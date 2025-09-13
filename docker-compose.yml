@@ -1,0 +1,11 @@
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    command: /bin/bash
+    tty: true
+    stdin_open: true
