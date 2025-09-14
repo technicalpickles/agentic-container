@@ -33,33 +33,27 @@ RUN apt-get update && apt-get install -y \
     locales \
     # Install sudo for non-root user
     sudo \
-    && rm -rf /var/lib/apt/lists/*
-
-# Generate locales
-RUN locale-gen en_US.UTF-8
-
-# Add Docker's official GPG key and repository
-RUN mkdir -m 0755 -p /etc/apt/keyrings \
+    # Install Docker
+    && mkdir -m 0755 -p /etc/apt/keyrings \
     && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
-    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-# Install Docker CLI and Docker Compose
-RUN apt-get update && apt-get install -y docker-ce-cli docker-compose-plugin && rm -rf /var/lib/apt/lists/*
-
-# Install mise and configure for system-wide use
-RUN curl https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null \
+    && apt-get update && apt-get install -y docker-ce-cli docker-compose-plugin \
+    # Generate locales
+    && locale-gen en_US.UTF-8 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set up mise for system-wide installations (based on research best practices)
 ENV MISE_DATA_DIR=/usr/local/share/mise
 ENV MISE_CONFIG_DIR=/etc/mise  
 ENV MISE_CACHE_DIR=/tmp/mise-cache
 
-# Create mise directories with proper permissions
-RUN mkdir -p $MISE_DATA_DIR $MISE_CONFIG_DIR $MISE_CACHE_DIR \
-    && chmod 755 $MISE_DATA_DIR $MISE_CONFIG_DIR
-
-# Configure environment variables system-wide
-RUN echo 'export MISE_DATA_DIR=/usr/local/share/mise' >> /etc/environment \
+# Install mise and configure for system-wide use
+RUN curl https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh && rm -rf /tmp/ \
+    # Create mise directories with proper permissions
+    && mkdir -p $MISE_DATA_DIR $MISE_CONFIG_DIR $MISE_CACHE_DIR \
+    && chmod 755 $MISE_DATA_DIR $MISE_CONFIG_DIR \
+    # Configure environment variables system-wide
+    && echo 'export MISE_DATA_DIR=/usr/local/share/mise' >> /etc/environment \
     && echo 'export MISE_CONFIG_DIR=/etc/mise' >> /etc/environment \
     && echo 'export MISE_CACHE_DIR=/tmp/mise-cache' >> /etc/environment \
     && echo 'eval "$(mise activate bash)"' >> /etc/bash.bashrc \
@@ -76,10 +70,9 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && (groupadd docker 2>/dev/null || true) \
     && usermod -aG docker $USERNAME \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
-    && chmod 0440 /etc/sudoers.d/$USERNAME
-
-# Create workspace directory
-RUN mkdir -p /workspace && chown $USERNAME:$USERNAME /workspace
+    && chmod 0440 /etc/sudoers.d/$USERNAME \
+    # Create workspace directory
+    && mkdir -p /workspace && chown $USERNAME:$USERNAME /workspace
 
 # Add extension helper script
 COPY scripts/extend-image.sh /usr/local/bin/extend-image
