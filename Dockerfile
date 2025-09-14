@@ -41,36 +41,65 @@ RUN mkdir -m 0755 -p /etc/apt/keyrings \
 # Install Docker CLI and Docker Compose
 RUN apt-get update && apt-get install -y docker-ce-cli docker-compose-plugin
 
-RUN curl https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh \
+# Install mise and configure for system-wide use
+RUN curl https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh
+
+# Set up mise for system-wide installations (based on research best practices)
+ENV MISE_DATA_DIR=/usr/local/share/mise
+ENV MISE_CONFIG_DIR=/etc/mise  
+ENV MISE_CACHE_DIR=/tmp/mise-cache
+
+# Create mise directories with proper permissions
+RUN mkdir -p $MISE_DATA_DIR $MISE_CONFIG_DIR $MISE_CACHE_DIR \
+    && chmod 755 $MISE_DATA_DIR $MISE_CONFIG_DIR
+
+# Configure environment variables system-wide
+RUN echo 'export MISE_DATA_DIR=/usr/local/share/mise' >> /etc/environment \
+    && echo 'export MISE_CONFIG_DIR=/etc/mise' >> /etc/environment \
+    && echo 'export MISE_CACHE_DIR=/tmp/mise-cache' >> /etc/environment \
     && echo 'eval "$(mise activate bash)"' >> /etc/bash.bashrc \
-    && echo 'eval "$(mise activate bash)"' >> /etc/profile \
-    && mkdir -p /root && echo 'eval "$(mise activate bash)"' >> /root/.bashrc
+    && echo 'eval "$(mise activate bash)"' >> /etc/profile
 
 RUN curl -sS https://starship.rs/install.sh | FORCE=true sh && echo 'eval "$(starship init bash)"' >> /etc/bash.bashrc
 
 
 FROM base AS ruby
-RUN curl --proto '=https' --tlsv1.2 -LsSf https://github.com/spinel-coop/rv/releases/download/v0.1.1/rv-installer.sh | sh
-# https://endoflife.date/ruby
-RUN /root/.cargo/bin/rv ruby install --install-dir ~/.local/share/mise/installs/ruby/ ruby-3.4.5 && \
-    mv ~/.local/share/mise/installs/ruby/ruby-3.4.5 ~/.local/share/mise/installs/ruby/3.4.5
+RUN curl --proto '=https' --tlsv1.2 -LsSf https://github.com/spinel-coop/rv/releases/download/v0.1.1/rv-installer.sh | sh \
+    && mv /root/.cargo/bin/rv /usr/local/bin/rv
+# https://endoflife.date/ruby - Install to global mise directory
+RUN rv ruby install --install-dir $MISE_DATA_DIR/installs/ruby/ ruby-3.4.5 && \
+    mv $MISE_DATA_DIR/installs/ruby/ruby-3.4.5 $MISE_DATA_DIR/installs/ruby/3.4.5
 
 FROM base AS node
-# https://endoflife.date/nodejs
+# https://endoflife.date/nodejs - Install to global mise directory
 RUN mise install node@24.8.0 node@22.11.0
 
-FROM base AS lefthook
+FROM base AS lefthook  
 RUN mise install lefthook@latest
 
 FROM base AS python
-# https://endoflife.date/python
+# https://endoflife.date/python - Install to global mise directory
 RUN mise install python@3.13.7
 
 FROM base AS go
-# https://endoflife.date/go
+# https://endoflife.date/go - Install to global mise directory  
 RUN mise install go@1.25.1
 
 FROM base AS dev
+
+# Copy global mise installations from build stages
+COPY --from=ruby $MISE_DATA_DIR/installs/ruby $MISE_DATA_DIR/installs/ruby
+COPY --from=node $MISE_DATA_DIR/installs/node $MISE_DATA_DIR/installs/node  
+COPY --from=lefthook $MISE_DATA_DIR/installs/lefthook $MISE_DATA_DIR/installs/lefthook
+COPY --from=python $MISE_DATA_DIR/installs/python $MISE_DATA_DIR/installs/python
+COPY --from=go $MISE_DATA_DIR/installs/go $MISE_DATA_DIR/installs/go
+
+# Configure global tool versions in system-wide mise config
+RUN mise use -g python@3.13.7 \
+    node@24.8.0 \
+    ruby@3.4.5 \
+    go@1.25.1 \
+    lefthook@latest
 
 # Create a non-root user for devcontainer use
 ARG USERNAME=vscode
@@ -85,30 +114,11 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME
 
-COPY --from=ruby /root/.local/share/mise/installs/ruby /root/.local/share/mise/installs/ruby
-COPY --from=node /root/.local/share/mise/installs/node /root/.local/share/mise/installs/node
-COPY --from=lefthook /root/.local/share/mise/installs/lefthook /root/.local/share/mise/installs/lefthook
-COPY --from=python /root/.local/share/mise/installs/python /root/.local/share/mise/installs/python
-COPY --from=go /root/.local/share/mise/installs/go /root/.local/share/mise/installs/go
-
-# Set up mise for both root and non-root user
-RUN mise use -g python@3.13.7 \
-    node@24.8.0 \
-    ruby@3.4.5 \
-    go@1.25.1 \
-    lefthook@latest
-
-# Create directories and copy mise installations to non-root user
-RUN mkdir -p /home/$USERNAME/.local/share && \
-    mkdir -p /home/$USERNAME/.config/mise && \
-    cp -r /root/.local/share/mise /home/$USERNAME/.local/share/ && \
-    if [ -f /root/.config/mise/config.toml ]; then cp /root/.config/mise/config.toml /home/$USERNAME/.config/mise/; fi && \
-    chown -R $USERNAME:$USERNAME /home/$USERNAME/.local /home/$USERNAME/.config
-
-# Set up shell for non-root user
+# Set up shell for non-root user  
 RUN echo 'eval "$(mise activate bash)"' >> /home/$USERNAME/.bashrc && \
     echo 'eval "$(starship init bash)"' >> /home/$USERNAME/.bashrc && \
-    echo 'eval "$(mise activate bash)"' >> /home/$USERNAME/.bash_profile
+    echo 'eval "$(mise activate bash)"' >> /home/$USERNAME/.bash_profile && \
+    echo 'eval "$(mise activate bash)"' >> /home/$USERNAME/.profile
 
 # Set up environment for both interactive and non-interactive use
 RUN echo 'export DEBIAN_FRONTEND=noninteractive' >> /home/$USERNAME/.bashrc && \
@@ -119,16 +129,13 @@ RUN echo 'export DEBIAN_FRONTEND=noninteractive' >> /home/$USERNAME/.bashrc && \
 # Create workspace directory
 RUN mkdir -p /workspace && chown $USERNAME:$USERNAME /workspace
 
-# Ensure mise is available in non-interactive shells (important for background agents)
-RUN echo 'eval "$(mise activate bash)"' >> /home/$USERNAME/.profile
-
 USER $USERNAME
 
 # Set git safe directory for the workspace (important for devcontainers)
 RUN git config --global --add safe.directory /workspace && \
     git config --global --add safe.directory '*'
 
-# Configure git with reasonable defaults for devcontainers
+# Configure git with reasonable defaults for devcontainers  
 RUN git config --global init.defaultBranch main && \
     git config --global pull.rebase false && \
     git config --global core.autocrlf input
