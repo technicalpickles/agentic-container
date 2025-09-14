@@ -15,7 +15,7 @@ services:
     command: ["/bin/bash", "--login"]
     tty: true
     stdin_open: true
-    # Enable privileged mode for Docker-in-Docker
+    # Enable privileged mode for Docker-in-Docker (can be removed if not needed)
     privileged: true
-    # Add user to docker group (optional, but recommended)
-    user: root
+    # Use non-root user for devcontainer compatibility  
+    user: "1001:1001"
