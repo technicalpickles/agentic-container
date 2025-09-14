@@ -190,9 +190,12 @@ COPY --from=lefthook-stage $MISE_DATA_DIR/installs/lefthook $MISE_DATA_DIR/insta
 COPY --from=python-stage $MISE_DATA_DIR/installs/python $MISE_DATA_DIR/installs/python
 COPY --from=go-stage $MISE_DATA_DIR/installs/go $MISE_DATA_DIR/installs/go
 
+USER root
 # Configure global tool versions in system-wide mise config
 RUN mise use -g python@3.13.7 \
     node@24.8.0 \
     ruby@3.4.5 \
     go@1.25.1 \
     lefthook@latest
+
+USER $USERNAME
