@@ -1,0 +1,91 @@
+# Full-Stack Web Development Container
+# Extends agentic-container with web development tools and databases
+
+FROM ghcr.io/your-repo/agentic-container:dev
+
+# Switch to root for system package installation
+USER root
+
+# Install additional system packages for web development
+RUN apt-get update && apt-get install -y \
+    # Database clients
+    postgresql-client \
+    mysql-client \
+    redis-tools \
+    # Additional utilities
+    imagemagick \
+    ffmpeg \
+    # Cleanup
+    && rm -rf /var/lib/apt/lists/*
+
+# Switch back to non-root user for tool installation
+USER $USERNAME
+
+# Install additional development tools via mise
+RUN mise install \
+    # Database tools
+    postgresql@16 \
+    redis@7 \
+    # Frontend tooling
+    bun@latest \
+    deno@latest \
+    # DevOps tools
+    terraform@latest \
+    kubectl@latest \
+    helm@latest \
+    # API tools
+    httpie@latest
+
+# Install global npm packages for web development  
+RUN npm install -g \
+    @angular/cli \
+    @vue/cli \
+    create-react-app \
+    next \
+    nuxt \
+    typescript \
+    @types/node \
+    eslint \
+    prettier \
+    nodemon \
+    concurrently \
+    serve
+
+# Install additional Python web packages
+RUN python -m pip install \
+    django \
+    fastapi \
+    flask \
+    sqlalchemy \
+    alembic \
+    celery \
+    redis \
+    psycopg2-binary
+
+# Install Ruby web gems
+RUN gem install \
+    rails \
+    sinatra \
+    rspec \
+    capybara \
+    rubocop
+
+# Create common web development directories
+RUN mkdir -p \
+    /workspace/frontend \
+    /workspace/backend \
+    /workspace/api \
+    /workspace/database \
+    /workspace/scripts
+
+# Configure Git hooks directory
+RUN git config --global init.templateDir /workspace/.git-templates
+
+# Expose common web development ports
+EXPOSE 3000 3001 4200 5000 8000 8080 9000
+
+# Set working directory
+WORKDIR /workspace
+
+# Default command
+CMD ["/bin/bash", "--login"]

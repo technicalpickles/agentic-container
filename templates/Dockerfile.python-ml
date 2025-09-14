@@ -1,0 +1,72 @@
+# Python Machine Learning Development Container
+# Extends agentic-container with Python ML libraries and Jupyter
+
+FROM ghcr.io/your-repo/agentic-container:python
+
+# Switch to root for package installation
+USER root
+
+# Install system dependencies for ML libraries
+RUN apt-get update && apt-get install -y \
+    # For numpy, scipy, matplotlib
+    python3-dev \
+    libopenblas-dev \
+    liblapack-dev \
+    gfortran \
+    # For data processing
+    libhdf5-dev \
+    libnetcdf-dev \
+    # For image processing
+    libpng-dev \
+    libjpeg-dev \
+    # Cleanup
+    && rm -rf /var/lib/apt/lists/*
+
+# Switch back to non-root user
+USER $USERNAME
+
+# Install Python ML packages using mise-managed Python
+RUN python -m pip install --upgrade pip && \
+    python -m pip install \
+        # Core ML stack
+        numpy \
+        pandas \
+        scikit-learn \
+        matplotlib \
+        seaborn \
+        plotly \
+        # Deep learning
+        torch \
+        tensorflow \
+        # Jupyter ecosystem  
+        jupyter \
+        jupyterlab \
+        ipywidgets \
+        # Additional tools
+        black \
+        flake8 \
+        pytest
+
+# Install additional data science tools via mise
+RUN mise install \
+    duckdb@latest \
+    sqlite@latest
+
+# Create directories for notebooks and data
+RUN mkdir -p /workspace/notebooks /workspace/data
+
+# Configure Jupyter
+RUN jupyter lab --generate-config && \
+    echo "c.ServerApp.ip = '0.0.0.0'" >> ~/.jupyter/jupyter_lab_config.py && \
+    echo "c.ServerApp.port = 8888" >> ~/.jupyter/jupyter_lab_config.py && \
+    echo "c.ServerApp.open_browser = False" >> ~/.jupyter/jupyter_lab_config.py && \
+    echo "c.ServerApp.allow_root = False" >> ~/.jupyter/jupyter_lab_config.py
+
+# Expose Jupyter port
+EXPOSE 8888
+
+# Set working directory
+WORKDIR /workspace
+
+# Default command starts Jupyter Lab
+CMD ["jupyter", "lab", "--no-browser", "--allow-root"]
