@@ -3,9 +3,19 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: dev
     volumes:
       - .:/workspace
+      # Mount Docker socket for Docker-in-Docker
+      # Option 1: Let Colima handle the magic (current working approach)
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Option 2: Direct path to Colima socket (more explicit)
+      # - /Users/josh.nichols/.colima/gusto/docker.sock:/var/run/docker.sock
     working_dir: /workspace
-    command: /bin/bash
+    command: ["/bin/bash", "--login"]
     tty: true
     stdin_open: true
+    # Enable privileged mode for Docker-in-Docker
+    privileged: true
+    # Add user to docker group (optional, but recommended)
+    user: root
