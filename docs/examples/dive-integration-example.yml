@@ -1,0 +1,117 @@
+# Example: Adding Dive Analysis to Existing Build Workflow
+# This shows how to integrate dive analysis into your current build-and-publish.yml
+
+# Add this job to your existing .github/workflows/build-and-publish.yml
+
+  # Add this after your existing build job
+  size-analysis:
+    runs-on: ubuntu-latest
+    needs: build  # Wait for images to be built
+    if: always()  # Run even if build partially fails
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [base, tools, python, node, ruby, go, dev]
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Analyze image size
+      run: |
+        # Use our helper script
+        chmod +x scripts/analyze-image-size.sh
+        
+        ./scripts/analyze-image-size.sh \
+          --install-dive \
+          --ci \
+          --format github \
+          --output-dir "./size-reports" \
+          "ghcr.io/${{ github.repository }}:${{ github.sha }}-${{ matrix.target }}" \
+          "ghcr.io/${{ github.repository }}:main-${{ matrix.target }}"
+    
+    - name: Upload size reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: size-analysis-${{ matrix.target }}
+        path: size-reports/
+
+---
+
+# Alternative: Simple Integration (Just Add to Existing Build Job)
+# Add these steps to your existing build job for each target
+
+    # Add after your build and push steps
+    - name: Quick size check with dive
+      if: github.event_name == 'pull_request'
+      run: |
+        # Install dive
+        curl -OL https://github.com/wagoodman/dive/releases/download/v0.12.0/dive_0.12.0_linux_amd64.tar.gz
+        tar -xzf dive_0.12.0_linux_amd64.tar.gz
+        sudo mv dive /usr/local/bin/
+        
+        # Quick analysis with basic thresholds
+        dive --ci \
+          --lowestEfficiency=0.85 \
+          --highestUserWastedPercent=15 \
+          "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-${{ matrix.target }}"
+        
+        # Generate GitHub step summary
+        echo "## 📊 Size Analysis: ${{ matrix.target }}" >> $GITHUB_STEP_SUMMARY
+        dive --json "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}-${{ matrix.target }}" | \
+        jq -r '"| Metric | Value |", "|-------|-------|", "| Size | \(.image.sizeBytes/1024/1024|floor)MB |", "| Efficiency | \(.image.efficiency*100|floor)% |", "| Wasted | \(.image.userSizeBytesWasted/1024/1024|floor)MB |"' >> $GITHUB_STEP_SUMMARY
+
+---
+
+# Environment Variables for Thresholds
+# Add these to your workflow env section to customize thresholds
+
+env:
+  # Size monitoring thresholds
+  DIVE_MIN_EFFICIENCY: "0.85"           # Minimum efficiency score
+  DIVE_MAX_WASTE_PERCENT: "15"         # Maximum waste percentage  
+  DIVE_MAX_WASTE_MB: "200"             # Maximum waste in MB
+  SIZE_INCREASE_THRESHOLD_PERCENT: "10" # Fail if size increases >10%
+  SIZE_INCREASE_THRESHOLD_MB: "100"     # Fail if size increases >100MB
+
+---
+
+# Pull Request Size Comparison
+# Add this job to compare PR images against main branch
+
+  pr-size-comparison:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+    - name: Compare PR image sizes
+      run: |
+        echo "## 📊 Image Size Comparison" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Image | PR Size | Main Size | Change |" >> $GITHUB_STEP_SUMMARY
+        echo "|-------|---------|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+        
+        for target in base tools python node ruby go dev; do
+          pr_image="ghcr.io/${{ github.repository }}:${{ github.sha }}-$target"
+          main_image="ghcr.io/${{ github.repository }}:main-$target"
+          
+          # Get sizes
+          pr_size=$(docker inspect "$pr_image" --format='{{.Size}}' 2>/dev/null || echo "0")
+          main_size=$(docker inspect "$main_image" --format='{{.Size}}' 2>/dev/null || echo "0")
+          
+          if [[ "$pr_size" != "0" && "$main_size" != "0" ]]; then
+            pr_mb=$((pr_size / 1024 / 1024))
+            main_mb=$((main_size / 1024 / 1024))  
+            diff_mb=$((pr_mb - main_mb))
+            
+            emoji="🟢"
+            if (( diff_mb > 100 )); then emoji="🔴"
+            elif (( diff_mb > 25 )); then emoji="🟡"
+            fi
+            
+            echo "| $target | ${pr_mb}MB | ${main_mb}MB | $emoji ${diff_mb}MB |" >> $GITHUB_STEP_SUMMARY
+          fi
+        done
