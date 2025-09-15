@@ -24,20 +24,15 @@ COMMANDS:
     help                  Show this help message
 
 BASE IMAGES:
-    minimal               Core system tools, mise, Docker CLI only (~500MB)
-    standard              Minimal + starship prompt and dev enhancements (~750MB)  
-    ruby                  Standard + Ruby runtime
-    node                  Standard + Node.js runtime
-    python                Standard + Python runtime
-    go                    Standard + Go runtime  
-    dev                   All languages and tools (kitchen sink) (~2GB)
+    standard              Ubuntu + mise + Python + Node.js + ast-grep + dev tools (~950MB)  
+    dev                   Standard + all languages pre-installed (kitchen sink) (~2.2GB)
 
 EXAMPLES:
-    # Start with just the minimal image
-    extend-image.sh init minimal
+    # Start with the production-ready standard image
+    extend-image.sh init standard
     
-    # Start with Node.js included
-    extend-image.sh init node
+    # Start with the dev image (all languages included)
+    extend-image.sh init dev
     
     # Add Python to an existing Dockerfile
     extend-image.sh add-language python@3.12
@@ -56,7 +51,7 @@ EOF
 }
 
 init_dockerfile() {
-    local base_image="${1:-tools}"
+    local base_image="${1:-standard}"
     local dockerfile="Dockerfile"
     
     if [[ -f "$dockerfile" ]]; then

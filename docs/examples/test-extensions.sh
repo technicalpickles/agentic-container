@@ -1,17 +1,25 @@
 #!/usr/bin/env bash
 
-# test-extensions.sh - Validate that all extension examples work correctly
+# test-extensions.sh - Validate custom extension Dockerfiles
 #
-# This script builds and tests all the extension examples to ensure they work.
-# It serves as both documentation validation and regression testing.
+# This script helps test your custom extension Dockerfiles based on the
+# inline examples from the main README.md. It builds and validates that
+# the extension works correctly.
 #
-# Usage: ./test-extensions.sh [--cleanup]
+# Usage: 
+#   ./test-extensions.sh <dockerfile-path> [--cleanup]
+#   ./test-extensions.sh --help
+#
+# Arguments:
+#   dockerfile-path: Path to your custom Dockerfile to test
 #   --cleanup: Remove built images after testing (default: keep for inspection)
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CLEANUP=${1:-""}
+PROJECT_ROOT="$SCRIPT_DIR/../.."
+DOCKERFILE=""
+CLEANUP=""
 FAILED_TESTS=()
 
 # Colors for output
@@ -37,123 +45,176 @@ log_error() {
     echo -e "${RED}❌ $1${NC}"
 }
 
-# Function to test an extension
-test_extension() {
-    local dockerfile=$1
-    local image_name=$2
-    local test_command=$3
-    local description=$4
+show_help() {
+    cat << EOF
+test-extensions.sh - Test custom agentic-container extensions
+
+USAGE:
+    ./test-extensions.sh <dockerfile-path> [--cleanup]
+    ./test-extensions.sh --help
+
+ARGUMENTS:
+    dockerfile-path    Path to your custom Dockerfile to test
+    --cleanup         Remove built test images after testing
+
+EXAMPLES:
+    # Test a Python extension Dockerfile
+    ./test-extensions.sh my-python-extension.dockerfile
     
-    log_info "Testing $description..."
+    # Test and cleanup afterwards
+    ./test-extensions.sh my-extension.dockerfile --cleanup
+    
+    # Create and test a Python extension from main README examples
+    cat > my-python-extension.dockerfile << 'EOF'
+FROM ghcr.io/technicalpickles/agentic-container:latest
+RUN pip install click typer rich pydantic pytest black ruff mypy && \\
+    mise use -g python@3.13.7
+RUN python3 --version && click --version
+WORKDIR /workspace
+EOF
+    ./test-extensions.sh my-python-extension.dockerfile --cleanup
+    rm my-python-extension.dockerfile
+
+TECHNOLOGY STACK EXAMPLES:
+    The main README.md contains inline extension examples for:
+    • Python CLI Applications - CLI tools, data processing, automation
+    • Backend JavaScript/Node.js Services - APIs, microservices  
+    • Full-Stack Rails Applications - Complete Ruby on Rails development
+    • Go Microservices - Lightweight, fast services and API backends
+    • React Frontend Applications - Modern web frontends with tooling
+    
+    Copy examples from: ../README.md#extending-for-different-technology-stacks
+
+EOF
+}
+
+# Parse arguments
+parse_args() {
+    if [[ $# -eq 0 ]] || [[ "${1:-}" == "--help" ]] || [[ "${1:-}" == "-h" ]]; then
+        show_help
+        exit 0
+    fi
+    
+    DOCKERFILE="$1"
+    CLEANUP="${2:-}"
+    
+    if [[ ! -f "$DOCKERFILE" ]]; then
+        log_error "Dockerfile not found: $DOCKERFILE"
+        echo
+        show_help
+        exit 1
+    fi
+    
+    if [[ -n "$CLEANUP" ]] && [[ "$CLEANUP" != "--cleanup" ]]; then
+        log_error "Invalid argument: $CLEANUP. Use --cleanup or omit."
+        echo  
+        show_help
+        exit 1
+    fi
+}
+
+# Test an extension dockerfile
+test_extension() {
+    local dockerfile="$1"
+    local image_name="test-extension-$(date +%s)"
+    
+    log_info "Testing extension: $(basename "$dockerfile")"
     
     # Create a temporary dockerfile with local image references for testing
-    local temp_dockerfile="$SCRIPT_DIR/temp-$(basename $dockerfile)"
+    local temp_dockerfile="$SCRIPT_DIR/temp-$(basename "$dockerfile")"
     sed 's|ghcr.io/technicalpickles/agentic-container:|agentic-container:|g' "$dockerfile" > "$temp_dockerfile"
     
     # Build the image
-    log_info "Building $image_name from $dockerfile (using local images)"
-    if docker build -f "$temp_dockerfile" -t "$image_name" "$SCRIPT_DIR/../.."; then
+    log_info "Building test image: $image_name"
+    if docker build -f "$temp_dockerfile" -t "$image_name" "$PROJECT_ROOT"; then
         log_success "Build successful: $image_name"
         rm "$temp_dockerfile"
     else
-        log_error "Build failed: $image_name"
+        log_error "Build failed for: $(basename "$dockerfile")"
         rm "$temp_dockerfile" 2>/dev/null || true
-        FAILED_TESTS+=("$description - Build")
+        FAILED_TESTS+=("Build failed")
         return 1
     fi
     
-    # Test the image
-    log_info "Testing functionality: $image_name"
-    if docker run --rm "$image_name" bash -c "$test_command"; then
-        log_success "Test successful: $description"
+    # Basic functionality tests
+    log_info "Testing basic functionality..."
+    
+    # Test 1: Container starts and basic commands work
+    if docker run --rm "$image_name" bash -c 'echo "Container startup test passed"'; then
+        log_success "Container startup test passed"
     else
-        log_error "Test failed: $description"
-        FAILED_TESTS+=("$description - Runtime")
-        return 1
+        log_error "Container startup test failed"
+        FAILED_TESTS+=("Startup test")
+    fi
+    
+    # Test 2: Mise is working
+    if docker run --rm "$image_name" bash -c 'mise --version >/dev/null 2>&1 && echo "mise working"'; then
+        log_success "mise version manager is working"
+    else
+        log_warning "mise test failed (might be expected for some extensions)"
+    fi
+    
+    # Test 3: Working directory is accessible
+    if docker run --rm "$image_name" bash -c 'cd /workspace && pwd'; then
+        log_success "Working directory is accessible"
+    else
+        log_error "Working directory test failed"
+        FAILED_TESTS+=("Working directory")
+    fi
+    
+    # Test 4: User permissions are correct
+    if docker run --rm "$image_name" bash -c 'whoami | grep -v "^root$" && echo "Running as non-root user"'; then
+        log_success "Running as non-root user"
+    else
+        log_warning "Running as root user (might not be ideal for security)"
+    fi
+    
+    # Cleanup test image
+    if [[ "$CLEANUP" == "--cleanup" ]]; then
+        if docker rmi "$image_name" >/dev/null 2>&1; then
+            log_success "Cleaned up test image"
+        else
+            log_warning "Failed to cleanup test image: $image_name"
+        fi
+    else
+        log_info "Test image retained: $image_name (use --cleanup to remove)"
     fi
     
     return 0
 }
 
-# Function to cleanup images
-cleanup_images() {
-    local images=("test-python-extension" "test-nodejs-extension" "test-fullstack-extension" "test-multistage-app")
-    
-    if [[ "$CLEANUP" == "--cleanup" ]]; then
-        log_info "Cleaning up test images..."
-        for image in "${images[@]}"; do
-            if docker image inspect "$image" >/dev/null 2>&1; then
-                docker rmi "$image" >/dev/null 2>&1 && log_success "Removed $image" || log_warning "Failed to remove $image"
-            fi
-        done
-    else
-        log_info "Test images retained for inspection. Use --cleanup to remove them."
-        docker images | grep -E "test-(python|nodejs|fullstack|multistage)" || true
-    fi
-}
-
 main() {
-    log_info "Starting extension example validation..."
-    log_info "Working directory: $SCRIPT_DIR"
+    parse_args "$@"
     
-    # Ensure we're in the right directory
-    cd "$SCRIPT_DIR"
+    log_info "Starting extension validation..."
+    log_info "Testing Dockerfile: $DOCKERFILE"
     
-    # Test 1: Python Extension
-    test_extension \
-        "extend-python.dockerfile" \
-        "test-python-extension" \
-        'python3 --version && python3 -c "import sys; print(f\"Python {sys.version_info.major}.{sys.version_info.minor} working!\")"' \
-        "Python Extension"
+    # Check if base image exists locally
+    if ! docker image inspect agentic-container:latest >/dev/null 2>&1; then
+        log_warning "Base image 'agentic-container:latest' not found locally."
+        log_info "The test will use 'ghcr.io/technicalpickles/agentic-container:latest' from registry."
+    fi
     
-    # Test 2: Node.js Extension  
-    test_extension \
-        "extend-nodejs.dockerfile" \
-        "test-nodejs-extension" \
-        'node --version && npm --version && node -e "console.log(\"Node.js working!\")"' \
-        "Node.js Extension"
-    
-    # Test 3: Full-Stack Extension
-    test_extension \
-        "extend-fullstack.dockerfile" \
-        "test-fullstack-extension" \
-        'cd /workspace/examples && python3 hello.py && node hello.js && go run hello.go' \
-        "Full-Stack Extension"
-    
-    # Test 4: Multi-Stage Build (runtime test only)
-    test_extension \
-        "multistage-app.dockerfile" \
-        "test-multistage-app" \
-        'cd /app && python3 -c "import app; print(\"FastAPI app module loaded successfully\")"' \
-        "Multi-Stage Build"
-    
-    # Cleanup
-    cleanup_images
+    # Test the extension
+    test_extension "$DOCKERFILE"
     
     # Summary
     echo
     log_info "=== Test Summary ==="
     if [[ ${#FAILED_TESTS[@]} -eq 0 ]]; then
-        log_success "All extension examples passed! 🎉"
+        log_success "Extension validation passed! 🎉"
         echo
-        log_info "The following examples are ready for use:"
-        echo "  • extend-python.dockerfile - Python development extension"  
-        echo "  • extend-nodejs.dockerfile - Node.js development extension"
-        echo "  • extend-fullstack.dockerfile - Multi-language development extension"
-        echo "  • multistage-app.dockerfile - Production app deployment pattern"
+        log_info "Your extension Dockerfile appears to be working correctly."
         echo
-        exit 0
     else
         log_error "Some tests failed:"
         for test in "${FAILED_TESTS[@]}"; do
             echo "  ❌ $test"
         done
         echo
+        log_info "Review the Dockerfile and try again."
         exit 1
     fi
 }
-
-# Handle Ctrl+C
-trap cleanup_images EXIT
 
 main "$@"
