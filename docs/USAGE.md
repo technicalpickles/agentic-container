@@ -40,8 +40,8 @@ services:
     volumes:
       - .:/workspace
       - /var/run/docker.sock:/var/run/docker.sock
-      - ~/.gitconfig:/home/vscode/.gitconfig:ro
-      - ~/.ssh:/home/vscode/.ssh:ro
+      - ~/.gitconfig:/home/agent/.gitconfig:ro
+      - ~/.ssh:/home/agent/.ssh:ro
     working_dir: /workspace
     tty: true
     stdin_open: true
@@ -133,7 +133,7 @@ Key environment variables you can customize:
 | `MISE_DATA_DIR` | Mise installation directory | `/usr/local/share/mise` |
 | `MISE_CONFIG_DIR` | Mise configuration directory | `/etc/mise` |
 | `MISE_CACHE_DIR` | Mise cache directory | `/tmp/mise-cache` |
-| `USERNAME` | Non-root user name | `vscode` |
+| `USERNAME` | Non-root user name | `agent` |
 | `USER_UID` | User ID | `1001` |
 | `USER_GID` | Group ID | `1001` |
 
@@ -148,14 +148,14 @@ services:
     image: ghcr.io/technicalpickles/agentic-container:dev
     volumes:
       # Git configuration
-      - ~/.gitconfig:/home/vscode/.gitconfig:ro
+      - ~/.gitconfig:/home/agent/.gitconfig:ro
       # SSH keys
-      - ~/.ssh:/home/vscode/.ssh:ro  
+      - ~/.ssh:/home/agent/.ssh:ro  
       # Shell configuration
-      - ./config/.bashrc:/home/vscode/.bashrc:ro
+      - ./config/.bashrc:/home/agent/.bashrc:ro
       # Tool configurations
-      - ./config/.vimrc:/home/vscode/.vimrc:ro
-      - ./config/starship.toml:/home/vscode/.config/starship.toml:ro
+      - ./config/.vimrc:/home/agent/.vimrc:ro
+      - ./config/starship.toml:/home/agent/.config/starship.toml:ro
 ```
 
 ### Language Version Management
@@ -349,7 +349,7 @@ services:
     volumes:
       - .:/workspace
       # Cache directories to persist between runs
-      - python-packages:/home/vscode/.cache/pip
+      - python-packages:/home/agent/.cache/pip
       - node-modules:/workspace/node_modules
     
 volumes:

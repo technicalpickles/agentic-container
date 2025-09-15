@@ -6,7 +6,7 @@ FROM ghcr.io/technicalpickles/agentic-container:latest AS builder
 USER root
 RUN apt-get update && apt-get install -y build-essential && \
     rm -rf /var/lib/apt/lists/*
-USER vscode
+USER agent
 
 # Install build dependencies
 RUN pip install --no-cache-dir wheel setuptools

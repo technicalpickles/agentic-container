@@ -121,7 +121,7 @@ RUN mkdir -p $MISE_DATA_DIR $MISE_CONFIG_DIR $MISE_CACHE_DIR \
     && echo 'eval "$(mise activate bash)"' >> /etc/profile
 
 # Create user (minimal user setup)
-ARG USERNAME=vscode
+ARG USERNAME=agent
 ARG USER_UID=1001
 ARG USER_GID=$USER_UID
 

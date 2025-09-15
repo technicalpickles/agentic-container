@@ -7,7 +7,7 @@ This document explains the user management patterns used in the agentic-containe
 The agentic-container uses a **dual-user pattern** with explicit USER switching to balance security, functionality, and simplicity:
 
 - **`root` user**: For operations requiring system-level permissions
-- **`vscode` user (UID 1001)**: Default non-root user for development and runtime
+- **`agent` user (UID 1001)**: Default non-root user for development and runtime
 
 ## Design Decision: Explicit USER Switching
 
@@ -15,8 +15,8 @@ The agentic-container uses a **dual-user pattern** with explicit USER switching 
 
 During development, we investigated two approaches for managing permissions in extension Dockerfiles:
 
-1. **Group-based permissions**: Create a shared group allowing both root and vscode users to write to tool directories
-2. **Explicit USER switching**: Use `USER root` for privileged operations, `USER vscode` for everything else
+1. **Group-based permissions**: Create a shared group allowing both root and agent users to write to tool directories
+2. **Explicit USER switching**: Use `USER root` for privileged operations, `USER agent` for everything else
 
 ### Investigation Results
 
@@ -26,7 +26,7 @@ We implemented and tested a group-based approach using a `mise` group (GID 2000)
 # Group-based approach (tested but not adopted)
 RUN groupadd --gid 2000 mise \
     && usermod -aG mise root \
-    && usermod -aG mise vscode \
+    && usermod -aG mise agent \
     && chgrp -R mise /usr/local/share/mise /etc/mise \
     && chmod -R g+ws /usr/local/share/mise /etc/mise
 ```
@@ -78,7 +78,7 @@ RUN apt-get update && apt-get install -y postgresql-client && \
     rm -rf /var/lib/apt/lists/*
 
 # Switch back to non-root user
-USER vscode
+USER agent
 WORKDIR /workspace
 ```
 
@@ -117,7 +117,7 @@ RUN mise install go@1.23.5 \
     && rm -rf /var/lib/apt/lists/*
 
 # Switch back for runtime
-USER vscode
+USER agent
 
 # User-level operations that depend on root installations
 RUN go install github.com/air-verse/air@latest
@@ -129,10 +129,10 @@ WORKDIR /workspace
 
 ### User Setup
 
-The base image creates the vscode user with:
+The base image creates the agent user with:
 
 ```dockerfile
-ARG USERNAME=vscode
+ARG USERNAME=agent
 ARG USER_UID=1001
 ARG USER_GID=$USER_UID
 
@@ -144,24 +144,24 @@ RUN groupadd --gid $USER_GID $USERNAME \
 
 ### Key Features
 
-1. **Passwordless sudo**: vscode user can use `sudo` without password
-2. **Docker group**: vscode user can access Docker daemon  
-3. **Home directory**: vscode user has `/home/vscode` home directory
+1. **Passwordless sudo**: agent user can use `sudo` without password
+2. **Docker group**: agent user can access Docker daemon  
+3. **Home directory**: agent user has `/home/agent` home directory
 4. **Shell configuration**: Pre-configured with mise activation and development tools
 
 ### Directory Ownership
 
 - **System directories**: `/usr/local`, `/etc` owned by root
-- **User directories**: `/home/vscode`, `/workspace` owned by vscode  
+- **User directories**: `/home/agent`, `/workspace` owned by agent  
 - **Tool directories**: `/usr/local/share/mise` owned by root (with group permissions as backup)
 
 ## Best Practices
 
 ### Extension Dockerfile Guidelines
 
-1. **Default to vscode user**: Only use `USER root` when necessary
+1. **Default to agent user**: Only use `USER root` when necessary
 2. **Group root operations**: Combine multiple root operations in single RUN statement
-3. **Always return to vscode**: End Dockerfile with `USER vscode` 
+3. **Always return to agent**: End Dockerfile with `USER agent` 
 4. **Document why root is needed**: Comment when root permissions are required
 
 ### Example: Well-structured Extension
@@ -181,7 +181,7 @@ RUN mise install go@1.23.5 \
     && rm -rf /var/lib/apt/lists/*
 
 # ✅ Good: Return to non-root user
-USER vscode
+USER agent
 WORKDIR /workspace
 
 # ✅ Good: Runtime operations as non-root user  
@@ -193,28 +193,28 @@ CMD ["python", "app.py"]
 ```dockerfile
 # ❌ Bad: Unnecessary root operations
 USER root
-RUN pip install requests  # pip works fine as vscode user
+RUN pip install requests  # pip works fine as agent user
 
-# ❌ Bad: Forgetting to switch back to vscode
+# ❌ Bad: Forgetting to switch back to agent
 USER root
 RUN mise install ruby@3.4.1
-# Missing: USER vscode
+# Missing: USER agent
 
 # ❌ Bad: Multiple unnecessary switches
 USER root
 RUN mise install ruby@3.4.1
-USER vscode
+USER agent
 USER root  # Switching back unnecessarily
 RUN gem install rails
-USER vscode
+USER agent
 ```
 
 ## Security Considerations
 
 1. **Principle of least privilege**: Use root only when required
 2. **Minimize root time**: Group root operations together
-3. **Clean return to user**: Always end with `USER vscode`
-4. **Sudo available**: vscode user can escalate when needed at runtime
+3. **Clean return to user**: Always end with `USER agent`
+4. **Sudo available**: agent user can escalate when needed at runtime
 
 ## Future Considerations
 
@@ -236,19 +236,19 @@ RUN gem install rails
 ```dockerfile
 USER root
 RUN gem install rails
-USER vscode
+USER agent
 ```
 
-**Problem**: Files created as root when they should be owned by vscode
+**Problem**: Files created as root when they should be owned by agent
 ```dockerfile
 USER root
 RUN some-command > /workspace/output.txt  # Wrong: file owned by root
 ```
 
-**Solution**: Create files as vscode user, or change ownership
+**Solution**: Create files as agent user, or change ownership
 ```dockerfile
-USER vscode
-RUN some-command > /workspace/output.txt  # Correct: file owned by vscode
+USER agent
+RUN some-command > /workspace/output.txt  # Correct: file owned by agent
 ```
 
 ## Related Documentation

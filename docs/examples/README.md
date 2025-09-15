@@ -58,7 +58,7 @@ Test any of these patterns:
 - **Installing new languages**: Use `mise install language@version`  
 - **Package managers**: pip, npm, gem, go install
 - **System packages**: apt-get for system dependencies
-- **User permissions**: USER root/USER vscode patterns
+- **User permissions**: USER root/USER agent patterns
 - **Multi-stage builds**: Separate build and runtime environments
 
 ## 🎯 Focus

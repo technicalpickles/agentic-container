@@ -5,6 +5,6 @@ FROM ghcr.io/technicalpickles/agentic-container:latest
 # Node.js already available - add packages via npm
 USER root
 RUN npm install -g create-vite typescript eslint prettier
-USER vscode
+USER agent
 
 WORKDIR /workspace

@@ -182,7 +182,7 @@ Internal build stages (not published as images):
 | `MISE_DATA_DIR` | Mise installation directory | `/usr/local/share/mise` | System |
 | `MISE_CONFIG_DIR` | Mise configuration directory | `/etc/mise` | System |
 | `MISE_CACHE_DIR` | Mise cache directory | `/tmp/mise-cache` | System |
-| `USERNAME` | Non-root user name | `vscode` | Build-time |
+| `USERNAME` | Non-root user name | `agent` | Build-time |
 | `USER_UID` | User ID | `1001` | Build-time |
 | `USER_GID` | Group ID | `1001` | Build-time |
 | `DEBIAN_FRONTEND` | Suppress interactive prompts | `noninteractive` | User shell |
@@ -194,7 +194,7 @@ Internal build stages (not published as images):
 
 | Argument | Description | Default |
 |----------|-------------|---------|
-| `USERNAME` | Non-root user name | `vscode` |
+| `USERNAME` | Non-root user name | `agent` |
 | `USER_UID` | User ID | `1001` |
 | `USER_GID` | Group ID | `1001` |
 
@@ -231,7 +231,7 @@ docker build \
 ├── bash.bashrc          # System-wide bash config
 └── profile              # System-wide profile
 
-/home/vscode/             # Non-root user home
+/home/agent/             # Non-root user home
 ├── .bashrc              # User bash config
 ├── .bash_profile        # User bash profile
 ├── .profile             # User profile

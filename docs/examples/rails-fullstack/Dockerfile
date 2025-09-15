@@ -9,5 +9,5 @@ RUN mise install ruby@3.4.1
 # Add Ruby packages via gem  
 RUN gem install rails bundler
 
-USER vscode
+USER agent
 WORKDIR /workspace
