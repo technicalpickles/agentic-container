@@ -1,12 +1,66 @@
-# Extension Examples
+# Agent Extension Examples
 
-This directory contains practical examples of how to extend the `agentic-container` images to create custom development environments. These examples demonstrate best practices, common patterns, and serve as starting points for your own customizations.
+This directory contains practical examples of how to extend the `agentic-container` images to create custom agent execution environments. These examples demonstrate best practices, common patterns, and serve as starting points for your own agent deployments.
 
 ## Quick Start
 
-All examples extend the `latest` image, which provides a solid foundation with mise, starship, and essential dev tools. Each example includes comprehensive comments explaining the approach and customization options.
+All examples extend the `latest` image, which provides a solid foundation with mise, agent tools, and analysis capabilities. Each example includes comprehensive comments explaining the approach and customization options.
 
-## Available Examples
+## Agent-Focused Examples
+
+### 🤖 Claude Agent Environment
+**File**: [`claude-agent.dockerfile`](claude-agent.dockerfile)
+
+Creates an environment optimized for Claude Desktop agents and similar AI code modification tools:
+- Python 3.13.7 runtime via mise
+- Core agent packages: anthropic, pydantic, python-dotenv
+- Code analysis tools: ast-grep, tree-sitter, libcst
+- Database tools for agent state management
+- Headless execution optimizations
+
+```bash
+# Build and run
+docker build -f docs/examples/claude-agent.dockerfile -t my-claude-agent .
+docker run --rm -v $(pwd):/workspace my-claude-agent python agent_script.py
+```
+
+**Use Cases**: Claude Desktop agents, AI code modification, automated programming
+
+### 🔍 Code Analysis Agent
+**File**: [`code-analysis-agent.dockerfile`](code-analysis-agent.dockerfile)
+
+Creates a multi-language environment for structural code analysis:
+- Python + Node.js + Go runtime support
+- Pre-installed ast-grep, tree-sitter parsers for multiple languages
+- Cross-language analysis capabilities
+- Code modification and transformation tools
+
+```bash
+# Build and run
+docker build -f docs/examples/code-analysis-agent.dockerfile -t my-analysis-agent .
+docker run --rm -v $(pwd):/workspace my-analysis-agent
+```
+
+**Use Cases**: Multi-language code analysis, automated refactoring, code quality agents
+
+### 🌐 MCP Server Host
+**File**: [`mcp-server.dockerfile`](mcp-server.dockerfile)
+
+Creates an environment ready for hosting Model Context Protocol servers:
+- Python + Node.js runtime support
+- MCP framework packages for both languages
+- Universal runners (uvx, npx) pre-configured
+- Network optimizations for agent communication
+
+```bash
+# Build and run
+docker build -f docs/examples/mcp-server.dockerfile -t my-mcp-server .
+docker run --rm -p 8080:8080 -v $(pwd):/workspace my-mcp-server
+```
+
+**Use Cases**: MCP server hosting, protocol integration, agent communication
+
+## Development-Focused Examples
 
 ### 🐍 Python Development
 **File**: [`extend-python.dockerfile`](extend-python.dockerfile)

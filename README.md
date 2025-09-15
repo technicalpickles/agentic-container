@@ -1,118 +1,144 @@
 # Agentic Container
 
-A flexible, extensible development container built for modern software development. Provides a solid foundation with development tools and mise version manager, designed to be extended with exactly the languages and tools you need.
+A fast, reliable container environment optimized for AI agent execution in cloud platforms. Provides a solid foundation with agent tooling and mise version manager, designed to be extended with exactly the languages and tools your agents need.
 
-## 🚀 Quick Start
+## 🤖 Built for AI Agents
 
-### Option 1: Extend the base image (Recommended)
+Optimized for cloud providers offering agentic experiences like Cursor Background Agents, Replit AI, and similar platforms:
+
+- **Fast startup time**: Pre-installed agent toolchain for quick execution
+- **Headless execution**: No interactive prompts, reliable automation  
+- **Code analysis ready**: ast-grep, tree-sitter, ripgrep pre-installed
+- **MCP server ready**: Universal package runners (uvx, npx) available
+- **Cloud-native**: Designed for multi-tenant, scalable execution
+- **Extension-friendly**: Easy to customize for specific agent workflows
+
+## 🚀 Quick Start for Agent Workloads
+
+### Agent Execution Environment (Recommended)
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-# Add languages and configure in a single RUN to minimize layers
-RUN mise install python@3.13.7 node@24.8.0 && \
-    mise use -g python@3.13.7 node@24.8.0 && \
+# Add agent-specific tooling
+RUN mise install python@3.13.7 && \
+    mise use -g python@3.13.7 && \
     bash -c 'eval "$(mise activate bash)" && \
-        pip install fastapi requests && \
-        npm install -g typescript'
+        pip install anthropic pydantic python-dotenv'
 ```
 
-### Option 2: Use the kitchen sink example
+### MCP Server Environment
+```dockerfile
+FROM ghcr.io/technicalpickles/agentic-container:latest
+
+# Ready for MCP servers in any language
+RUN mise install python@3.13.7 node@24.8.0 && \
+    mise use -g python@3.13.7 node@24.8.0
+# Both uvx and npx are ready to use for protocol servers
+```
+
+### Quick Prototyping
 ```bash
-# Use the dev environment (all languages pre-installed, for prototyping only)
-docker run -it --rm ghcr.io/technicalpickles/agentic-container:dev
+# Use the dev environment (all languages pre-installed, for agent prototyping only)
+docker run --rm ghcr.io/technicalpickles/agentic-container:dev python your_agent.py
 ```
 
 ## 🤔 When to Use Which Image?
 
 | Scenario | Recommended Image | Why? |
 |----------|------------------|------|
-| **Production applications** | `latest` + extensions | Smaller, controlled dependencies, maintained |
-| **CI/CD pipelines** | `latest` + extensions | Predictable, minimal, fast builds |
-| **Team development** | `latest` + extensions | Consistent environment, documented requirements |
-| **Quick prototyping** | `dev` | All languages ready, fastest to start experimenting |
-| **Learning/tutorials** | `dev` | No setup required, focus on code not configuration |
-| **Unknown requirements** | Start with `dev`, then create extension | Explore needs, then optimize |
+| **Production agent deployment** | `latest` + extensions | Smaller, controlled dependencies, maintained |
+| **Cloud agent platforms** | `latest` + extensions | Predictable, minimal, fast startup |
+| **Background agent processing** | `latest` + extensions | Consistent environment, documented requirements |
+| **Agent prototyping** | `dev` | All languages ready, fastest to start experimenting |
+| **MCP server hosting** | `latest` + languages | Optimized runtime, minimal overhead |
+| **Code analysis agents** | `latest` + analysis tools | Pre-configured for structural code work |
+| **Unknown agent requirements** | Start with `dev`, then create extension | Explore needs, then optimize |
 
 ### ⚠️ Important Notes
 
 - **`dev` is NOT maintained**: Language versions may become outdated
 - **`latest` is actively maintained**: Regular updates with latest tools and security patches  
 - **Extension > Variants**: Better to extend `latest` than use an unmaintained variant
-- **Document your extensions**: Make it easy for team members to reproduce your environment
+- **Document your extensions**: Make it easy to reproduce your agent environment
+- **Headless by design**: All operations are non-interactive, suitable for automated agent execution
 
 ## 📦 Available Images
 
 | Image Tag | Description | Size | Maintenance Level | Use Case |
 |-----------|-------------|------|------------------|----------|
-| `latest` | Ubuntu + mise + starship + dev tools | ~750MB | **Actively maintained** | Production-ready base for extension |
-| `dev` | Standard + all languages | ~2.2GB | **Example only** | Quick prototyping, not for production |
+| `latest` | Ubuntu + mise + agent tools + analysis tools | ~750MB | **Actively maintained** | Production-ready base for agent deployment |
+| `dev` | Latest + all languages | ~2.2GB | **Example only** | Agent prototyping and experimentation |
 
 
 ## 🔧 What's Included
 
 ### Core Tools (`latest` image)
-- **mise** - Universal version manager for all languages
-- **Docker CLI** + Docker Compose - Container orchestration
-- **Git** - Version control with sensible defaults
-- **Starship** - Beautiful, customizable shell prompt
-- **Essential CLI tools** - vim, nano, jq, curl, tree, htop, etc.
-- **Non-root user** - Ready for dev container use
-- **Optimized shell** - Configured bash environment
+- **mise** - Universal version manager for all languages and tools
+- **Docker CLI** + Docker Compose - Container orchestration capabilities
+- **Git** - Version control with sensible defaults for agent workflows
+- **Code analysis tools** - ast-grep, tree-sitter, ripgrep for structural analysis
+- **Universal runners** - uvx, npx ready for MCP server deployment
+- **Essential CLI tools** - vim, nano, jq, curl, tree, htop for agent scripting
+- **Non-root user** - Security-conscious execution environment
+- **Optimized shell** - Configured bash environment for headless operations
 
 ### Additional Languages (`dev` image only)
-The `dev` image includes pre-installed language runtimes for quick prototyping:
+The `dev` image includes pre-installed language runtimes for quick agent experimentation:
 - **Ruby** 3.4.5 + **Node.js** 24.8.0 + **Python** 3.13.7 + **Go** 1.25.1
 - **Lefthook** - Git hooks manager
 
-> **Note**: For production use, extend `latest` with only the languages you need rather than using the large `dev` image.
+> **Note**: For production agent deployment, extend `latest` with only the languages your agents need rather than using the large `dev` image.
 
 ## 🏗️ Extending Images
 
-The recommended approach is to extend the `latest` image with exactly the languages and tools you need.
+The recommended approach is to extend the `latest` image with exactly the languages and tools your agents need.
 
-### Basic Extension Pattern
+### Basic Agent Extension
 
-Create a Dockerfile extending the base image:
+Create a Dockerfile extending the base image for agent workloads:
 
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-# Add a single language
+# Add language runtime for agent
 RUN mise install python@3.13.7 && \
     mise use -g python@3.13.7 && \
-    bash -c 'eval "$(mise activate bash)" && pip install django fastapi'
+    bash -c 'eval "$(mise activate bash)" && \
+        pip install anthropic pydantic python-dotenv requests'
 ```
 
-### Multi-Language Extension
+### Multi-Language Agent Extension
 
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-# Add multiple languages in a single layer
+# Add multiple languages for cross-language agent analysis
 RUN mise install python@3.13.7 node@24.8.0 go@1.25.1 && \
     mise use -g python@3.13.7 node@24.8.0 go@1.25.1 && \
     bash -c 'eval "$(mise activate bash)" && \
-        pip install fastapi requests && \
-        npm install -g typescript @nestjs/cli && \
-        go install github.com/gorilla/mux@latest'
+        pip install ast-grep-py tree-sitter libcst && \
+        npm install -g @tree-sitter/cli typescript && \
+        go install golang.org/x/tools/cmd/goimports@latest'
 ```
 
-### Adding System Packages
+### Agent with Database Tools
 
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-# Add system packages and languages
+# Add system packages for database interaction
 USER root
 RUN apt-get update && apt-get install -y \
     postgresql-client \
-    redis-tools \
+    sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
 USER $USERNAME  
 RUN mise install python@3.13.7 && \
     mise use -g python@3.13.7 && \
-    bash -c 'eval "$(mise activate bash)" && pip install django psycopg2-binary redis'
+    bash -c 'eval "$(mise activate bash)" && \
+        pip install sqlalchemy psycopg2-binary sqlite-utils && \
+        pip install anthropic python-dotenv'
 
 WORKDIR /workspace
 ```
@@ -129,11 +155,11 @@ If available, you can use the extension scripts for convenience:
 ./scripts/extend-image.sh build my-custom-container:v1.0.0
 ```
 
-## 📋 Extension Examples
+## 📋 Agent Extension Examples
 
-Common extension patterns for different use cases:
+Common extension patterns for different agent use cases:
 
-### Python Machine Learning
+### Claude Agent Environment
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
@@ -147,45 +173,52 @@ RUN apt-get update && apt-get install -y \
 
 USER $USERNAME
 RUN bash -c 'eval "$(mise activate bash)" && \
-    pip install jupyter pandas numpy scikit-learn torch tensorflow && \
-    pip install duckdb sqlite-utils plotly seaborn'
+    pip install anthropic python-dotenv pydantic && \
+    pip install requests aiohttp httpx && \
+    pip install ast-grep-py tree-sitter libcst'
 
-EXPOSE 8888
+# Verify agent toolchain
+RUN bash -c 'eval "$(mise activate bash)" && \
+    ast-grep --version && \
+    python3 -c "import anthropic; print(\"Agent runtime ready\")"'
+
 WORKDIR /workspace
 ```
 
-### Full-Stack Web Development
+### Code Analysis Agent
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-# Install languages
-RUN mise install python@3.13.7 node@24.8.0 && \
-    mise use -g python@3.13.7 node@24.8.0
-
-# Install system packages
-USER root  
-RUN apt-get update && apt-get install -y \
-    postgresql-client \
-    mysql-client \
-    redis-tools \
-    && rm -rf /var/lib/apt/lists/*
+# Install multiple languages for cross-language analysis
+RUN mise install python@3.13.7 node@24.8.0 go@1.25.1 && \
+    mise use -g python@3.13.7 node@24.8.0 go@1.25.1
 
 USER $USERNAME
 RUN bash -c 'eval "$(mise activate bash)" && \
-    # Python backend tools
-    pip install django fastapi uvicorn psycopg2-binary redis && \
-    # Node.js frontend tools  
-    npm install -g @angular/cli @vue/cli create-react-app next'
+    # Python analysis tools
+    pip install ast-grep-py tree-sitter libcst && \
+    pip install anthropic python-dotenv pydantic && \
+    # Node.js parsing tools  
+    npm install -g @tree-sitter/cli typescript && \
+    npm install -g @babel/parser @babel/traverse && \
+    # Go analysis tools
+    go install golang.org/x/tools/cmd/goimports@latest'
+
+# Pre-install tree-sitter grammars for common languages
+RUN bash -c 'eval "$(mise activate bash)" && \
+    tree-sitter init-config && \
+    tree-sitter install python javascript typescript go rust'
 
 WORKDIR /workspace  
 ```
 
-### DevOps & Infrastructure
+### MCP Server Host
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-RUN mise install python@3.13.7 go@1.25.1 && \
-    mise use -g python@3.13.7 go@1.25.1
+# Install multiple languages for versatile MCP server hosting
+RUN mise install python@3.13.7 node@24.8.0 && \
+    mise use -g python@3.13.7 node@24.8.0
 
 USER root
 RUN apt-get update && apt-get install -y \
@@ -195,13 +228,17 @@ RUN apt-get update && apt-get install -y \
 
 USER $USERNAME  
 RUN bash -c 'eval "$(mise activate bash)" && \
-    # Install cloud tools
-    pip install awscli ansible && \
-    # Install terraform
-    mise install terraform@latest && mise use -g terraform@latest && \
-    # Install kubectl
-    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
-    chmod +x kubectl && sudo mv kubectl /usr/local/bin/'
+    # Python MCP tools
+    pip install pydantic httpx uvicorn fastapi && \
+    pip install python-dotenv anthropic && \
+    # Node.js MCP tools
+    npm install -g @modelcontextprotocol/sdk && \
+    npm install -g express cors ws'
+
+# Verify MCP server capabilities
+RUN bash -c 'eval "$(mise activate bash)" && \
+    uvx --help && npx --help && \
+    python3 -c "import pydantic; print(\"MCP server runtime ready\")"'
 
 WORKDIR /workspace
 ```
@@ -231,11 +268,11 @@ Automate your custom image builds with GitHub Actions:
 
 4. Push changes - your custom image will be built and published automatically!
 
-## 🧑‍💻 Development Container Usage
+## 🧑‍💻 Container Usage
 
-### VS Code Dev Containers
+### VS Code Dev Containers (for agent development)
 
-For custom language combinations, create a `Dockerfile` and reference it:
+For custom agent development environments, create a `Dockerfile` and reference it:
 
 ```dockerfile
 # .devcontainer/Dockerfile  
@@ -244,13 +281,13 @@ FROM ghcr.io/technicalpickles/agentic-container:latest
 RUN mise install python@3.13.7 node@24.8.0 && \
     mise use -g python@3.13.7 node@24.8.0 && \
     bash -c 'eval "$(mise activate bash)" && \
-        pip install fastapi requests && \
-        npm install -g typescript'
+        pip install anthropic pydantic python-dotenv && \
+        npm install -g @tree-sitter/cli'
 ```
 
 ```json
 {
-  "name": "My Development Environment",
+  "name": "My Agent Development Environment",
   "build": {
     "dockerfile": "Dockerfile"
   },
@@ -266,13 +303,13 @@ RUN mise install python@3.13.7 node@24.8.0 && \
 }
 ```
 
-### Quick Prototyping with Pre-built Dev Image
+### Quick Agent Prototyping with Pre-built Dev Image
 
-For quick experimentation, you can use the `dev` image directly:
+For quick agent experimentation, you can use the `dev` image directly:
 
 ```json
 {
-  "name": "Quick Prototyping Environment", 
+  "name": "Quick Agent Prototyping Environment", 
   "image": "ghcr.io/technicalpickles/agentic-container:dev",
   "mounts": [
     "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
@@ -373,4 +410,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Built with ❤️ for the developer community**
+**Built with ❤️ for the AI agent community**

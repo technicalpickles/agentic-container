@@ -1,179 +1,179 @@
-# Extension Cookbook
+# Agent Extension Cookbook
 
 **Created**: 2025-09-15  
-**Purpose**: Practical examples and best practices for extending the agentic-container base image
+**Purpose**: Practical examples and best practices for extending the agentic-container base image for AI agent workloads
 
 ## Overview
 
-This cookbook provides copy-paste ready Dockerfile examples for common development scenarios. All examples extend the maintained `latest` image and follow best practices for layer optimization.
+This cookbook provides copy-paste ready Dockerfile examples for common AI agent scenarios. All examples extend the maintained `latest` image and follow best practices for layer optimization and fast agent startup times.
 
 ## Quick Reference
 
-| Use Case | Languages | Key Tools | Size Impact |
+| Use Case | Languages | Key Tools | Agent Focus |
 |----------|-----------|-----------|-------------|
-| [Python Data Science](#python-data-science) | Python 3.13.7 | Jupyter, pandas, numpy | +~500MB |
-| [Node.js Web App](#nodejs-web-application) | Node.js 24.8.0 | TypeScript, Express, testing tools | +~200MB |
-| [Full-Stack Development](#full-stack-development) | Python + Node.js | Django, React, databases | +~800MB |
-| [Go Microservices](#go-microservices) | Go 1.25.1 | Popular Go frameworks | +~300MB |
-| [Ruby on Rails](#ruby-on-rails) | Ruby 3.4.5 | Rails, gems, PostgreSQL client | +~400MB |
-| [DevOps Toolkit](#devops-toolkit) | Python + Go | kubectl, terraform, cloud CLIs | +~600MB |
-| [Mobile Development](#mobile-development) | Node.js + Java | React Native, Android tools | +~1.2GB |
-| [Machine Learning](#machine-learning) | Python + R | PyTorch, TensorFlow, Jupyter | +~1.5GB |
+| [Claude Agent Environment](#claude-agent-environment) | Python 3.13.7 | anthropic, ast-grep, pydantic | +~300MB |
+| [Code Analysis Agent](#code-analysis-agent) | Python + Node.js | ast-grep, tree-sitter, ripgrep | +~400MB |
+| [MCP Server Host](#mcp-server-host) | Python + Node.js | uvx, npx, protocol tools | +~300MB |
+| [Multi-Language Agent](#multi-language-agent) | Python + Node + Go | All language toolchains | +~600MB |
+| [Background Processing Agent](#background-processing-agent) | Python + Redis | Celery, background job tools | +~400MB |
+| [Database Integration Agent](#database-integration-agent) | Python + SQL | SQLAlchemy, psycopg2, sqlite-utils | +~250MB |
+| [Web Scraping Agent](#web-scraping-agent) | Python + Node.js | Playwright, BeautifulSoup, requests | +~500MB |
+| [Agent Development Environment](#agent-development-environment) | Python + Node.js | Testing, debugging, analysis tools | +~450MB |
 
 ## Extension Patterns
 
-### Basic Language Extension
+### Basic Agent Extension
 
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-# Install and configure a single language
+# Install and configure a single language for agent workload
 RUN mise install python@3.13.7 && \
     mise use -g python@3.13.7 && \
-    bash -c 'eval "$(mise activate bash)" && pip install requests fastapi'
+    bash -c 'eval "$(mise activate bash)" && pip install anthropic pydantic python-dotenv'
 ```
 
-### Multi-Language Extension
+### Multi-Language Agent Extension
 
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-# Install multiple languages efficiently
+# Install multiple languages for cross-language agent analysis
 RUN mise install python@3.13.7 node@24.8.0 go@1.25.1 && \
     mise use -g python@3.13.7 node@24.8.0 go@1.25.1 && \
     bash -c 'eval "$(mise activate bash)" && \
-        pip install fastapi requests && \
-        npm install -g typescript @types/node && \
-        go install github.com/gin-gonic/gin@latest'
+        pip install ast-grep-py tree-sitter libcst && \
+        npm install -g @tree-sitter/cli typescript && \
+        go install golang.org/x/tools/cmd/goimports@latest'
 ```
 
-### System Packages + Languages
+### Agent with System Dependencies
 
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-# Add system packages first
+# Add system packages needed for agent operations
 USER root
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
+    sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
-# Then add languages as user
+# Then add languages and agent tools as user
 USER $USERNAME
 RUN mise install python@3.13.7 && \
     mise use -g python@3.13.7 && \
-    bash -c 'eval "$(mise activate bash)" && pip install psycopg2-binary'
+    bash -c 'eval "$(mise activate bash)" && \
+        pip install psycopg2-binary sqlite-utils && \
+        pip install anthropic pydantic python-dotenv'
 ```
 
 ## Use Case Examples
 
-### Python Data Science
+### Claude Agent Environment
 
-Perfect for data analysis, machine learning experiments, and Jupyter notebooks.
+Optimized for Claude Desktop agents and similar AI code modification tools.
 
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-# Install Python and system dependencies for data science
+# Install Python and system dependencies for agent operations
 USER root
 RUN apt-get update && apt-get install -y \
     python3-dev \
     build-essential \
-    libhdf5-dev \
-    libnetcdf-dev \
+    sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
 USER $USERNAME
 RUN mise install python@3.13.7 && mise use -g python@3.13.7
 
-# Install data science stack
+# Install agent-focused packages
 RUN bash -c 'eval "$(mise activate bash)" && \
-    pip install jupyter jupyterlab && \
-    pip install pandas numpy scipy matplotlib seaborn plotly && \
-    pip install scikit-learn xgboost lightgbm && \
-    pip install requests beautifulsoup4 sqlalchemy && \
-    pip install duckdb sqlite-utils'
+    pip install anthropic python-dotenv pydantic && \
+    pip install requests aiohttp httpx && \
+    pip install ast-grep-py tree-sitter libcst && \
+    pip install sqlite-utils sqlalchemy'
 
-# Expose Jupyter port
-EXPOSE 8888
+# Verify agent toolchain is ready
+RUN bash -c 'eval "$(mise activate bash)" && \
+    ast-grep --version && \
+    python3 -c "import anthropic; print(\"Claude agent runtime ready\")"'
 
 WORKDIR /workspace
-
-# Optional: Set up Jupyter config
-RUN mkdir -p ~/.jupyter && \
-    echo "c.NotebookApp.ip = '0.0.0.0'" >> ~/.jupyter/jupyter_notebook_config.py && \
-    echo "c.NotebookApp.open_browser = False" >> ~/.jupyter/jupyter_notebook_config.py && \
-    echo "c.NotebookApp.token = ''" >> ~/.jupyter/jupyter_notebook_config.py
 ```
 
-### Node.js Web Application
+### Code Analysis Agent
 
-Optimized for modern Node.js web development with TypeScript and testing tools.
+Equipped for structural code analysis and modification across multiple languages.
 
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-# Install Node.js and configure
-RUN mise install node@24.8.0 && mise use -g node@24.8.0
+# Install multiple languages for cross-language analysis
+RUN mise install python@3.13.7 node@24.8.0 go@1.25.1 && \
+    mise use -g python@3.13.7 node@24.8.0 go@1.25.1
 
-# Install global tools and frameworks
+# Install code analysis tooling
 RUN bash -c 'eval "$(mise activate bash)" && \
-    npm install -g typescript ts-node @types/node && \
-    npm install -g express-generator @nestjs/cli && \
-    npm install -g jest vitest cypress && \
-    npm install -g nodemon pm2 && \
-    npm install -g prettier eslint @typescript-eslint/parser'
+    # Python analysis tools
+    pip install ast-grep-py tree-sitter libcst && \
+    pip install anthropic python-dotenv pydantic && \
+    # Node.js parsing tools  
+    npm install -g @tree-sitter/cli typescript-parser && \
+    npm install -g @babel/parser @babel/traverse && \
+    # Go analysis tools
+    go install golang.org/x/tools/cmd/goimports@latest'
 
-# Common Node.js ports
-EXPOSE 3000 8080
+# Pre-install tree-sitter grammars for common languages
+RUN bash -c 'eval "$(mise activate bash)" && \
+    tree-sitter init-config && \
+    tree-sitter install python javascript typescript go rust'
 
 WORKDIR /workspace
-
-# Set up npm defaults
-RUN bash -c 'eval "$(mise activate bash)" && \
-    npm config set init-author-name "Developer" && \
-    npm config set init-license "MIT"'
 ```
 
-### Full-Stack Development
+### MCP Server Host
 
-Combines Python backend with Node.js frontend, plus database tools.
+Ready for hosting Model Context Protocol servers in multiple languages.
 
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-# Install system packages for databases
+# Install system packages for MCP server operations
 USER root
 RUN apt-get update && apt-get install -y \
-    postgresql-client \
-    mysql-client \
-    redis-tools \
+    curl \
+    unzip \
     sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
 USER $USERNAME
 
-# Install multiple languages
+# Install multiple languages for versatile MCP server hosting
 RUN mise install python@3.13.7 node@24.8.0 && \
     mise use -g python@3.13.7 node@24.8.0
 
-# Install backend tools (Python)
+# Install Python MCP tools
 RUN bash -c 'eval "$(mise activate bash)" && \
-    pip install django fastapi uvicorn gunicorn && \
-    pip install psycopg2-binary redis celery && \
-    pip install pytest pytest-django requests && \
-    pip install django-extensions django-debug-toolbar'
+    pip install pydantic httpx uvicorn fastapi && \
+    pip install python-dotenv anthropic && \
+    pip install sqlite-utils sqlalchemy'
 
-# Install frontend tools (Node.js)  
+# Install Node.js MCP tools  
 RUN bash -c 'eval "$(mise activate bash)" && \
-    npm install -g create-react-app @angular/cli @vue/cli && \
-    npm install -g typescript @types/react @types/node && \
-    npm install -g vite webpack webpack-cli && \
-    npm install -g tailwindcss postcss autoprefixer'
+    npm install -g @modelcontextprotocol/sdk && \
+    npm install -g express cors ws && \
+    npm install -g typescript @types/node'
 
-# Common web ports
-EXPOSE 3000 8000 8080 5173
+# Verify MCP server capabilities
+RUN bash -c 'eval "$(mise activate bash)" && \
+    uvx --help && npx --help && \
+    python3 -c "import pydantic; print(\"MCP server runtime ready\")"'
+
+# Common MCP server ports
+EXPOSE 8080 3000
 
 WORKDIR /workspace
 ```
@@ -294,41 +294,46 @@ RUN echo 'alias k=kubectl' >> ~/.bashrc && \
     echo 'alias tf=terraform' >> ~/.bashrc
 ```
 
-### Mobile Development
+### Web Scraping Agent
 
-React Native and Android development setup.
+Optimized for web scraping and data extraction agents with browser automation.
 
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-# Install system dependencies
+# Install system dependencies for browser automation
 USER root
 RUN apt-get update && apt-get install -y \
-    openjdk-17-jdk \
-    android-sdk \
-    gradle \
-    unzip \
+    wget \
+    gnupg \
+    ca-certificates \
+    libnss3-dev \
+    libgconf-2-4 \
+    libxss1 \
+    libasound2 \
     && rm -rf /var/lib/apt/lists/*
 
 USER $USERNAME
 
-# Install Node.js for React Native
-RUN mise install node@24.8.0 && mise use -g node@24.8.0
+# Install Python and Node.js for web scraping tools
+RUN mise install python@3.13.7 node@24.8.0 && \
+    mise use -g python@3.13.7 node@24.8.0
 
-# Install React Native and mobile development tools
+# Install Python web scraping tools
 RUN bash -c 'eval "$(mise activate bash)" && \
-    npm install -g react-native-cli @react-native-community/cli && \
-    npm install -g expo-cli @expo/cli && \
-    npm install -g typescript @types/react @types/react-native && \
-    npm install -g flipper-server && \
-    npm install -g detox-cli'
+    pip install requests beautifulsoup4 lxml && \
+    pip install selenium playwright && \
+    pip install scrapy && \
+    pip install anthropic python-dotenv pydantic'
 
-# Set up Android environment
-ENV ANDROID_HOME=/usr/lib/android-sdk
-ENV PATH=$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools
+# Install Node.js automation tools  
+RUN bash -c 'eval "$(mise activate bash)" && \
+    npm install -g playwright && \
+    npm install -g puppeteer && \
+    npx playwright install'
 
-# Metro bundler port
-EXPOSE 8081
+# Install Python playwright browsers
+RUN bash -c 'eval "$(mise activate bash)" && playwright install'
 
 WORKDIR /workspace
 ```
