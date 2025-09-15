@@ -66,6 +66,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     jq \
     unzip \
     zip \
+    ripgrep \
+    fd-find \
     # Process management
     dumb-init \
     sudo \
@@ -78,11 +80,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     iputils-ping \
     netcat-traditional \
     telnet \
-    # Install Docker CLI
+    # Install Docker CLI and GitHub CLI
     && mkdir -m 0755 -p /etc/apt/keyrings \
     && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null \
-    && apt-get update && apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin \
+    && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+    && apt-get update && apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin gh \
     # Generate locales
     && locale-gen en_US.UTF-8 \
     # Cleanup after installation
@@ -108,9 +113,17 @@ COPY --from=builder /usr/local/bin/rv /usr/local/bin/rv
 COPY --from=builder $MISE_DATA_DIR/installs/node $MISE_DATA_DIR/installs/node  
 COPY --from=builder $MISE_DATA_DIR/installs/python $MISE_DATA_DIR/installs/python
 
-# Configure mise with optimized setup and add shims to PATH
+# Create mise group for shared access to directories and add root to it
+RUN groupadd --gid 2000 mise \
+    && usermod -aG mise root
+
+# Configure mise with optimized setup and add shims to PATH with group permissions
 RUN mkdir -p $MISE_DATA_DIR $MISE_CONFIG_DIR $MISE_CACHE_DIR \
-    && chmod 755 $MISE_DATA_DIR $MISE_CONFIG_DIR \
+    # Set group ownership and permissions for shared access
+    && chgrp -R mise $MISE_DATA_DIR $MISE_CONFIG_DIR $MISE_CACHE_DIR \
+    && chmod -R g+ws $MISE_DATA_DIR $MISE_CONFIG_DIR $MISE_CACHE_DIR \
+    # Ensure parent directories support group creation
+    && chgrp mise /usr/local/share && chmod g+ws /usr/local/share \
     # Configure environment variables system-wide
     && echo 'export MISE_DATA_DIR=/usr/local/share/mise' >> /etc/environment \
     && echo 'export MISE_CONFIG_DIR=/etc/mise' >> /etc/environment \
@@ -119,10 +132,27 @@ RUN mkdir -p $MISE_DATA_DIR $MISE_CONFIG_DIR $MISE_CACHE_DIR \
     && echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /etc/environment \
     && echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /etc/bash.bashrc \
     && echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /etc/profile \
+    # Set umask for group-writable files
+    && echo 'umask 002' >> /etc/bash.bashrc \
+    && echo 'umask 002' >> /etc/profile \
     # Also add mise activation for interactive shell features (auto-switching, etc.)
     && echo 'eval "$(mise activate bash)"' >> /etc/bash.bashrc \
     && echo 'eval "$(mise activate bash)"' >> /etc/profile \
-    && mise use -g node@latest python@latest
+    && mise use -g node@latest python@latest \
+    # Install agent toolchain: ast-grep for structural code search, uv for MCP server support (includes uvx)
+    && mise use -g ast-grep@latest uv@latest \
+    # Install AI Coding Agents (GitHub CLI already installed above)
+    && npm install -g @anthropic-ai/claude-code @openai/codex \
+    && gh extension install github/gh-copilot \
+    && curl -fsSL https://opencode.ai/install | bash \
+    && curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | bash \
+    # Cleanup after all installations
+    && apt-get autoremove -y \
+    && apt-get autoclean \
+    && rm -rf /var/lib/apt/lists/* /var/cache/apt/* /tmp/* /var/tmp/* \
+    && find /var/log -type f -exec truncate -s 0 {} \; 2>/dev/null || true \
+    && find /usr/share/doc -depth -type f ! -name copyright -delete 2>/dev/null || true \
+    && rm -rf /usr/share/man/* /usr/share/groff/* /usr/share/info/* /usr/share/lintian/* /usr/share/linda/* 2>/dev/null || true
 
 # Create a non-root user for devcontainer use
 ARG USERNAME=vscode
@@ -133,7 +163,7 @@ ARG USER_GID=$USER_UID
 RUN groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
     && (groupadd docker 2>/dev/null || true) \
-    && usermod -aG docker $USERNAME \
+    && usermod -aG docker,mise $USERNAME \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME \
     # Create workspace directory
@@ -153,6 +183,10 @@ RUN echo 'eval "$(starship init bash)"' >> /home/$USERNAME/.bashrc && \
     echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /home/$USERNAME/.bashrc && \
     echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /home/$USERNAME/.bash_profile && \
     echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /home/$USERNAME/.profile && \
+    # Set umask for group-writable files
+    echo 'umask 002' >> /home/$USERNAME/.bashrc && \
+    echo 'umask 002' >> /home/$USERNAME/.bash_profile && \
+    echo 'umask 002' >> /home/$USERNAME/.profile && \
     # Also add mise activation for interactive shell features
     echo 'eval "$(mise activate bash)"' >> /home/$USERNAME/.bashrc && \
     echo 'eval "$(mise activate bash)"' >> /home/$USERNAME/.bash_profile && \
