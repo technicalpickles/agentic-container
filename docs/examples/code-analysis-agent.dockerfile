@@ -15,7 +15,7 @@ RUN mise install python@3.13.7 node@24.8.0 go@1.25.1 && \
     mise use -g python@3.13.7 node@24.8.0 go@1.25.1
 
 # Install Python code analysis tools
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     pip install --no-cache-dir \
         ast-grep-py \
         tree-sitter \
@@ -23,10 +23,9 @@ RUN bash -c 'eval "$(mise activate bash)" && \
         anthropic \
         python-dotenv \
         pydantic \
-        requests'
-
+        requests
 # Install Node.js parsing and analysis tools  
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     npm install -g \
         @tree-sitter/cli \
         typescript \
@@ -34,17 +33,15 @@ RUN bash -c 'eval "$(mise activate bash)" && \
         @babel/parser \
         @babel/traverse \
         acorn \
-        esprima'
-
+        esprima
 # Install Go analysis tools
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     go install golang.org/x/tools/cmd/goimports@latest && \
     go install golang.org/x/tools/cmd/gofmt@latest && \
-    go install golang.org/x/tools/gopls@latest'
-
+    go install golang.org/x/tools/gopls@latest
 # Pre-install tree-sitter grammars for common languages
 # This speeds up agent startup by avoiding downloads during execution
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     tree-sitter init-config && \
     tree-sitter install python && \
     tree-sitter install javascript && \
@@ -53,17 +50,15 @@ RUN bash -c 'eval "$(mise activate bash)" && \
     tree-sitter install rust && \
     tree-sitter install java && \
     tree-sitter install c && \
-    tree-sitter install cpp'
-
+    tree-sitter install cpp
 # Verify all analysis tools are working
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     ast-grep --version && \
     tree-sitter --version && \
     python3 -c "import tree_sitter; print(\"Python analysis ready\")" && \
     node -e "console.log(\"Node.js analysis ready\")" && \
     go version && \
-    echo "Multi-language code analysis agent ready"'
-
+    echo "Multi-language code analysis agent ready"
 # Set working directory
 WORKDIR /workspace
 
@@ -74,4 +69,4 @@ ENV GO111MODULE=on
 ENV CGO_ENABLED=0
 
 # Default command demonstrates analysis capabilities
-CMD ["bash", "-c", "echo 'Code Analysis Agent Ready:' && echo '- ast-grep: structural pattern matching' && echo '- tree-sitter: syntax tree parsing' && echo '- Multi-language: Python, JS/TS, Go, Rust, Java, C/C++' && echo 'Run your analysis script: python analysis.py'"]
+CMD ["bash", "-c", "echo Code Analysis Agent Ready: && echo - ast-grep: structural pattern matching && echo - tree-sitter: syntax tree parsing && echo - Multi-language: Python, JS/TS, Go, Rust, Java, C/C++ && echo Run your analysis script: python analysis.py"]

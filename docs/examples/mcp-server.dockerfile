@@ -23,7 +23,7 @@ RUN mise install python@3.13.7 node@24.8.0 && \
     mise use -g python@3.13.7 node@24.8.0
 
 # Install Python MCP server tools and frameworks
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     pip install --no-cache-dir \
         pydantic \
         httpx \
@@ -32,25 +32,22 @@ RUN bash -c 'eval "$(mise activate bash)" && \
         python-dotenv \
         anthropic \
         sqlite-utils \
-        sqlalchemy'
-
+        sqlalchemy
 # Install Node.js MCP server tools and frameworks
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     npm install -g \
         @modelcontextprotocol/sdk \
         express \
         cors \
         ws \
         typescript \
-        @types/node'
-
+        @types/node
 # Verify MCP server capabilities (both uvx and npx should work)
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     uvx --help > /dev/null && echo "uvx ready for Python MCP servers" && \
     npx --help > /dev/null && echo "npx ready for Node.js MCP servers" && \
     python3 -c "import pydantic; print(\"Python MCP runtime ready\")" && \
-    node -e "console.log(\"Node.js MCP runtime ready\")"'
-
+    node -e "console.log(\"Node.js MCP runtime ready\")"
 # Set working directory
 WORKDIR /workspace
 
@@ -63,4 +60,4 @@ ENV MCP_SERVER_PORT=8080
 EXPOSE 8080 3000
 
 # Default command shows available runtimes
-CMD ["bash", "-c", "echo 'MCP Server Host Ready:' && echo '- Python: uvx your-python-mcp-server' && echo '- Node.js: npx your-nodejs-mcp-server' && echo '- Custom: python your_server.py or node your_server.js'"]
+CMD ["bash", "-c", "echo MCP Server Host Ready: && echo - Python: uvx your-python-mcp-server && echo - Node.js: npx your-nodejs-mcp-server && echo - Custom: python your_server.py or node your_server.js"]

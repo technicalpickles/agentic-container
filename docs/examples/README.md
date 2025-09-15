@@ -161,7 +161,7 @@ Test individual examples:
 docker build -f docs/examples/extend-python.dockerfile -t test-python .
 
 # Test functionality
-docker run --rm test-python bash -c 'eval "$(mise activate bash)" && python3 --version'
+docker run --rm test-python bash -c 'python3 --version'
 
 # Interactive testing
 docker run -it --rm test-python
@@ -172,7 +172,7 @@ docker run -it --rm test-python
 ### 1. **Mise Activation Pattern**
 All examples show the correct way to activate mise in Dockerfiles:
 ```dockerfile
-RUN bash -c 'eval "$(mise activate bash)" && python3 --version'
+RUN python3 --version
 ```
 
 ### 2. **Security (Non-Root User)**
@@ -211,7 +211,7 @@ RUN mise install python@3.13.7 node@24.8.0
 RUN mise use -g python@3.13.7 node@24.8.0
 
 # Test installation
-RUN bash -c 'eval "$(mise activate bash)" && python3 --version && node --version'
+RUN python3 --version && node --version
 ```
 
 ### Adding System Packages
@@ -227,13 +227,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ### Adding Application Dependencies
 ```dockerfile
 # For Python
-RUN bash -c 'eval "$(mise activate bash)" && pip install --no-cache-dir package1 package2'
+RUN pip install --no-cache-dir package1 package2
 
 # For Node.js
-RUN bash -c 'eval "$(mise activate bash)" && npm install -g package1 package2'
+RUN npm install -g package1 package2
 
 # For Go
-RUN bash -c 'eval "$(mise activate bash)" && go install github.com/user/package@latest'
+RUN go install github.com/user/package@latest
 ```
 
 ## Size Optimization Tips
@@ -278,7 +278,7 @@ When adding new examples:
 **"python3: not found"**
 ```dockerfile
 # Wrong: RUN python3 --version  
-# Right: RUN bash -c 'eval "$(mise activate bash)" && python3 --version'
+# Right: RUN python3 --version
 ```
 
 **"Permission denied"** 

@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Install rv (fast precompiled Ruby binaries)
     && curl --proto '=https' --tlsv1.2 -LsSf https://github.com/spinel-coop/rv/releases/download/v0.1.1/rv-installer.sh | sh \
     && mv /root/.cargo/bin/rv /usr/local/bin/rv \
-    rm -rf /var/lib/apt/lists/* \
+    && rm -rf /var/lib/apt/lists/*
 
 # =============================================================================
 # STANDARD LAYER: Main development image with enhanced experience
@@ -75,14 +75,21 @@ COPY --from=builder /usr/local/bin/rv /usr/local/bin/rv
 ENV MISE_DATA_DIR=/usr/local/share/mise
 ENV MISE_CONFIG_DIR=/etc/mise  
 ENV MISE_CACHE_DIR=/tmp/mise-cache
+# Add mise shims to PATH - no activation needed!
+ENV PATH="/usr/local/share/mise/shims:${PATH}"
 
-# Configure mise with optimized setup
+# Configure mise with optimized setup and add shims to PATH
 RUN mkdir -p $MISE_DATA_DIR $MISE_CONFIG_DIR $MISE_CACHE_DIR \
     && chmod 755 $MISE_DATA_DIR $MISE_CONFIG_DIR \
     # Configure environment variables system-wide
     && echo 'export MISE_DATA_DIR=/usr/local/share/mise' >> /etc/environment \
     && echo 'export MISE_CONFIG_DIR=/etc/mise' >> /etc/environment \
     && echo 'export MISE_CACHE_DIR=/tmp/mise-cache' >> /etc/environment \
+    # Add mise shims to PATH system-wide (enables tools in RUN commands without activation)
+    && echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /etc/environment \
+    && echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /etc/bash.bashrc \
+    && echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /etc/profile \
+    # Also add mise activation for interactive shell features (auto-switching, etc.)
     && echo 'eval "$(mise activate bash)"' >> /etc/bash.bashrc \
     && echo 'eval "$(mise activate bash)"' >> /etc/profile
 
@@ -110,8 +117,13 @@ RUN curl -sS https://starship.rs/install.sh | FORCE=true sh \
     && echo 'eval "$(starship init bash)"' >> /etc/bash.bashrc
 
 # Set up enhanced shell for non-root user  
-RUN echo 'eval "$(mise activate bash)"' >> /home/$USERNAME/.bashrc && \
-    echo 'eval "$(starship init bash)"' >> /home/$USERNAME/.bashrc && \
+RUN echo 'eval "$(starship init bash)"' >> /home/$USERNAME/.bashrc && \
+    # Add mise shims to PATH in user shell files (for RUN commands)
+    echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /home/$USERNAME/.bashrc && \
+    echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /home/$USERNAME/.bash_profile && \
+    echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /home/$USERNAME/.profile && \
+    # Also add mise activation for interactive shell features
+    echo 'eval "$(mise activate bash)"' >> /home/$USERNAME/.bashrc && \
     echo 'eval "$(mise activate bash)"' >> /home/$USERNAME/.bash_profile && \
     echo 'eval "$(mise activate bash)"' >> /home/$USERNAME/.profile
 

@@ -18,11 +18,9 @@ RUN mise install python@3.13.7
 RUN mise use -g python@3.13.7
 
 # Verify installation works (demonstrates proper mise activation)
-RUN bash -c 'eval "$(mise activate bash)" && python3 --version && pip --version'
-
+RUN python3 --version && pip --version
 # Optional: Install common Python packages
-# RUN bash -c 'eval "$(mise activate bash)" && pip install requests pandas numpy'
-
+# RUN pip install requests pandas numpy
 # Switch to non-root user for security
 USER vscode
 
@@ -33,7 +31,6 @@ WORKDIR /workspace
 # When you run this container, Python will be available automatically
 
 # Test that everything works
-RUN bash -c 'eval "$(mise activate bash)" && python3 -c "print(\"Python is ready for development!\")"'
-
+RUN python3 -c "print(\"Python is ready for development!\")"
 # Default command
 CMD ["/bin/bash", "--login"]

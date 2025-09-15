@@ -22,8 +22,7 @@ FROM ghcr.io/technicalpickles/agentic-container:latest
 # Add agent-specific tooling
 RUN mise install python@3.13.7 && \
     mise use -g python@3.13.7 && \
-    bash -c 'eval "$(mise activate bash)" && \
-        pip install anthropic pydantic python-dotenv'
+    pip install anthropic pydantic python-dotenv
 ```
 
 ### MCP Server Environment
@@ -103,8 +102,7 @@ FROM ghcr.io/technicalpickles/agentic-container:latest
 # Add language runtime for agent
 RUN mise install python@3.13.7 && \
     mise use -g python@3.13.7 && \
-    bash -c 'eval "$(mise activate bash)" && \
-        pip install anthropic pydantic python-dotenv requests'
+    pip install anthropic pydantic python-dotenv requests
 ```
 
 ### Multi-Language Agent Extension
@@ -115,10 +113,9 @@ FROM ghcr.io/technicalpickles/agentic-container:latest
 # Add multiple languages for cross-language agent analysis
 RUN mise install python@3.13.7 node@24.8.0 go@1.25.1 && \
     mise use -g python@3.13.7 node@24.8.0 go@1.25.1 && \
-    bash -c 'eval "$(mise activate bash)" && \
-        pip install ast-grep-py tree-sitter libcst && \
-        npm install -g @tree-sitter/cli typescript && \
-        go install golang.org/x/tools/cmd/goimports@latest'
+    pip install ast-grep-py tree-sitter libcst && \
+    npm install -g @tree-sitter/cli typescript && \
+    go install golang.org/x/tools/cmd/goimports@latest
 ```
 
 ### Agent with Database Tools
@@ -136,9 +133,8 @@ RUN apt-get update && apt-get install -y \
 USER $USERNAME  
 RUN mise install python@3.13.7 && \
     mise use -g python@3.13.7 && \
-    bash -c 'eval "$(mise activate bash)" && \
-        pip install sqlalchemy psycopg2-binary sqlite-utils && \
-        pip install anthropic python-dotenv'
+    pip install sqlalchemy psycopg2-binary sqlite-utils && \
+    pip install anthropic python-dotenv
 
 WORKDIR /workspace
 ```
@@ -172,15 +168,13 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 USER $USERNAME
-RUN bash -c 'eval "$(mise activate bash)" && \
-    pip install anthropic python-dotenv pydantic && \
+RUN pip install anthropic python-dotenv pydantic && \
     pip install requests aiohttp httpx && \
-    pip install ast-grep-py tree-sitter libcst'
+    pip install ast-grep-py tree-sitter libcst
 
 # Verify agent toolchain
-RUN bash -c 'eval "$(mise activate bash)" && \
-    ast-grep --version && \
-    python3 -c "import anthropic; print(\"Agent runtime ready\")"'
+RUN ast-grep --version && \
+    python3 -c "import anthropic; print(\"Agent runtime ready\")"
 
 WORKDIR /workspace
 ```
@@ -194,20 +188,17 @@ RUN mise install python@3.13.7 node@24.8.0 go@1.25.1 && \
     mise use -g python@3.13.7 node@24.8.0 go@1.25.1
 
 USER $USERNAME
-RUN bash -c 'eval "$(mise activate bash)" && \
-    # Python analysis tools
-    pip install ast-grep-py tree-sitter libcst && \
+RUN pip install ast-grep-py tree-sitter libcst && \
     pip install anthropic python-dotenv pydantic && \
     # Node.js parsing tools  
     npm install -g @tree-sitter/cli typescript && \
     npm install -g @babel/parser @babel/traverse && \
     # Go analysis tools
-    go install golang.org/x/tools/cmd/goimports@latest'
+    go install golang.org/x/tools/cmd/goimports@latest
 
 # Pre-install tree-sitter grammars for common languages
-RUN bash -c 'eval "$(mise activate bash)" && \
-    tree-sitter init-config && \
-    tree-sitter install python javascript typescript go rust'
+RUN tree-sitter init-config && \
+    tree-sitter install python javascript typescript go rust
 
 WORKDIR /workspace  
 ```
@@ -227,18 +218,14 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 USER $USERNAME  
-RUN bash -c 'eval "$(mise activate bash)" && \
-    # Python MCP tools
-    pip install pydantic httpx uvicorn fastapi && \
+RUN pip install pydantic httpx uvicorn fastapi && \
     pip install python-dotenv anthropic && \
-    # Node.js MCP tools
     npm install -g @modelcontextprotocol/sdk && \
-    npm install -g express cors ws'
+    npm install -g express cors ws
 
 # Verify MCP server capabilities
-RUN bash -c 'eval "$(mise activate bash)" && \
-    uvx --help && npx --help && \
-    python3 -c "import pydantic; print(\"MCP server runtime ready\")"'
+RUN uvx --help && npx --help && \
+    python3 -c "import pydantic; print(\"MCP server runtime ready\")"
 
 WORKDIR /workspace
 ```
@@ -280,9 +267,8 @@ FROM ghcr.io/technicalpickles/agentic-container:latest
 
 RUN mise install python@3.13.7 node@24.8.0 && \
     mise use -g python@3.13.7 node@24.8.0 && \
-    bash -c 'eval "$(mise activate bash)" && \
-        pip install anthropic pydantic python-dotenv && \
-        npm install -g @tree-sitter/cli'
+    pip install anthropic pydantic python-dotenv && \
+    npm install -g @tree-sitter/cli
 ```
 
 ```json
@@ -379,9 +365,8 @@ RUN mise install python@3.13.7 node@24.8.0 && \
     mise use -g python@3.13.7 node@24.8.0
 
 # ✅ Good: Install packages in the same layer as language activation  
-RUN bash -c 'eval "$(mise activate bash)" && \
-        pip install fastapi && \
-        npm install -g typescript'
+RUN pip install fastapi && \
+    npm install -g typescript
 
 # ❌ Avoid: Multiple RUN commands create unnecessary layers
 # RUN mise install python@3.13.7

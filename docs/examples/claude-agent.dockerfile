@@ -22,30 +22,27 @@ USER vscode
 RUN mise install python@3.13.7 && mise use -g python@3.13.7
 
 # Install core agent packages in a single layer for efficiency
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     pip install --no-cache-dir \
         anthropic \
         python-dotenv \
         pydantic \
         requests \
         aiohttp \
-        httpx'
-
+        httpx
 # Install code analysis tools that agents commonly need
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     pip install --no-cache-dir \
         ast-grep-py \
         tree-sitter \
         libcst \
         sqlite-utils \
-        sqlalchemy'
-
+        sqlalchemy
 # Verify agent toolchain is ready (fail fast if something is wrong)
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     ast-grep --version && \
     python3 -c "import anthropic; print(\"Claude agent runtime ready\")" && \
-    python3 -c "import tree_sitter; print(\"Code analysis tools ready\")"'
-
+    python3 -c "import tree_sitter; print(\"Code analysis tools ready\")"
 # Set working directory
 WORKDIR /workspace
 

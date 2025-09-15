@@ -103,28 +103,28 @@ main() {
     test_extension \
         "extend-python.dockerfile" \
         "test-python-extension" \
-        'eval "$(mise activate bash)" && python3 --version && python3 -c "import sys; print(f\"Python {sys.version_info.major}.{sys.version_info.minor} working!\")"' \
+        'python3 --version && python3 -c "import sys; print(f\"Python {sys.version_info.major}.{sys.version_info.minor} working!\")"' \
         "Python Extension"
     
     # Test 2: Node.js Extension  
     test_extension \
         "extend-nodejs.dockerfile" \
         "test-nodejs-extension" \
-        'eval "$(mise activate bash)" && node --version && npm --version && node -e "console.log(\"Node.js working!\")"' \
+        'node --version && npm --version && node -e "console.log(\"Node.js working!\")"' \
         "Node.js Extension"
     
     # Test 3: Full-Stack Extension
     test_extension \
         "extend-fullstack.dockerfile" \
         "test-fullstack-extension" \
-        'eval "$(mise activate bash)" && cd /workspace/examples && python3 hello.py && node hello.js && go run hello.go' \
+        'cd /workspace/examples && python3 hello.py && node hello.js && go run hello.go' \
         "Full-Stack Extension"
     
     # Test 4: Multi-Stage Build (runtime test only)
     test_extension \
         "multistage-app.dockerfile" \
         "test-multistage-app" \
-        'eval "$(mise activate bash)" && cd /app && python3 -c "import app; print(\"FastAPI app module loaded successfully\")"' \
+        'cd /app && python3 -c "import app; print(\"FastAPI app module loaded successfully\")"' \
         "Multi-Stage Build"
     
     # Cleanup

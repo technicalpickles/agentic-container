@@ -30,8 +30,8 @@ RUN mise use -g python@3.13.7 node@24.8.0
 WORKDIR /build
 
 # Copy source code (in real scenario, this would be your app)
-# For demo purposes, we'll create a simple Python web app
-RUN bash -c 'eval "$(mise activate bash)" && \
+# For demo purposes, well create a simple Python web app
+RUN \
     printf "%s\n" \
         "from fastapi import FastAPI" \
         "app = FastAPI()" \
@@ -47,16 +47,13 @@ RUN bash -c 'eval "$(mise activate bash)" && \
     printf "%s\n" \
         "fastapi==0.104.1" \
         "uvicorn[standard]==0.24.0" \
-        > requirements.txt'
-
+        > requirements.txt
 # Install Python dependencies
-RUN bash -c 'eval "$(mise activate bash)" && pip install --no-cache-dir -r requirements.txt'
-
+RUN pip install --no-cache-dir -r requirements.txt
 # Build/compile step (in real scenario, this might compile Go, build React app, etc.)
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     python -m py_compile app.py && \
-    echo "Build completed successfully"'
-
+    echo "Build completed successfully"
 # =============================================================================
 # RUNTIME STAGE: Minimal runtime environment
 # =============================================================================
@@ -71,10 +68,9 @@ COPY --from=builder /build/app.py /app/app.py
 COPY --from=builder /build/requirements.txt /app/requirements.txt
 
 # Install only runtime Python packages
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     cd /app && \
-    pip install --no-cache-dir -r requirements.txt'
-
+    pip install --no-cache-dir -r requirements.txt
 # Switch to non-root user for security
 USER vscode
 
@@ -83,8 +79,7 @@ WORKDIR /app
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD bash -c 'eval "$(mise activate bash)" && curl -f http://localhost:8000/health || exit 1'
-
+    CMD curl -f http://localhost:8000/health || exit 1
 # Expose port
 EXPOSE 8000
 

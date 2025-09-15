@@ -30,8 +30,7 @@ FROM ghcr.io/technicalpickles/agentic-container:latest
 # Install and configure a single language for agent workload
 RUN mise install python@3.13.7 && \
     mise use -g python@3.13.7 && \
-    bash -c 'eval "$(mise activate bash)" && pip install anthropic pydantic python-dotenv'
-```
+pip install anthropic pydantic python-dotenv```
 
 ### Multi-Language Agent Extension
 
@@ -41,11 +40,10 @@ FROM ghcr.io/technicalpickles/agentic-container:latest
 # Install multiple languages for cross-language agent analysis
 RUN mise install python@3.13.7 node@24.8.0 go@1.25.1 && \
     mise use -g python@3.13.7 node@24.8.0 go@1.25.1 && \
-    bash -c 'eval "$(mise activate bash)" && \
+\
         pip install ast-grep-py tree-sitter libcst && \
         npm install -g @tree-sitter/cli typescript && \
-        go install golang.org/x/tools/cmd/goimports@latest'
-```
+        go install golang.org/x/tools/cmd/goimports@latest```
 
 ### Agent with System Dependencies
 
@@ -64,10 +62,9 @@ RUN apt-get update && apt-get install -y \
 USER $USERNAME
 RUN mise install python@3.13.7 && \
     mise use -g python@3.13.7 && \
-    bash -c 'eval "$(mise activate bash)" && \
+\
         pip install psycopg2-binary sqlite-utils && \
-        pip install anthropic pydantic python-dotenv'
-```
+        pip install anthropic pydantic python-dotenv```
 
 ## Use Case Examples
 
@@ -90,17 +87,15 @@ USER $USERNAME
 RUN mise install python@3.13.7 && mise use -g python@3.13.7
 
 # Install agent-focused packages
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     pip install anthropic python-dotenv pydantic && \
     pip install requests aiohttp httpx && \
     pip install ast-grep-py tree-sitter libcst && \
-    pip install sqlite-utils sqlalchemy'
-
+    pip install sqlite-utils sqlalchemy
 # Verify agent toolchain is ready
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     ast-grep --version && \
-    python3 -c "import anthropic; print(\"Claude agent runtime ready\")"'
-
+    python3 -c "import anthropic; print(\"Claude agent runtime ready\")"
 WORKDIR /workspace
 ```
 
@@ -116,7 +111,7 @@ RUN mise install python@3.13.7 node@24.8.0 go@1.25.1 && \
     mise use -g python@3.13.7 node@24.8.0 go@1.25.1
 
 # Install code analysis tooling
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     # Python analysis tools
     pip install ast-grep-py tree-sitter libcst && \
     pip install anthropic python-dotenv pydantic && \
@@ -124,13 +119,11 @@ RUN bash -c 'eval "$(mise activate bash)" && \
     npm install -g @tree-sitter/cli typescript-parser && \
     npm install -g @babel/parser @babel/traverse && \
     # Go analysis tools
-    go install golang.org/x/tools/cmd/goimports@latest'
-
+    go install golang.org/x/tools/cmd/goimports@latest
 # Pre-install tree-sitter grammars for common languages
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     tree-sitter init-config && \
-    tree-sitter install python javascript typescript go rust'
-
+    tree-sitter install python javascript typescript go rust
 WORKDIR /workspace
 ```
 
@@ -156,22 +149,19 @@ RUN mise install python@3.13.7 node@24.8.0 && \
     mise use -g python@3.13.7 node@24.8.0
 
 # Install Python MCP tools
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     pip install pydantic httpx uvicorn fastapi && \
     pip install python-dotenv anthropic && \
-    pip install sqlite-utils sqlalchemy'
-
+    pip install sqlite-utils sqlalchemy
 # Install Node.js MCP tools  
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     npm install -g @modelcontextprotocol/sdk && \
     npm install -g express cors ws && \
-    npm install -g typescript @types/node'
-
+    npm install -g typescript @types/node
 # Verify MCP server capabilities
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     uvx --help && npx --help && \
-    python3 -c "import pydantic; print(\"MCP server runtime ready\")"'
-
+    python3 -c "import pydantic; print(\"MCP server runtime ready\")"
 # Common MCP server ports
 EXPOSE 8080 3000
 
@@ -189,15 +179,14 @@ FROM ghcr.io/technicalpickles/agentic-container:latest
 RUN mise install go@1.25.1 && mise use -g go@1.25.1
 
 # Install popular Go tools and frameworks
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     go install github.com/gin-gonic/gin@latest && \
     go install github.com/gorilla/mux@latest && \
     go install github.com/labstack/echo/v4@latest && \
     go install gorm.io/gorm@latest && \
     go install github.com/stretchr/testify@latest && \
     go install golang.org/x/tools/gopls@latest && \
-    go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest'
-
+    go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 # Common Go application ports
 EXPOSE 8080 9000
 
@@ -231,13 +220,12 @@ USER $USERNAME
 RUN mise install ruby@3.4.5 && mise use -g ruby@3.4.5
 
 # Install Rails and common gems
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     gem install rails -v "~> 7.1" --no-document && \
     gem install bundler rspec-rails factory_bot_rails --no-document && \
     gem install pg mysql2 sqlite3 redis --no-document && \
     gem install devise cancancan rolify --no-document && \
-    gem install image_processing mini_magick --no-document'
-
+    gem install image_processing mini_magick --no-document
 # Rails common ports
 EXPOSE 3000
 
@@ -272,7 +260,7 @@ RUN mise install python@3.13.7 go@1.25.1 && \
     mise use -g python@3.13.7 go@1.25.1
 
 # Install cloud and infrastructure tools
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     # AWS CLI
     pip install awscli boto3 && \
     # Ansible
@@ -285,13 +273,12 @@ RUN bash -c 'eval "$(mise activate bash)" && \
     # Helm
     curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash && \
     # Docker Compose (additional)
-    pip install docker-compose'
-
+    pip install docker-compose
 WORKDIR /workspace
 
 # Set up useful aliases
-RUN echo 'alias k=kubectl' >> ~/.bashrc && \
-    echo 'alias tf=terraform' >> ~/.bashrc
+RUN echo alias k=kubectl >> ~/.bashrc && \
+    echo alias tf=terraform >> ~/.bashrc
 ```
 
 ### Web Scraping Agent
@@ -320,21 +307,18 @@ RUN mise install python@3.13.7 node@24.8.0 && \
     mise use -g python@3.13.7 node@24.8.0
 
 # Install Python web scraping tools
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     pip install requests beautifulsoup4 lxml && \
     pip install selenium playwright && \
     pip install scrapy && \
-    pip install anthropic python-dotenv pydantic'
-
+    pip install anthropic python-dotenv pydantic
 # Install Node.js automation tools  
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     npm install -g playwright && \
     npm install -g puppeteer && \
-    npx playwright install'
-
+    npx playwright install
 # Install Python playwright browsers
-RUN bash -c 'eval "$(mise activate bash)" && playwright install'
-
+RUN playwright install
 WORKDIR /workspace
 ```
 
@@ -366,7 +350,7 @@ USER $USERNAME
 RUN mise install python@3.13.7 && mise use -g python@3.13.7
 
 # Install comprehensive ML stack
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     # Core ML libraries
     pip install numpy pandas scipy matplotlib seaborn plotly && \
     # Jupyter ecosystem  
@@ -386,10 +370,9 @@ RUN bash -c 'eval "$(mise activate bash)" && \
     # Data processing
     pip install dask ray polars && \
     # Databases
-    pip install sqlalchemy duckdb sqlite-utils'
-
+    pip install sqlalchemy duckdb sqlite-utils
 # Install R packages
-RUN R -e "install.packages(c('ggplot2', 'dplyr', 'tidyr', 'caret', 'randomForest', 'xgboost'), repos='https://cran.rstudio.com/')"
+RUN R -e "install.packages(c(ggplot2, dplyr, tidyr, caret, randomForest, xgboost), repos=https://cran.rstudio.com/)"
 
 # Expose Jupyter and MLflow ports
 EXPOSE 8888 5000
@@ -397,8 +380,7 @@ EXPOSE 8888 5000
 WORKDIR /workspace
 
 # Download common NLP models
-RUN bash -c 'eval "$(mise activate bash)" && python -c "import nltk; nltk.download('punkt')"'
-```
+RUN python -c "import nltk; nltk.download(punkt)"```
 
 ## Best Practices
 
@@ -408,15 +390,13 @@ RUN bash -c 'eval "$(mise activate bash)" && python -c "import nltk; nltk.downlo
 # ✅ Good: Combine related operations
 RUN mise install python@3.13.7 node@24.8.0 && \
     mise use -g python@3.13.7 node@24.8.0 && \
-    bash -c 'eval "$(mise activate bash)" && \
+\
         pip install django && \
-        npm install -g typescript'
-
+        npm install -g typescript
 # ❌ Bad: Separate operations create unnecessary layers
 RUN mise install python@3.13.7
 RUN mise use -g python@3.13.7
-RUN bash -c 'eval "$(mise activate bash)" && pip install django'
-RUN mise install node@24.8.0
+RUN pip install djangoRUN mise install node@24.8.0
 RUN npm install -g typescript
 ```
 
@@ -439,10 +419,9 @@ RUN apt-get install -y package1 package2
 
 ```dockerfile
 # ✅ Good: Use mise activation for package installation
-RUN bash -c 'eval "$(mise activate bash)" && \
+RUN \
     pip install package && \
-    npm install -g tool'
-
+    npm install -g tool
 # ⚠️ Works but less robust: Direct paths
 RUN /home/$USERNAME/.local/share/mise/installs/python/3.13.7/bin/pip install package
 ```
@@ -478,12 +457,11 @@ WORKDIR /workspace
 **mise activation not working**
 ```dockerfile
 # Solution: Use explicit bash activation
-RUN bash -c 'eval "$(mise activate bash)" && pip install package'
-```
+RUN pip install package```
 
 **Permission errors during package installation**  
 ```dockerfile
-# Solution: Ensure you're using the correct user
+# Solution: Ensure youre using the correct user
 USER $USERNAME  # For language packages
 USER root      # For system packages
 ```
@@ -492,13 +470,12 @@ USER root      # For system packages
 ```dockerfile
 # Solution: Clean up package managers
 RUN apt-get update && apt-get install -y packages && rm -rf /var/lib/apt/lists/*
-RUN bash -c 'eval "$(mise activate bash)" && pip install --no-cache-dir packages'
-```
+RUN pip install --no-cache-dir packages```
 
 **Packages not found in container**
 ```dockerfile
 # Solution: Verify mise activation in entrypoint or shell
-RUN echo 'eval "$(mise activate bash)"' >> ~/.bashrc
+RUN echo eval "$(mise activate bash)" >> ~/.bashrc
 ```
 
 ## Contributing
