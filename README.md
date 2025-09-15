@@ -6,7 +6,7 @@ A flexible, extensible development container built for modern software developme
 
 ### Option 1: Extend the base image (Recommended)
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:latest
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
 # Add languages and configure in a single RUN to minimize layers
 RUN mise install python@3.13.7 node@24.8.0 && \
@@ -19,7 +19,7 @@ RUN mise install python@3.13.7 node@24.8.0 && \
 ### Option 2: Use the kitchen sink example
 ```bash
 # Use the dev environment (all languages pre-installed, for prototyping only)
-docker run -it --rm ghcr.io/your-repo/agentic-container:dev
+docker run -it --rm ghcr.io/technicalpickles/agentic-container:dev
 ```
 
 ## 🤔 When to Use Which Image?
@@ -47,35 +47,6 @@ docker run -it --rm ghcr.io/your-repo/agentic-container:dev
 | `latest` | Ubuntu + mise + starship + dev tools | ~750MB | **Actively maintained** | Production-ready base for extension |
 | `dev` | Standard + all languages | ~2.2GB | **Example only** | Quick prototyping, not for production |
 
-### Migration from Previous Versions
-
-If you were using specific language variants, here's how to migrate:
-
-```dockerfile
-# Old approach: FROM ghcr.io/your-repo/agentic-container:python  
-# New approach:
-FROM ghcr.io/your-repo/agentic-container:latest
-RUN mise install python@3.13.7 && mise use -g python@3.13.7
-
-# Old approach: FROM ghcr.io/your-repo/agentic-container:node
-# New approach:  
-FROM ghcr.io/your-repo/agentic-container:latest
-RUN mise install node@24.8.0 && mise use -g node@24.8.0
-
-# Old approach: FROM ghcr.io/your-repo/agentic-container:ruby
-# New approach:
-FROM ghcr.io/your-repo/agentic-container:latest  
-RUN mise install ruby@3.4.5 && mise use -g ruby@3.4.5
-
-# Old approach: FROM ghcr.io/your-repo/agentic-container:go
-# New approach:
-FROM ghcr.io/your-repo/agentic-container:latest
-RUN mise install go@1.25.1 && mise use -g go@1.25.1
-
-# Old approach: FROM ghcr.io/your-repo/agentic-container:minimal
-# New approach: Use latest (it's our maintained minimal base)
-FROM ghcr.io/your-repo/agentic-container:latest
-```
 
 ## 🔧 What's Included
 
@@ -104,7 +75,7 @@ The recommended approach is to extend the `latest` image with exactly the langua
 Create a Dockerfile extending the base image:
 
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:latest
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
 # Add a single language
 RUN mise install python@3.13.7 && \
@@ -115,7 +86,7 @@ RUN mise install python@3.13.7 && \
 ### Multi-Language Extension
 
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:latest
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
 # Add multiple languages in a single layer
 RUN mise install python@3.13.7 node@24.8.0 go@1.25.1 && \
@@ -129,7 +100,7 @@ RUN mise install python@3.13.7 node@24.8.0 go@1.25.1 && \
 ### Adding System Packages
 
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:latest
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
 # Add system packages and languages
 USER root
@@ -164,7 +135,7 @@ Common extension patterns for different use cases:
 
 ### Python Machine Learning
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:latest
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
 RUN mise install python@3.13.7 && mise use -g python@3.13.7
 
@@ -185,7 +156,7 @@ WORKDIR /workspace
 
 ### Full-Stack Web Development
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:latest
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
 # Install languages
 RUN mise install python@3.13.7 node@24.8.0 && \
@@ -211,7 +182,7 @@ WORKDIR /workspace
 
 ### DevOps & Infrastructure
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:latest
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
 RUN mise install python@3.13.7 go@1.25.1 && \
     mise use -g python@3.13.7 go@1.25.1
@@ -268,7 +239,7 @@ For custom language combinations, create a `Dockerfile` and reference it:
 
 ```dockerfile
 # .devcontainer/Dockerfile  
-FROM ghcr.io/your-repo/agentic-container:latest
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
 RUN mise install python@3.13.7 node@24.8.0 && \
     mise use -g python@3.13.7 node@24.8.0 && \
@@ -302,7 +273,7 @@ For quick experimentation, you can use the `dev` image directly:
 ```json
 {
   "name": "Quick Prototyping Environment", 
-  "image": "ghcr.io/your-repo/agentic-container:dev",
+  "image": "ghcr.io/technicalpickles/agentic-container:dev",
   "mounts": [
     "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
   ],
@@ -327,7 +298,7 @@ services:
 
   # Or for quick prototyping:
   prototype:
-    image: ghcr.io/your-repo/agentic-container:dev
+    image: ghcr.io/technicalpickles/agentic-container:dev
     volumes:
       - .:/workspace
       - /var/run/docker.sock:/var/run/docker.sock  
@@ -364,7 +335,7 @@ ubuntu:24.04 (base OS)
 ### Extension Best Practices
 
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:latest
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
 # ✅ Good: Install multiple languages in one RUN command
 RUN mise install python@3.13.7 node@24.8.0 && \

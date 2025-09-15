@@ -261,7 +261,7 @@ set -euo pipefail
 
 # Use meaningful variable names
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BASE_REGISTRY="${BASE_REGISTRY:-ghcr.io/your-repo/agentic-container}"
+BASE_REGISTRY="${BASE_REGISTRY:-ghcr.io/technicalpickles/agentic-container}"
 
 # Function documentation
 show_help() {

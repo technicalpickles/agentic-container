@@ -37,7 +37,7 @@ extend-image.sh COMMAND [OPTIONS]
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `BASE_REGISTRY` | Registry for base images | `ghcr.io/your-repo/agentic-container` |
+| `BASE_REGISTRY` | Registry for base images | `ghcr.io/technicalpickles/agentic-container` |
 | `DOCKER_BUILDKIT` | Enable BuildKit | `1` |
 
 ### publish-extended-image.sh
@@ -102,7 +102,7 @@ publish-extended-image.sh \
 **Use Case**: Starting point for minimal custom images
 
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:minimal
+FROM ghcr.io/technicalpickles/agentic-container:latest
 # Your minimal additions here
 ```
 
@@ -118,7 +118,7 @@ FROM ghcr.io/your-repo/agentic-container:minimal
 **Use Case**: Base for most custom development environments
 
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:standard
+FROM ghcr.io/technicalpickles/agentic-container:standard
 # Add your languages and tools
 ```
 

@@ -6,7 +6,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BASE_REGISTRY="${BASE_REGISTRY:-ghcr.io/your-repo/agentic-container}"
+BASE_REGISTRY="${BASE_REGISTRY:-ghcr.io/technicalpickles/agentic-container}"
 
 show_help() {
     cat << EOF
@@ -62,7 +62,7 @@ EXAMPLES:
         ghcr.io/myorg/my-custom-env:v2.1.0
 
 ENVIRONMENT VARIABLES:
-    BASE_REGISTRY           Registry for base images (default: ghcr.io/your-repo/agentic-container)
+    BASE_REGISTRY           Registry for base images (default: ghcr.io/technicalpickles/agentic-container)
     DOCKER_BUILDKIT         Enable BuildKit features (default: 1)
 
 EOF

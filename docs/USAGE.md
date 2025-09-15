@@ -21,12 +21,12 @@ Start an interactive development session:
 docker run -it --rm \
   -v $(pwd):/workspace \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  ghcr.io/your-repo/agentic-container:latest
+  ghcr.io/technicalpickles/agentic-container:latest
 
 # Language-specific environment  
 docker run -it --rm \
   -v $(pwd):/workspace \
-  ghcr.io/your-repo/agentic-container:python
+  ghcr.io/technicalpickles/agentic-container:latest
 ```
 
 ### Using with Docker Compose
@@ -36,7 +36,7 @@ Create a `docker-compose.yml` for your project:
 ```yaml
 services:
   dev:
-    image: ghcr.io/your-repo/agentic-container:dev
+    image: ghcr.io/technicalpickles/agentic-container:dev
     volumes:
       - .:/workspace
       - /var/run/docker.sock:/var/run/docker.sock
@@ -66,7 +66,7 @@ docker-compose exec dev bash
 Start with the base image and add only what you need:
 
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:minimal
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
 # Add just Python
 RUN mise install python@3.11 && mise use -g python@3.11
@@ -80,7 +80,7 @@ RUN python -m pip install poetry black pytest
 Combine multiple languages as needed:
 
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:standard
+FROM ghcr.io/technicalpickles/agentic-container:standard
 
 # Add multiple languages
 RUN mise install python@3.11 node@20 && \
@@ -100,7 +100,7 @@ RUN cd /workspace && poetry install && npm install
 Create a purpose-built environment:
 
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:python
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
 # Install ML/AI specific tools
 USER root
@@ -145,7 +145,7 @@ Mount your configuration files:
 # docker-compose.yml
 services:
   dev:
-    image: ghcr.io/your-repo/agentic-container:dev
+    image: ghcr.io/technicalpickles/agentic-container:dev
     volumes:
       # Git configuration
       - ~/.gitconfig:/home/vscode/.gitconfig:ro
@@ -283,7 +283,7 @@ build:
 docker run -it --rm \
   --user $(id -u):$(id -g) \
   -v $(pwd):/workspace \
-  ghcr.io/your-repo/agentic-container:dev
+  ghcr.io/technicalpickles/agentic-container:dev
 ```
 
 #### Docker Socket Access
@@ -319,7 +319,7 @@ Use BuildKit for faster builds:
 
 ```bash
 export DOCKER_BUILDKIT=1
-docker build --cache-from ghcr.io/your-repo/agentic-container:minimal .
+docker build --cache-from ghcr.io/technicalpickles/agentic-container:latest .
 ```
 
 #### Image Size Optimization
@@ -332,10 +332,10 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Use multi-stage builds for build dependencies
-FROM ghcr.io/your-repo/agentic-container:minimal AS builder
+FROM ghcr.io/technicalpickles/agentic-container:latest AS builder
 RUN install build dependencies...
 
-FROM ghcr.io/your-repo/agentic-container:minimal AS final
+FROM ghcr.io/technicalpickles/agentic-container:latest AS final
 COPY --from=builder /built/artifacts /usr/local/
 ```
 
@@ -345,7 +345,7 @@ COPY --from=builder /built/artifacts /usr/local/
 # Use volume mounts for faster iteration
 services:
   dev:
-    image: ghcr.io/your-repo/agentic-container:python
+    image: ghcr.io/technicalpickles/agentic-container:latest
     volumes:
       - .:/workspace
       # Cache directories to persist between runs
@@ -365,7 +365,7 @@ volumes:
 # Get shell access to debug issues
 docker run -it --rm \
   --entrypoint /bin/bash \
-  ghcr.io/your-repo/agentic-container:dev
+  ghcr.io/technicalpickles/agentic-container:dev
 
 # Or override entrypoint in docker-compose
 services:
@@ -378,13 +378,13 @@ services:
 
 ```bash
 # Check what's installed
-docker run --rm ghcr.io/your-repo/agentic-container:python mise list
+docker run --rm ghcr.io/technicalpickles/agentic-container:latest mise list
 
 # Check environment
-docker run --rm ghcr.io/your-repo/agentic-container:python env
+docker run --rm ghcr.io/technicalpickles/agentic-container:latest env
 
 # Check file system
-docker run --rm ghcr.io/your-repo/agentic-container:python ls -la /usr/local/bin/
+docker run --rm ghcr.io/technicalpickles/agentic-container:latest ls -la /usr/local/bin/
 ```
 
 #### Log Analysis
@@ -397,7 +397,7 @@ docker logs container-name
 docker logs -f container-name
 
 # Check system logs
-docker run --rm -v /var/log:/host/var/log ghcr.io/your-repo/agentic-container:minimal \
+docker run --rm -v /var/log:/host/var/log ghcr.io/technicalpickles/agentic-container:latest \
   tail -f /host/var/log/syslog
 ```
 

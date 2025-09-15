@@ -25,7 +25,7 @@ This cookbook provides copy-paste ready Dockerfile examples for common developme
 ### Basic Language Extension
 
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:latest
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
 # Install and configure a single language
 RUN mise install python@3.13.7 && \
@@ -36,7 +36,7 @@ RUN mise install python@3.13.7 && \
 ### Multi-Language Extension
 
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:latest
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
 # Install multiple languages efficiently
 RUN mise install python@3.13.7 node@24.8.0 go@1.25.1 && \
@@ -50,7 +50,7 @@ RUN mise install python@3.13.7 node@24.8.0 go@1.25.1 && \
 ### System Packages + Languages
 
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:latest
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
 # Add system packages first
 USER root
@@ -73,7 +73,7 @@ RUN mise install python@3.13.7 && \
 Perfect for data analysis, machine learning experiments, and Jupyter notebooks.
 
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:latest
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
 # Install Python and system dependencies for data science
 USER root
@@ -112,7 +112,7 @@ RUN mkdir -p ~/.jupyter && \
 Optimized for modern Node.js web development with TypeScript and testing tools.
 
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:latest
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
 # Install Node.js and configure
 RUN mise install node@24.8.0 && mise use -g node@24.8.0
@@ -141,7 +141,7 @@ RUN bash -c 'eval "$(mise activate bash)" && \
 Combines Python backend with Node.js frontend, plus database tools.
 
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:latest
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
 # Install system packages for databases
 USER root
@@ -183,7 +183,7 @@ WORKDIR /workspace
 Lightweight Go environment with popular frameworks and tools.
 
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:latest
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
 # Install Go
 RUN mise install go@1.25.1 && mise use -g go@1.25.1
@@ -213,7 +213,7 @@ ENV GOSUMDB=sum.golang.org
 Complete Ruby on Rails development environment.
 
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:latest
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
 # Install system dependencies for Ruby gems
 USER root
@@ -253,7 +253,7 @@ ENV RACK_ENV=development
 Essential tools for infrastructure management and deployment.
 
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:latest
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
 # Install system packages
 USER root
@@ -299,7 +299,7 @@ RUN echo 'alias k=kubectl' >> ~/.bashrc && \
 React Native and Android development setup.
 
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:latest
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
 # Install system dependencies
 USER root
@@ -338,7 +338,7 @@ WORKDIR /workspace
 Comprehensive ML environment with multiple frameworks and R support.
 
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:latest
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
 # Install system dependencies for ML
 USER root
