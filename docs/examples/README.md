@@ -4,12 +4,12 @@ This directory contains practical examples of how to extend the `agentic-contain
 
 ## Quick Start
 
-All examples use the optimized `minimal` image as the base for maximum flexibility and size efficiency. Each example includes comprehensive comments explaining the approach and customization options.
+All examples extend the `latest` image, which provides a solid foundation with mise, starship, and essential dev tools. Each example includes comprehensive comments explaining the approach and customization options.
 
 ## Available Examples
 
 ### 🐍 Python Development
-**File**: [`extend-minimal-python.dockerfile`](extend-minimal-python.dockerfile)
+**File**: [`extend-python.dockerfile`](extend-python.dockerfile)
 
 Creates a Python development environment with:
 - Python 3.13.7 runtime via mise
@@ -19,14 +19,14 @@ Creates a Python development environment with:
 
 ```bash
 # Build and run
-docker build -f docs/examples/extend-minimal-python.dockerfile -t my-python-env .
+docker build -f docs/examples/extend-python.dockerfile -t my-python-env .
 docker run -it --rm my-python-env
 ```
 
 **Use Cases**: Data science, web APIs, automation scripts, machine learning
 
 ### 🟨 Node.js Development  
-**File**: [`extend-minimal-nodejs.dockerfile`](extend-minimal-nodejs.dockerfile)
+**File**: [`extend-nodejs.dockerfile`](extend-nodejs.dockerfile)
 
 Creates a Node.js development environment with:
 - Node.js 24.8.0 runtime via mise
@@ -36,14 +36,14 @@ Creates a Node.js development environment with:
 
 ```bash
 # Build and run
-docker build -f docs/examples/extend-minimal-nodejs.dockerfile -t my-node-env .
+docker build -f docs/examples/extend-nodejs.dockerfile -t my-node-env .
 docker run -it --rm my-node-env
 ```
 
 **Use Cases**: Web applications, APIs, React/Vue development, TypeScript projects
 
 ### 🔧 Full-Stack Development
-**File**: [`extend-minimal-fullstack.dockerfile`](extend-minimal-fullstack.dockerfile)
+**File**: [`extend-fullstack.dockerfile`](extend-fullstack.dockerfile)
 
 Creates a comprehensive development environment with:
 - Python 3.13.7 + FastAPI, pandas, pytest
@@ -54,14 +54,14 @@ Creates a comprehensive development environment with:
 
 ```bash
 # Build and run
-docker build -f docs/examples/extend-minimal-fullstack.dockerfile -t my-fullstack-env .
+docker build -f docs/examples/extend-fullstack.dockerfile -t my-fullstack-env .
 docker run -it --rm my-fullstack-env
 ```
 
 **Use Cases**: Polyglot development, microservices, full-stack applications
 
 ### 🏗️ Multi-Stage Production Build
-**File**: [`multistage-minimal-app.dockerfile`](multistage-minimal-app.dockerfile)
+**File**: [`multistage-app.dockerfile`](multistage-app.dockerfile)
 
 Demonstrates production-ready patterns:
 - **Build stage**: Compile/build with full tooling
@@ -72,7 +72,7 @@ Demonstrates production-ready patterns:
 
 ```bash
 # Build and run
-docker build -f docs/examples/multistage-minimal-app.dockerfile -t my-production-app .
+docker build -f docs/examples/multistage-app.dockerfile -t my-production-app .
 docker run -p 8000:8000 my-production-app
 curl http://localhost:8000  # Test the API
 ```
@@ -104,7 +104,7 @@ Test individual examples:
 
 ```bash
 # Build specific example
-docker build -f docs/examples/extend-minimal-python.dockerfile -t test-python .
+docker build -f docs/examples/extend-python.dockerfile -t test-python .
 
 # Test functionality
 docker run --rm test-python bash -c 'eval "$(mise activate bash)" && python3 --version'
@@ -138,11 +138,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends package \
 ### 4. **Multi-Stage Optimization**
 ```dockerfile
 # Build stage with full tooling
-FROM ghcr.io/technicalpickles/agentic-container:minimal AS builder
+FROM ghcr.io/technicalpickles/agentic-container:latest AS builder
 # ... build steps ...
 
-# Minimal runtime stage
-FROM ghcr.io/technicalpickles/agentic-container:minimal AS runtime
+# Runtime stage
+FROM ghcr.io/technicalpickles/agentic-container:latest AS runtime
 COPY --from=builder /build/app /app
 ```
 
@@ -184,7 +184,7 @@ RUN bash -c 'eval "$(mise activate bash)" && go install github.com/user/package@
 
 ## Size Optimization Tips
 
-1. **Start with `minimal`**: Always use the minimal image unless you specifically need the additional tools in `standard`
+1. **Start with `latest`**: Use the maintained `latest` image which provides optimal balance of tools and size
 
 2. **Multi-stage builds**: Use separate build and runtime stages for production images
 
@@ -204,14 +204,14 @@ RUN bash -c 'eval "$(mise activate bash)" && go install github.com/user/package@
     ./docs/examples/test-extensions.sh --cleanup
 ```
 
-### Dependency on Minimal Image
-All examples depend on the `agentic-container:minimal` image being available. In CI, ensure it's built first or pull from registry.
+### Dependency on Latest Image
+All examples depend on the `agentic-container:latest` image being available. In CI, ensure it's built first or pull from registry.
 
 ## Contributing
 
 When adding new examples:
 
-1. **Follow naming pattern**: `extend-minimal-{purpose}.dockerfile`
+1. **Follow naming pattern**: `extend-{purpose}.dockerfile`
 2. **Add comprehensive comments**: Explain the purpose and customization options
 3. **Include in test script**: Add validation test to `test-extensions.sh`
 4. **Update this README**: Document the new example
@@ -250,4 +250,4 @@ RUN apt-get update && apt-get install -y package \
 
 ---
 
-These examples provide a solid foundation for creating custom development environments while maintaining the benefits of the optimized `agentic-container` base images.
+These examples provide a solid foundation for creating custom development environments while maintaining the benefits of the maintained `agentic-container:latest` base image.
