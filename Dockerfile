@@ -4,6 +4,9 @@
 # =============================================================================
 FROM ubuntu:24.04 AS builder
 
+# Set mise environment for consistent installation paths
+ENV MISE_DATA_DIR=/usr/local/share/mise
+
 # Install build dependencies only
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -17,6 +20,29 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && curl --proto '=https' --tlsv1.2 -LsSf https://github.com/spinel-coop/rv/releases/download/v0.1.1/rv-installer.sh | sh \
     && mv /root/.cargo/bin/rv /usr/local/bin/rv \
     && rm -rf /var/lib/apt/lists/*
+
+# Install commonly used languages in builder stage
+# Install Node.js (https://endoflife.date/nodejs) and Python (https://endoflife.date/python)
+RUN mise install node@latest \
+    && mise install python@latest
+
+# =============================================================================
+# LANGUAGE-SPECIFIC BUILD STAGES FOR DEV IMAGE
+# These install language runtimes for the kitchen sink dev example.
+# We use multiple stages to enable parallelization, plus better utilize layer caching.
+# =============================================================================
+
+FROM builder AS ruby-stage
+# https://endoflife.date/ruby - Install to global mise directory using rv (fast precompiled binaries)
+RUN rv ruby install --install-dir $MISE_DATA_DIR/installs/ruby/ ruby-3.4.5 && \
+    mv $MISE_DATA_DIR/installs/ruby/ruby-3.4.5 $MISE_DATA_DIR/installs/ruby/3.4.5
+
+FROM builder AS go-stage
+# https://endoflife.date/go - Install to global mise directory  
+RUN mise install go@latest
+
+FROM builder AS lefthook-stage
+RUN mise install lefthook@latest
 
 # =============================================================================
 # STANDARD LAYER: Main development image with enhanced experience
@@ -67,9 +93,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && find /usr/share/doc -depth -type f ! -name copyright -delete 2>/dev/null || true \
     && rm -rf /usr/share/man/* /usr/share/groff/* /usr/share/info/* /usr/share/lintian/* /usr/share/linda/* 2>/dev/null || true
 
-# Copy version managers from builder stage
-COPY --from=builder /usr/local/bin/mise /usr/local/bin/mise
-COPY --from=builder /usr/local/bin/rv /usr/local/bin/rv
+
 
 # Set up mise for system-wide installations (optimized configuration)
 ENV MISE_DATA_DIR=/usr/local/share/mise
@@ -77,6 +101,12 @@ ENV MISE_CONFIG_DIR=/etc/mise
 ENV MISE_CACHE_DIR=/tmp/mise-cache
 # Add mise shims to PATH - no activation needed!
 ENV PATH="/usr/local/share/mise/shims:${PATH}"
+
+# Copy version managers and common languages from builder stage
+COPY --from=builder /usr/local/bin/mise /usr/local/bin/mise
+COPY --from=builder /usr/local/bin/rv /usr/local/bin/rv
+COPY --from=builder $MISE_DATA_DIR/installs/node $MISE_DATA_DIR/installs/node  
+COPY --from=builder $MISE_DATA_DIR/installs/python $MISE_DATA_DIR/installs/python
 
 # Configure mise with optimized setup and add shims to PATH
 RUN mkdir -p $MISE_DATA_DIR $MISE_CONFIG_DIR $MISE_CACHE_DIR \
@@ -91,7 +121,8 @@ RUN mkdir -p $MISE_DATA_DIR $MISE_CONFIG_DIR $MISE_CACHE_DIR \
     && echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /etc/profile \
     # Also add mise activation for interactive shell features (auto-switching, etc.)
     && echo 'eval "$(mise activate bash)"' >> /etc/bash.bashrc \
-    && echo 'eval "$(mise activate bash)"' >> /etc/profile
+    && echo 'eval "$(mise activate bash)"' >> /etc/profile \
+    && mise use -g node@latest python@latest
 
 # Create a non-root user for devcontainer use
 ARG USERNAME=vscode
@@ -115,13 +146,6 @@ RUN chmod +x /usr/local/bin/extend-image
 # Install starship prompt
 RUN curl -sS https://starship.rs/install.sh | FORCE=true sh \
     && echo 'eval "$(starship init bash)"' >> /etc/bash.bashrc
-
-# Install standard Python and Node.js for agent tooling, plus ast-grep for code analysis
-USER root
-RUN mise install python@3.13.7 node@24.8.0 ast-grep@latest && \
-    mise use -g python@3.13.7 node@24.8.0 ast-grep@latest
-
-USER $USERNAME
 
 # Set up enhanced shell for non-root user  
 RUN echo 'eval "$(starship init bash)"' >> /home/$USERNAME/.bashrc && \
@@ -160,35 +184,7 @@ ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 # Default command - can be overridden
 CMD ["/bin/bash", "--login"]
 
-# =============================================================================
-# LANGUAGE-SPECIFIC BUILD STAGES FOR DEV IMAGE
-# These install language runtimes for the kitchen sink dev example
-# =============================================================================
 
-FROM standard AS ruby-stage
-USER root
-# https://endoflife.date/ruby - Install to global mise directory using rv (fast precompiled binaries)
-RUN rv ruby install --install-dir $MISE_DATA_DIR/installs/ruby/ ruby-3.4.5 && \
-    mv $MISE_DATA_DIR/installs/ruby/ruby-3.4.5 $MISE_DATA_DIR/installs/ruby/3.4.5
-
-FROM standard AS node-stage
-USER root
-# https://endoflife.date/nodejs - Install to global mise directory
-RUN mise install node@24.8.0 node@22.11.0
-
-FROM standard AS python-stage
-USER root
-# https://endoflife.date/python - Install precompiled binary via mise
-RUN mise install python@3.13.7
-
-FROM standard AS go-stage
-USER root
-# https://endoflife.date/go - Install to global mise directory  
-RUN mise install go@1.25.1
-
-FROM standard AS lefthook-stage
-USER root  
-RUN mise install lefthook@latest
 
 # =============================================================================
 # DEV IMAGE: Kitchen sink example with all languages
@@ -197,19 +193,18 @@ RUN mise install lefthook@latest
 # =============================================================================
 FROM standard AS dev
 
-# Copy global mise installations from build stages
+# Copy additional language installations from build stages
+# (python and node are already available from the standard stage)
 COPY --from=ruby-stage $MISE_DATA_DIR/installs/ruby $MISE_DATA_DIR/installs/ruby
-COPY --from=node-stage $MISE_DATA_DIR/installs/node $MISE_DATA_DIR/installs/node  
 COPY --from=lefthook-stage $MISE_DATA_DIR/installs/lefthook $MISE_DATA_DIR/installs/lefthook
-COPY --from=python-stage $MISE_DATA_DIR/installs/python $MISE_DATA_DIR/installs/python
 COPY --from=go-stage $MISE_DATA_DIR/installs/go $MISE_DATA_DIR/installs/go
 
 USER root
-# Configure global tool versions in system-wide mise config
-RUN mise use -g python@3.13.7 \
-    node@24.8.0 \
-    ruby@3.4.5 \
-    go@1.25.1 \
+# Configure global tool versions in system-wide mise config 
+RUN mise use -g python@latest \
+    node@latest \
+    ruby@latest \
+    go@latest \
     lefthook@latest
 
 USER $USERNAME
