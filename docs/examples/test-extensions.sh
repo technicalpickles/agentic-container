@@ -77,7 +77,7 @@ test_extension() {
 
 # Function to cleanup images
 cleanup_images() {
-    local images=("test-python-minimal" "test-nodejs-minimal" "test-fullstack-minimal" "test-multistage-app")
+    local images=("test-python-extension" "test-nodejs-extension" "test-fullstack-extension" "test-multistage-app")
     
     if [[ "$CLEANUP" == "--cleanup" ]]; then
         log_info "Cleaning up test images..."
@@ -101,28 +101,28 @@ main() {
     
     # Test 1: Python Extension
     test_extension \
-        "extend-minimal-python.dockerfile" \
-        "test-python-minimal" \
+        "extend-python.dockerfile" \
+        "test-python-extension" \
         'eval "$(mise activate bash)" && python3 --version && python3 -c "import sys; print(f\"Python {sys.version_info.major}.{sys.version_info.minor} working!\")"' \
         "Python Extension"
     
     # Test 2: Node.js Extension  
     test_extension \
-        "extend-minimal-nodejs.dockerfile" \
-        "test-nodejs-minimal" \
+        "extend-nodejs.dockerfile" \
+        "test-nodejs-extension" \
         'eval "$(mise activate bash)" && node --version && npm --version && node -e "console.log(\"Node.js working!\")"' \
         "Node.js Extension"
     
     # Test 3: Full-Stack Extension
     test_extension \
-        "extend-minimal-fullstack.dockerfile" \
-        "test-fullstack-minimal" \
+        "extend-fullstack.dockerfile" \
+        "test-fullstack-extension" \
         'eval "$(mise activate bash)" && cd /workspace/examples && python3 hello.py && node hello.js && go run hello.go' \
         "Full-Stack Extension"
     
     # Test 4: Multi-Stage Build (runtime test only)
     test_extension \
-        "multistage-minimal-app.dockerfile" \
+        "multistage-app.dockerfile" \
         "test-multistage-app" \
         'eval "$(mise activate bash)" && cd /app && python3 -c "import app; print(\"FastAPI app module loaded successfully\")"' \
         "Multi-Stage Build"
@@ -137,10 +137,10 @@ main() {
         log_success "All extension examples passed! 🎉"
         echo
         log_info "The following examples are ready for use:"
-        echo "  • extend-minimal-python.dockerfile - Python development"  
-        echo "  • extend-minimal-nodejs.dockerfile - Node.js development"
-        echo "  • extend-minimal-fullstack.dockerfile - Multi-language development"
-        echo "  • multistage-minimal-app.dockerfile - Production app deployment"
+        echo "  • extend-python.dockerfile - Python development extension"  
+        echo "  • extend-nodejs.dockerfile - Node.js development extension"
+        echo "  • extend-fullstack.dockerfile - Multi-language development extension"
+        echo "  • multistage-app.dockerfile - Production app deployment pattern"
         echo
         exit 0
     else

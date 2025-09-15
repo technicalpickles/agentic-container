@@ -1,13 +1,13 @@
 # Extension Example: Full-Stack Development Environment
 #
-# This example demonstrates extending the minimal image with multiple
+# This example demonstrates extending the agentic-container base image with multiple
 # language runtimes for full-stack development. This creates a custom
 # development environment with Python, Node.js, and essential tools.
 #
-# Build: docker build -f docs/examples/extend-minimal-fullstack.dockerfile -t my-fullstack-container .
+# Build: docker build -f docs/examples/extend-fullstack.dockerfile -t my-fullstack-container .
 # Run:   docker run -it --rm my-fullstack-container
 
-FROM ghcr.io/technicalpickles/agentic-container:minimal
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
 # Install multiple language runtimes
 RUN mise install python@3.13.7 node@24.8.0 go@1.25.1

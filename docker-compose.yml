@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: dev
+      target: minimal
     volumes:
       - .:/workspace
       # Mount Docker socket for Docker-in-Docker

@@ -1,19 +1,19 @@
-# Extension Example: Multi-Stage Build with Minimal Base
+# Extension Example: Multi-Stage Build with Base Image
 #
-# This example demonstrates how to use agentic-container:minimal in a
+# This example demonstrates how to use agentic-container in a
 # multi-stage build to create optimized application images. 
 # 
 # The pattern:
-# 1. Build stage: Use minimal + build tools to compile/build application
-# 2. Runtime stage: Use minimal + runtime dependencies for final image
+# 1. Build stage: Use base image + build tools to compile/build application
+# 2. Runtime stage: Use base image + runtime dependencies for final image
 #
-# Build: docker build -f docs/examples/multistage-minimal-app.dockerfile -t my-app .
+# Build: docker build -f docs/examples/multistage-app.dockerfile -t my-app .
 # Run:   docker run -it --rm my-app
 
 # =============================================================================
 # BUILD STAGE: Compile and build the application
 # =============================================================================
-FROM ghcr.io/technicalpickles/agentic-container:minimal AS builder
+FROM ghcr.io/technicalpickles/agentic-container:latest AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -60,7 +60,7 @@ RUN bash -c 'eval "$(mise activate bash)" && \
 # =============================================================================
 # RUNTIME STAGE: Minimal runtime environment
 # =============================================================================
-FROM ghcr.io/technicalpickles/agentic-container:minimal AS runtime
+FROM ghcr.io/technicalpickles/agentic-container:latest AS runtime
 
 # Install only runtime dependencies (no build tools)
 RUN mise install python@3.13.7

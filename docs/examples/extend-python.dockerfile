@@ -1,16 +1,17 @@
-# Extension Example: Adding Python to Minimal Image
+# Extension Example: Adding Python to Base Image
 # 
-# This example demonstrates how to extend the agentic-container:minimal 
-# image with Python runtime. This is useful when you need a lightweight
-# base with just Python added.
+# This example demonstrates how to extend the agentic-container base 
+# image with Python runtime. This is useful when you need just Python added
+# to the development environment.
 #
-# Build: docker build -f docs/examples/extend-minimal-python.dockerfile -t my-python-container .
+# Build: docker build -f docs/examples/extend-python.dockerfile -t my-python-container .
 # Run:   docker run -it --rm my-python-container
 
-FROM ghcr.io/technicalpickles/agentic-container:minimal
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
-# Install Python using mise
+# Install Python using mise as root
 # Note: mise installs are cached, so this is efficient
+USER root
 RUN mise install python@3.13.7
 
 # Set Python as the global version

@@ -1,12 +1,12 @@
-# Extension Example: Adding Node.js to Minimal Image
+# Extension Example: Adding Node.js to Base Image
 #
-# This example demonstrates how to extend the agentic-container:minimal
+# This example demonstrates how to extend the agentic-container base
 # image with Node.js runtime. Ideal for JavaScript/TypeScript development.
 #
-# Build: docker build -f docs/examples/extend-minimal-nodejs.dockerfile -t my-node-container .
+# Build: docker build -f docs/examples/extend-nodejs.dockerfile -t my-node-container .
 # Run:   docker run -it --rm my-node-container
 
-FROM ghcr.io/technicalpickles/agentic-container:minimal
+FROM ghcr.io/technicalpickles/agentic-container:latest
 
 # Install Node.js using mise
 RUN mise install node@24.8.0

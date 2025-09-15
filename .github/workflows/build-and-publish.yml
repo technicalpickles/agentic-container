@@ -23,65 +23,21 @@ jobs:
     
     strategy:
       matrix:
-        target: [minimal, standard, dev, ruby, node, python, go]
+        target: [standard, dev]
         include:
-          - target: minimal
-            platforms: linux/amd64,linux/arm64
-            tags: |
-              type=ref,event=branch,suffix=-minimal
-              type=ref,event=pr,suffix=-minimal
-              type=semver,pattern={{version}},suffix=-minimal
-              type=semver,pattern={{major}}.{{minor}},suffix=-minimal
-              type=raw,value=minimal,enable={{is_default_branch}}
           - target: standard
             platforms: linux/amd64,linux/arm64
             tags: |
-              type=ref,event=branch,suffix=-standard
-              type=ref,event=pr,suffix=-standard
-              type=semver,pattern={{version}},suffix=-standard
-              type=semver,pattern={{major}}.{{minor}},suffix=-standard
-              type=raw,value=standard,enable={{is_default_branch}}
+              type=ref,event=branch
+              type=ref,event=pr
+              type=semver,pattern={{version}}
+              type=semver,pattern={{major}}.{{minor}}
               type=raw,value=latest,enable={{is_default_branch}}
+              type=raw,value=main,enable={{is_default_branch}}
           - target: dev
             platforms: linux/amd64,linux/arm64
             tags: |
-              type=ref,event=branch,suffix=-dev
-              type=ref,event=pr,suffix=-dev
-              type=semver,pattern={{version}},suffix=-dev
-              type=semver,pattern={{major}}.{{minor}},suffix=-dev
               type=raw,value=dev,enable={{is_default_branch}}
-          - target: ruby
-            platforms: linux/amd64,linux/arm64
-            tags: |
-              type=ref,event=branch,suffix=-ruby
-              type=ref,event=pr,suffix=-ruby
-              type=semver,pattern={{version}},suffix=-ruby
-              type=semver,pattern={{major}}.{{minor}},suffix=-ruby
-              type=raw,value=ruby,enable={{is_default_branch}}
-          - target: node
-            platforms: linux/amd64,linux/arm64
-            tags: |
-              type=ref,event=branch,suffix=-node
-              type=ref,event=pr,suffix=-node
-              type=semver,pattern={{version}},suffix=-node
-              type=semver,pattern={{major}}.{{minor}},suffix=-node
-              type=raw,value=node,enable={{is_default_branch}}
-          - target: python
-            platforms: linux/amd64,linux/arm64
-            tags: |
-              type=ref,event=branch,suffix=-python
-              type=ref,event=pr,suffix=-python
-              type=semver,pattern={{version}},suffix=-python
-              type=semver,pattern={{major}}.{{minor}},suffix=-python
-              type=raw,value=python,enable={{is_default_branch}}
-          - target: go
-            platforms: linux/amd64,linux/arm64
-            tags: |
-              type=ref,event=branch,suffix=-go
-              type=ref,event=pr,suffix=-go
-              type=semver,pattern={{version}},suffix=-go
-              type=semver,pattern={{major}}.{{minor}},suffix=-go
-              type=raw,value=go,enable={{is_default_branch}}
 
     steps:
     - name: Checkout repository
