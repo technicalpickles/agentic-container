@@ -66,7 +66,7 @@ docker-compose exec dev bash
 Start with the base image and add only what you need:
 
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:base
+FROM ghcr.io/your-repo/agentic-container:minimal
 
 # Add just Python
 RUN mise install python@3.11 && mise use -g python@3.11
@@ -80,7 +80,7 @@ RUN python -m pip install poetry black pytest
 Combine multiple languages as needed:
 
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:tools
+FROM ghcr.io/your-repo/agentic-container:standard
 
 # Add multiple languages
 RUN mise install python@3.11 node@20 && \
@@ -319,7 +319,7 @@ Use BuildKit for faster builds:
 
 ```bash
 export DOCKER_BUILDKIT=1
-docker build --cache-from ghcr.io/your-repo/agentic-container:base .
+docker build --cache-from ghcr.io/your-repo/agentic-container:minimal .
 ```
 
 #### Image Size Optimization
@@ -332,10 +332,10 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Use multi-stage builds for build dependencies
-FROM ghcr.io/your-repo/agentic-container:base AS builder
+FROM ghcr.io/your-repo/agentic-container:minimal AS builder
 RUN install build dependencies...
 
-FROM ghcr.io/your-repo/agentic-container:base AS final
+FROM ghcr.io/your-repo/agentic-container:minimal AS final
 COPY --from=builder /built/artifacts /usr/local/
 ```
 
@@ -397,7 +397,7 @@ docker logs container-name
 docker logs -f container-name
 
 # Check system logs
-docker run --rm -v /var/log:/host/var/log ghcr.io/your-repo/agentic-container:base \
+docker run --rm -v /var/log:/host/var/log ghcr.io/your-repo/agentic-container:minimal \
   tail -f /host/var/log/syslog
 ```
 

@@ -67,7 +67,7 @@ Monitor all image variants simultaneously.
 ```yaml
 strategy:
   matrix:
-    target: [base, tools, python, node, ruby, go, dev]
+    target: [minimal, standard, python, node, ruby, go, dev]
 
 steps:
 - name: Size analysis for ${{ matrix.target }}
@@ -92,7 +92,7 @@ Set minimum efficiency thresholds for images.
 ```yaml
 - name: Efficiency check
   run: |
-    for target in base tools python node ruby go dev; do
+    for target in minimal standard python node ruby go dev; do
       IMAGE="ghcr.io/${{ github.repository }}:${{ github.sha }}-$target"
       echo "Analyzing $target..."
       
@@ -157,7 +157,7 @@ jobs:
       run: |
         mkdir -p reports
         
-        for target in base tools python node ruby go dev; do
+        for target in minimal standard python node ruby go dev; do
           image="ghcr.io/${{ github.repository }}:${{ github.sha }}-$target"
           
           # Generate detailed analysis
@@ -195,7 +195,7 @@ jobs:
     EOF
     
     first=true
-    for target in base tools python node ruby go dev; do
+    for target in minimal standard python node ruby go dev; do
       if [ "$first" = false ]; then echo "," >> size_data.json; fi
       first=false
       
@@ -306,7 +306,7 @@ env:
 - name: Send metrics to monitoring
   run: |
     # Send to DataDog, Grafana, or similar
-    for target in base tools python node ruby go dev; do
+    for target in minimal standard python node ruby go dev; do
       analysis=$(cat "reports/${target}-analysis.json")
       size=$(echo "$analysis" | jq '.image.sizeBytes')
       efficiency=$(echo "$analysis" | jq '.image.efficiency')

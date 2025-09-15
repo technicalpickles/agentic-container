@@ -23,32 +23,33 @@ jobs:
     
     strategy:
       matrix:
-        target: [base, tools, dev, ruby, node, python, go]
+        target: [minimal, standard, dev, ruby, node, python, go]
         include:
-          - target: base
+          - target: minimal
             platforms: linux/amd64,linux/arm64
             tags: |
-              type=ref,event=branch,suffix=-base
-              type=ref,event=pr,suffix=-base
-              type=semver,pattern={{version}},suffix=-base
-              type=semver,pattern={{major}}.{{minor}},suffix=-base
-              type=raw,value=base,enable={{is_default_branch}}
-          - target: tools
+              type=ref,event=branch,suffix=-minimal
+              type=ref,event=pr,suffix=-minimal
+              type=semver,pattern={{version}},suffix=-minimal
+              type=semver,pattern={{major}}.{{minor}},suffix=-minimal
+              type=raw,value=minimal,enable={{is_default_branch}}
+          - target: standard
             platforms: linux/amd64,linux/arm64
             tags: |
-              type=ref,event=branch,suffix=-tools
-              type=ref,event=pr,suffix=-tools
-              type=semver,pattern={{version}},suffix=-tools
-              type=semver,pattern={{major}}.{{minor}},suffix=-tools
-              type=raw,value=tools,enable={{is_default_branch}}
+              type=ref,event=branch,suffix=-standard
+              type=ref,event=pr,suffix=-standard
+              type=semver,pattern={{version}},suffix=-standard
+              type=semver,pattern={{major}}.{{minor}},suffix=-standard
+              type=raw,value=standard,enable={{is_default_branch}}
+              type=raw,value=latest,enable={{is_default_branch}}
           - target: dev
             platforms: linux/amd64,linux/arm64
             tags: |
-              type=ref,event=branch
-              type=ref,event=pr
-              type=semver,pattern={{version}}
-              type=semver,pattern={{major}}.{{minor}}
-              type=raw,value=latest,enable={{is_default_branch}}
+              type=ref,event=branch,suffix=-dev
+              type=ref,event=pr,suffix=-dev
+              type=semver,pattern={{version}},suffix=-dev
+              type=semver,pattern={{major}}.{{minor}},suffix=-dev
+              type=raw,value=dev,enable={{is_default_branch}}
           - target: ruby
             platforms: linux/amd64,linux/arm64
             tags: |

@@ -24,17 +24,17 @@ COMMANDS:
     help                  Show this help message
 
 BASE IMAGES:
-    base                  Core system tools, mise, Docker CLI only
-    tools                 Base + starship prompt and dev enhancements  
-    ruby                  Tools + Ruby runtime
-    node                  Tools + Node.js runtime
-    python                Tools + Python runtime
-    go                    Tools + Go runtime  
-    dev                   All languages and tools (kitchen sink)
+    minimal               Core system tools, mise, Docker CLI only (~500MB)
+    standard              Minimal + starship prompt and dev enhancements (~750MB)  
+    ruby                  Standard + Ruby runtime
+    node                  Standard + Node.js runtime
+    python                Standard + Python runtime
+    go                    Standard + Go runtime  
+    dev                   All languages and tools (kitchen sink) (~2GB)
 
 EXAMPLES:
-    # Start with just the base image
-    extend-image.sh init base
+    # Start with just the minimal image
+    extend-image.sh init minimal
     
     # Start with Node.js included
     extend-image.sh init node

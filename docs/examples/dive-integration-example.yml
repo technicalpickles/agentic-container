@@ -12,7 +12,7 @@
     strategy:
       fail-fast: false
       matrix:
-        target: [base, tools, python, node, ruby, go, dev]
+        target: [minimal, standard, python, node, ruby, go, dev]
     
     steps:
     - name: Checkout repository
@@ -94,7 +94,7 @@ env:
         echo "| Image | PR Size | Main Size | Change |" >> $GITHUB_STEP_SUMMARY
         echo "|-------|---------|-----------|--------|" >> $GITHUB_STEP_SUMMARY
         
-        for target in base tools python node ruby go dev; do
+        for target in minimal standard python node ruby go dev; do
           pr_image="ghcr.io/${{ github.repository }}:${{ github.sha }}-$target"
           main_image="ghcr.io/${{ github.repository }}:main-$target"
           

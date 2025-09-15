@@ -1,7 +1,7 @@
 # Docker Image Layer Analysis Report
 
 **Generated on:** September 14, 2025  
-**Image:** `agentic-container:tools`  
+**Image:** `agentic-container:standard`  
 **Total Image Size:** 897.7 MB (~898 MB)  
 **Analysis Tool:** `dive v0.13.1`
 
@@ -65,12 +65,12 @@ This analysis identifies the largest layers in our agentic-container Docker imag
 Create separate build and runtime stages:
 ```dockerfile
 # Build stage - contains heavy build tools
-FROM base AS builder
+FROM minimal AS builder
 RUN apt-get update && apt-get install -y build-essential cmake
 # ... build operations ...
 
 # Runtime stage - lightweight 
-FROM base AS runtime
+FROM minimal AS runtime
 COPY --from=builder /built/artifacts /usr/local/bin/
 # Only install runtime dependencies
 ```

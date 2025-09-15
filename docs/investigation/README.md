@@ -4,7 +4,7 @@ This directory contains analysis and investigation reports for optimizing our Do
 
 ## Files
 
-- **`docker-layer-analysis.md`** - Comprehensive analysis of the `agentic-container:tools` image layers, identifying optimization opportunities
+- **`docker-layer-analysis.md`** - Comprehensive analysis of the `agentic-container:standard` image layers, identifying optimization opportunities
 - **`analyze-image-layers.sh`** - Reusable script for analyzing any Docker image with `dive`
 
 ## Quick Analysis

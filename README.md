@@ -14,7 +14,7 @@ docker run -it --rm ghcr.io/your-repo/agentic-container:latest
 docker run -it --rm ghcr.io/your-repo/agentic-container:python
 
 # Use just the base tools without languages
-docker run -it --rm ghcr.io/your-repo/agentic-container:base
+docker run -it --rm ghcr.io/your-repo/agentic-container:minimal
 ```
 
 ## 📦 Available Images

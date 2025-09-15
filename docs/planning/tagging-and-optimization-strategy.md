@@ -43,7 +43,7 @@ This document outlines the strategy for optimizing image sizes and implementing 
 
 #### Core Tags
 ```
-ghcr.io/your-repo/agentic-container:
+ghcr.io/technicalpickles/agentic-container:
 ├── minimal       (~600MB) - Core + mise only, optimized for extension
 ├── standard      (~800MB) - Current "tools", good developer experience  
 ├── full          (~2.2GB) - Current "dev", kitchen sink

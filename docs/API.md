@@ -102,7 +102,7 @@ publish-extended-image.sh \
 **Use Case**: Starting point for minimal custom images
 
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:base
+FROM ghcr.io/your-repo/agentic-container:minimal
 # Your minimal additions here
 ```
 
@@ -118,7 +118,7 @@ FROM ghcr.io/your-repo/agentic-container:base
 **Use Case**: Base for most custom development environments
 
 ```dockerfile
-FROM ghcr.io/your-repo/agentic-container:tools
+FROM ghcr.io/your-repo/agentic-container:standard
 # Add your languages and tools
 ```
 
@@ -307,7 +307,7 @@ The workflow builds multiple targets in parallel:
 ```yaml
 strategy:
   matrix:
-    target: [base, tools, dev, ruby, node, python, go]
+    target: [minimal, standard, dev, ruby, node, python, go]
 ```
 
 Each target gets its own set of tags based on the target name.

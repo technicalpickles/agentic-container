@@ -4,7 +4,7 @@
 # 
 # Purpose: Quick analysis of Docker image layers using dive
 # Usage: ./analyze-image-layers.sh <image-name>
-# Example: ./analyze-image-layers.sh agentic-container:tools
+# Example: ./analyze-image-layers.sh agentic-container:standard
 #
 # This script generates a JSON analysis and extracts key metrics
 # for identifying optimization opportunities.
@@ -13,7 +13,7 @@ set -euo pipefail
 
 if [ $# -eq 0 ]; then
     echo "Usage: $0 <image-name>"
-    echo "Example: $0 agentic-container:tools"
+    echo "Example: $0 agentic-container:standard"
     exit 1
 fi
 

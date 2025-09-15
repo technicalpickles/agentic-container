@@ -47,13 +47,13 @@ Build all image targets:
 
 ```bash
 # Build specific targets
-docker build --target base -t agentic-container:base .
-docker build --target tools -t agentic-container:tools .
+docker build --target minimal -t agentic-container:minimal .
+docker build --target standard -t agentic-container:standard .
 docker build --target dev -t agentic-container:dev .
 
 # Test the images
-docker run --rm -it agentic-container:base which mise
-docker run --rm -it agentic-container:tools starship --version
+docker run --rm -it agentic-container:minimal which mise
+docker run --rm -it agentic-container:standard starship --version
 docker run --rm -it agentic-container:dev mise list
 ```
 
@@ -107,7 +107,7 @@ To add support for a new programming language:
 2. **Create a build stage** in the Dockerfile:
 
 ```dockerfile
-FROM base AS newlang-stage
+FROM minimal AS newlang-stage
 # Install the language runtime using mise or direct installation
 RUN mise install newlang@X.Y.Z
 ```
@@ -115,7 +115,7 @@ RUN mise install newlang@X.Y.Z
 3. **Create a single-language target**:
 
 ```dockerfile
-FROM tools AS newlang
+FROM standard AS newlang
 COPY --from=newlang-stage $MISE_DATA_DIR/installs/newlang $MISE_DATA_DIR/installs/newlang
 RUN mise use -g newlang@X.Y.Z
 ```
@@ -132,7 +132,7 @@ To add development tools:
 2. **Add to appropriate stage**:
 
 ```dockerfile
-FROM base AS tool-stage
+FROM minimal AS tool-stage
 RUN mise install tool@latest
 
 # Or for tools not in mise
@@ -302,7 +302,7 @@ Before submitting, test your changes:
 
 ```bash
 # Build all affected targets
-docker build --target base -t test-base .
+docker build --target minimal -t test-minimal .
 docker build --target your-new-target -t test-new .
 
 # Test functionality
