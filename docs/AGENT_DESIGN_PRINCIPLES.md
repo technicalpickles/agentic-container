@@ -35,7 +35,7 @@ Agentic Container provides fast, reliable container environments optimized for A
 - Support for protocol-agnostic agent architectures
 
 **Agent toolchain support**
-- Pre-installed tools agents commonly need (ast-grep, tree-sitter parsers)
+- Pre-installed tools agents commonly need (ast-grep, Python/Node.js runtimes)
 - Code analysis tools ready for structural code modification
 - Cross-language parsing and analysis capabilities
 
@@ -163,7 +163,7 @@ When evaluating new features, tools, or changes, ask:
 ### ✅ Good Additions
 - **ast-grep**: Agents frequently need structural code analysis
 - **uvx/npx universal availability**: Enables MCP server deployment
-- **tree-sitter parsers**: Core capability for code modification agents
+- **Standard Python/Node.js**: Core runtimes for most agent workloads
 - **Fast startup optimizations**: Directly improves agent performance
 
 ### ❌ Bad Additions
@@ -175,7 +175,7 @@ When evaluating new features, tools, or changes, ask:
 ## Evolution Strategy
 
 ### Short-term (Next 6 months)
-- Implement core agent tooling (ast-grep, tree-sitter, etc.)
+- Implement core agent tooling (ast-grep, standard runtimes, etc.)
 - Optimize startup time and reliability
 - Create agent-focused documentation and examples
 - Build adoption with agent platform providers

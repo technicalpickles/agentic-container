@@ -17,11 +17,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install and configure Python runtime
+# Python, Node.js, and ast-grep already installed as standard
 USER vscode
-RUN mise install python@3.13.7 && mise use -g python@3.13.7
 
-# Install core agent packages in a single layer for efficiency
+# Install core Claude agent packages in a single layer for efficiency
 RUN \
     pip install --no-cache-dir \
         anthropic \
@@ -30,19 +29,20 @@ RUN \
         requests \
         aiohttp \
         httpx
-# Install code analysis tools that agents commonly need
+
+# Install additional code analysis tools that Claude agents commonly need
 RUN \
     pip install --no-cache-dir \
-        ast-grep-py \
-        tree-sitter \
         libcst \
         sqlite-utils \
         sqlalchemy
-# Verify agent toolchain is ready (fail fast if something is wrong)
+
+# Verify Claude agent toolchain is ready (fail fast if something is wrong)
 RUN \
-    ast-grep --version && \
-    python3 -c "import anthropic; print(\"Claude agent runtime ready\")" && \
-    python3 -c "import tree_sitter; print(\"Code analysis tools ready\")"
+    sg --version && \
+    python3 -c "import anthropic; print('Claude agent runtime ready')" && \
+    python3 -c "import libcst; print('Code analysis tools ready')"
+
 # Set working directory
 WORKDIR /workspace
 

@@ -11,9 +11,9 @@ This cookbook provides copy-paste ready Dockerfile examples for common AI agent 
 
 | Use Case | Languages | Key Tools | Agent Focus |
 |----------|-----------|-----------|-------------|
-| [Claude Agent Environment](#claude-agent-environment) | Python 3.13.7 | anthropic, ast-grep, pydantic | +~300MB |
-| [Code Analysis Agent](#code-analysis-agent) | Python + Node.js | ast-grep, tree-sitter, ripgrep | +~400MB |
-| [MCP Server Host](#mcp-server-host) | Python + Node.js | uvx, npx, protocol tools | +~300MB |
+| [Claude Agent Environment](#claude-agent-environment) | Python + Node (standard) | anthropic, ast-grep, pydantic | +~200MB |
+| [Code Analysis Agent](#code-analysis-agent) | Python + Node + Go | ast-grep, language-specific tools | +~300MB |
+| [MCP Server Host](#mcp-server-host) | Python + Node (standard) | uvx, npx, protocol tools | +~200MB |
 | [Multi-Language Agent](#multi-language-agent) | Python + Node + Go | All language toolchains | +~600MB |
 | [Background Processing Agent](#background-processing-agent) | Python + Redis | Celery, background job tools | +~400MB |
 | [Database Integration Agent](#database-integration-agent) | Python + SQL | SQLAlchemy, psycopg2, sqlite-utils | +~250MB |
@@ -22,27 +22,33 @@ This cookbook provides copy-paste ready Dockerfile examples for common AI agent 
 
 ## Extension Patterns
 
-### Basic Agent Extension
+### Basic Claude Agent Extension
 
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-# Install and configure a single language for agent workload
-RUN mise install python@3.13.7 && \
-    mise use -g python@3.13.7 && \
-pip install anthropic pydantic python-dotenv```
+# Python and Node.js are already installed as standard
+# Just add Claude-specific packages
+RUN pip install anthropic pydantic python-dotenv
+
+# Verify Claude agent toolchain is ready
+RUN python3 -c "import anthropic; print('Claude agent runtime ready')" && \
+    sg --version
+
+WORKDIR /workspace
+```
 
 ### Multi-Language Agent Extension
 
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-# Install multiple languages for cross-language agent analysis
-RUN mise install python@3.13.7 node@24.8.0 go@1.25.1 && \
-    mise use -g python@3.13.7 node@24.8.0 go@1.25.1 && \
+# Python and Node.js already installed - just add Go
+RUN mise install go@1.25.1 && \
+    mise use -g go@1.25.1 && \
 \
-        pip install ast-grep-py tree-sitter libcst && \
-        npm install -g @tree-sitter/cli typescript && \
+        pip install libcst && \
+        npm install -g typescript && \
         go install golang.org/x/tools/cmd/goimports@latest```
 
 ### Agent with System Dependencies
@@ -58,13 +64,10 @@ RUN apt-get update && apt-get install -y \
     sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
-# Then add languages and agent tools as user
+# Python and Node.js already installed - add packages as user
 USER $USERNAME
-RUN mise install python@3.13.7 && \
-    mise use -g python@3.13.7 && \
-\
-        pip install psycopg2-binary sqlite-utils && \
-        pip install anthropic pydantic python-dotenv```
+RUN pip install psycopg2-binary sqlite-utils && \
+    pip install anthropic pydantic python-dotenv```
 
 ## Use Case Examples
 
@@ -75,7 +78,7 @@ Optimized for Claude Desktop agents and similar AI code modification tools.
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-# Install Python and system dependencies for agent operations
+# Add system dependencies for advanced agent operations
 USER root
 RUN apt-get update && apt-get install -y \
     python3-dev \
@@ -84,18 +87,20 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 USER $USERNAME
-RUN mise install python@3.13.7 && mise use -g python@3.13.7
+# Python, Node.js, and ast-grep already installed as standard
 
-# Install agent-focused packages
+# Install Claude agent packages
 RUN \
     pip install anthropic python-dotenv pydantic && \
     pip install requests aiohttp httpx && \
-    pip install ast-grep-py tree-sitter libcst && \
+    pip install libcst && \
     pip install sqlite-utils sqlalchemy
-# Verify agent toolchain is ready
+
+# Verify Claude agent toolchain is ready
 RUN \
-    ast-grep --version && \
-    python3 -c "import anthropic; print(\"Claude agent runtime ready\")"
+    sg --version && \
+    python3 -c "import anthropic; print('Claude agent runtime ready')"
+
 WORKDIR /workspace
 ```
 
@@ -106,24 +111,28 @@ Equipped for structural code analysis and modification across multiple languages
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-# Install multiple languages for cross-language analysis
-RUN mise install python@3.13.7 node@24.8.0 go@1.25.1 && \
-    mise use -g python@3.13.7 node@24.8.0 go@1.25.1
+# Python and Node.js already installed - add Go for multi-language analysis
+RUN mise install go@1.25.1 && \
+    mise use -g go@1.25.1
 
 # Install code analysis tooling
 RUN \
-    # Python analysis tools
-    pip install ast-grep-py tree-sitter libcst && \
+    # Python analysis tools (ast-grep already installed as standard)
+    pip install libcst && \
     pip install anthropic python-dotenv pydantic && \
     # Node.js parsing tools  
-    npm install -g @tree-sitter/cli typescript-parser && \
+    npm install -g typescript && \
     npm install -g @babel/parser @babel/traverse && \
     # Go analysis tools
     go install golang.org/x/tools/cmd/goimports@latest
-# Pre-install tree-sitter grammars for common languages
+
+# Verify multi-language toolchain
 RUN \
-    tree-sitter init-config && \
-    tree-sitter install python javascript typescript go rust
+    sg --version && \
+    python3 -c "import libcst; print('Python analysis ready')" && \
+    tsc --version && \
+    go version
+
 WORKDIR /workspace
 ```
 
@@ -143,25 +152,25 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 USER $USERNAME
-
-# Install multiple languages for versatile MCP server hosting
-RUN mise install python@3.13.7 node@24.8.0 && \
-    mise use -g python@3.13.7 node@24.8.0
+# Python and Node.js already installed as standard
 
 # Install Python MCP tools
 RUN \
     pip install pydantic httpx uvicorn fastapi && \
     pip install python-dotenv anthropic && \
     pip install sqlite-utils sqlalchemy
+
 # Install Node.js MCP tools  
 RUN \
     npm install -g @modelcontextprotocol/sdk && \
     npm install -g express cors ws && \
     npm install -g typescript @types/node
-# Verify MCP server capabilities
+
+# Verify MCP server capabilities (uvx and npx available from standard install)
 RUN \
-    uvx --help && npx --help && \
-    python3 -c "import pydantic; print(\"MCP server runtime ready\")"
+    uvx --version && npx --version && \
+    python3 -c "import pydantic; print('MCP server runtime ready')"
+
 # Common MCP server ports
 EXPOSE 8080 3000
 
@@ -219,10 +228,10 @@ USER $USERNAME
 # Install Ruby
 RUN mise install ruby@3.4.5 && mise use -g ruby@3.4.5
 
-# Install Rails and common gems
+# Install Rails, Rake, and common gems
 RUN \
-    gem install rails -v "~> 7.1" --no-document && \
-    gem install bundler rspec-rails factory_bot_rails --no-document && \
+    gem install rails rake bundler --no-document && \
+    gem install rspec-rails factory_bot_rails --no-document && \
     gem install pg mysql2 sqlite3 redis --no-document && \
     gem install devise cancancan rolify --no-document && \
     gem install image_processing mini_magick --no-document
@@ -380,24 +389,27 @@ EXPOSE 8888 5000
 WORKDIR /workspace
 
 # Download common NLP models
-RUN python -c "import nltk; nltk.download(punkt)"```
+RUN python -c "import nltk; nltk.download('punkt')"```
 
 ## Best Practices
 
 ### Layer Optimization
 
 ```dockerfile
-# ✅ Good: Combine related operations
-RUN mise install python@3.13.7 node@24.8.0 && \
-    mise use -g python@3.13.7 node@24.8.0 && \
-\
-        pip install django && \
-        npm install -g typescript
+# ✅ Good: Combine related operations (Python/Node already available)
+RUN pip install django && \
+    npm install -g typescript
+    
+# ✅ Good: Install additional languages efficiently
+RUN mise install go@1.25.1 ruby@3.4.5 && \
+    mise use -g go@1.25.1 ruby@3.4.5 && \
+    go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest && \
+    gem install rails rake
+    
 # ❌ Bad: Separate operations create unnecessary layers
-RUN mise install python@3.13.7
-RUN mise use -g python@3.13.7
-RUN pip install djangoRUN mise install node@24.8.0
-RUN npm install -g typescript
+RUN mise install go@1.25.1
+RUN mise use -g go@1.25.1
+RUN go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 ```
 
 ### System Package Management
@@ -418,12 +430,17 @@ RUN apt-get install -y package1 package2
 ### Environment Activation
 
 ```dockerfile
-# ✅ Good: Use mise activation for package installation
+# ✅ Good: Python and Node.js available directly (installed as standard)
 RUN \
     pip install package && \
     npm install -g tool
+    
+# ✅ Good: Additional languages use mise activation
+RUN mise install ruby@3.4.5 && mise use -g ruby@3.4.5 && \
+    gem install rails rake
+    
 # ⚠️ Works but less robust: Direct paths
-RUN /home/$USERNAME/.local/share/mise/installs/python/3.13.7/bin/pip install package
+RUN /home/$USERNAME/.local/share/mise/installs/ruby/3.4.5/bin/gem install rails
 ```
 
 ### Port Management
@@ -457,7 +474,8 @@ WORKDIR /workspace
 **mise activation not working**
 ```dockerfile
 # Solution: Use explicit bash activation
-RUN pip install package```
+RUN pip install package
+```
 
 **Permission errors during package installation**  
 ```dockerfile

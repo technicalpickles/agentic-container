@@ -8,37 +8,40 @@ Optimized for cloud providers offering agentic experiences like Cursor Backgroun
 
 - **Fast startup time**: Pre-installed agent toolchain for quick execution
 - **Headless execution**: No interactive prompts, reliable automation  
-- **Code analysis ready**: ast-grep, tree-sitter, ripgrep pre-installed
+- **Code analysis ready**: ast-grep and ripgrep pre-installed, Python/Node.js standard
 - **MCP server ready**: Universal package runners (uvx, npx) available
 - **Cloud-native**: Designed for multi-tenant, scalable execution
 - **Extension-friendly**: Easy to customize for specific agent workflows
 
 ## 🚀 Quick Start for Agent Workloads
 
-### Agent Execution Environment (Recommended)
+### Claude Agent Environment (Recommended)
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-# Add agent-specific tooling
-RUN mise install python@3.13.7 && \
-    mise use -g python@3.13.7 && \
-    pip install anthropic pydantic python-dotenv
+# Python and Node.js already installed as standard
+# Add Claude agent-specific tooling
+RUN pip install anthropic pydantic python-dotenv
+
+# Verify Claude agent is ready
+RUN python3 -c "import anthropic; print('Claude agent ready')" && \
+    sg --version
 ```
 
 ### MCP Server Environment
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-# Ready for MCP servers in any language
-RUN mise install python@3.13.7 node@24.8.0 && \
-    mise use -g python@3.13.7 node@24.8.0
+# Python and Node.js already installed as standard
 # Both uvx and npx are ready to use for protocol servers
+RUN pip install pydantic httpx && \
+    npm install -g @modelcontextprotocol/sdk
 ```
 
 ### Quick Prototyping
 ```bash
-# Use the dev environment (all languages pre-installed, for agent prototyping only)
-docker run --rm ghcr.io/technicalpickles/agentic-container:dev python your_agent.py
+# Use the dev environment (all languages pre-installed, for Claude agent prototyping only)
+docker run --rm ghcr.io/technicalpickles/agentic-container:dev python your_claude_agent.py
 ```
 
 ## 🤔 When to Use Which Image?
@@ -65,19 +68,20 @@ docker run --rm ghcr.io/technicalpickles/agentic-container:dev python your_agent
 
 | Image Tag | Description | Size | Maintenance Level | Use Case |
 |-----------|-------------|------|------------------|----------|
-| `latest` | Ubuntu + mise + agent tools + analysis tools | ~750MB | **Actively maintained** | Production-ready base for agent deployment |
+| `latest` | Ubuntu + mise + Python + Node.js + ast-grep | ~950MB | **Actively maintained** | Production-ready base for agent deployment |
 | `dev` | Latest + all languages | ~2.2GB | **Example only** | Agent prototyping and experimentation |
 
 
 ## 🔧 What's Included
 
 ### Core Tools (`latest` image)
-- **mise** - Universal version manager for all languages and tools
+- **Python 3.13.7** + **Node.js 24.8.0** - Standard runtime environments for agents
+- **ast-grep** - Structural code search and analysis tool
+- **mise** - Universal version manager for additional languages and tools
 - **Docker CLI** + Docker Compose - Container orchestration capabilities
 - **Git** - Version control with sensible defaults for agent workflows
-- **Code analysis tools** - ast-grep, tree-sitter, ripgrep for structural analysis
-- **Universal runners** - uvx, npx ready for MCP server deployment
-- **Essential CLI tools** - vim, nano, jq, curl, tree, htop for agent scripting
+- **Universal runners** - uvx (Python) and npx (Node.js) ready for MCP server deployment
+- **Essential CLI tools** - vim, nano, jq, curl, tree, htop, ripgrep for agent scripting
 - **Non-root user** - Security-conscious execution environment
 - **Optimized shell** - Configured bash environment for headless operations
 
@@ -92,17 +96,22 @@ The `dev` image includes pre-installed language runtimes for quick agent experim
 
 The recommended approach is to extend the `latest` image with exactly the languages and tools your agents need.
 
-### Basic Agent Extension
+### Basic Claude Agent Extension
 
-Create a Dockerfile extending the base image for agent workloads:
+Create a Dockerfile extending the base image for Claude agent workloads:
 
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-# Add language runtime for agent
-RUN mise install python@3.13.7 && \
-    mise use -g python@3.13.7 && \
-    pip install anthropic pydantic python-dotenv requests
+# Python and Node.js already installed as standard
+# Add Claude agent packages
+RUN pip install anthropic pydantic python-dotenv requests
+
+# Verify Claude agent is ready
+RUN python3 -c "import anthropic; print('Claude agent runtime ready')" && \
+    sg --version
+
+WORKDIR /workspace
 ```
 
 ### Multi-Language Agent Extension
@@ -110,11 +119,11 @@ RUN mise install python@3.13.7 && \
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-# Add multiple languages for cross-language agent analysis
-RUN mise install python@3.13.7 node@24.8.0 go@1.25.1 && \
-    mise use -g python@3.13.7 node@24.8.0 go@1.25.1 && \
-    pip install ast-grep-py tree-sitter libcst && \
-    npm install -g @tree-sitter/cli typescript && \
+# Python and Node.js already installed - add Go for cross-language analysis
+RUN mise install go@1.25.1 && \
+    mise use -g go@1.25.1 && \
+    pip install libcst && \
+    npm install -g typescript && \
     go install golang.org/x/tools/cmd/goimports@latest
 ```
 
@@ -159,8 +168,7 @@ Common extension patterns for different agent use cases:
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-RUN mise install python@3.13.7 && mise use -g python@3.13.7
-
+# Python, Node.js, and ast-grep already installed as standard
 USER root
 RUN apt-get update && apt-get install -y \
     python3-dev \
@@ -170,11 +178,11 @@ RUN apt-get update && apt-get install -y \
 USER $USERNAME
 RUN pip install anthropic python-dotenv pydantic && \
     pip install requests aiohttp httpx && \
-    pip install ast-grep-py tree-sitter libcst
+    pip install libcst
 
-# Verify agent toolchain
-RUN ast-grep --version && \
-    python3 -c "import anthropic; print(\"Agent runtime ready\")"
+# Verify Claude agent toolchain
+RUN sg --version && \
+    python3 -c "import anthropic; print('Claude agent runtime ready')"
 
 WORKDIR /workspace
 ```
@@ -183,22 +191,25 @@ WORKDIR /workspace
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-# Install multiple languages for cross-language analysis
-RUN mise install python@3.13.7 node@24.8.0 go@1.25.1 && \
-    mise use -g python@3.13.7 node@24.8.0 go@1.25.1
+# Python and Node.js already installed - add Go for multi-language analysis
+RUN mise install go@1.25.1 && \
+    mise use -g go@1.25.1
 
 USER $USERNAME
-RUN pip install ast-grep-py tree-sitter libcst && \
+# ast-grep already installed as standard
+RUN pip install libcst && \
     pip install anthropic python-dotenv pydantic && \
     # Node.js parsing tools  
-    npm install -g @tree-sitter/cli typescript && \
+    npm install -g typescript && \
     npm install -g @babel/parser @babel/traverse && \
     # Go analysis tools
     go install golang.org/x/tools/cmd/goimports@latest
 
-# Pre-install tree-sitter grammars for common languages
-RUN tree-sitter init-config && \
-    tree-sitter install python javascript typescript go rust
+# Verify multi-language toolchain
+RUN sg --version && \
+    python3 -c "import libcst; print('Python analysis ready')" && \
+    tsc --version && \
+    go version
 
 WORKDIR /workspace  
 ```
@@ -207,10 +218,7 @@ WORKDIR /workspace
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-# Install multiple languages for versatile MCP server hosting
-RUN mise install python@3.13.7 node@24.8.0 && \
-    mise use -g python@3.13.7 node@24.8.0
-
+# Python and Node.js already installed as standard
 USER root
 RUN apt-get update && apt-get install -y \
     curl \
@@ -223,9 +231,9 @@ RUN pip install pydantic httpx uvicorn fastapi && \
     npm install -g @modelcontextprotocol/sdk && \
     npm install -g express cors ws
 
-# Verify MCP server capabilities
-RUN uvx --help && npx --help && \
-    python3 -c "import pydantic; print(\"MCP server runtime ready\")"
+# Verify MCP server capabilities (uvx and npx available from standard install)
+RUN uvx --version && npx --version && \
+    python3 -c "import pydantic; print('MCP server runtime ready')"
 
 WORKDIR /workspace
 ```
@@ -268,7 +276,7 @@ FROM ghcr.io/technicalpickles/agentic-container:latest
 RUN mise install python@3.13.7 node@24.8.0 && \
     mise use -g python@3.13.7 node@24.8.0 && \
     pip install anthropic pydantic python-dotenv && \
-    npm install -g @tree-sitter/cli
+    npm install -g typescript
 ```
 
 ```json
@@ -289,14 +297,15 @@ RUN mise install python@3.13.7 node@24.8.0 && \
 }
 ```
 
-### Quick Agent Prototyping with Pre-built Dev Image
+### Quick Claude Agent Prototyping with Pre-built Dev Image
 
-For quick agent experimentation, you can use the `dev` image directly:
+For quick Claude agent experimentation, you can use the `dev` image directly:
 
 ```json
 {
-  "name": "Quick Agent Prototyping Environment", 
+  "name": "Quick Claude Agent Prototyping Environment", 
   "image": "ghcr.io/technicalpickles/agentic-container:dev",
+  "postCreateCommand": "pip install anthropic pydantic python-dotenv",
   "mounts": [
     "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
   ],
@@ -360,18 +369,20 @@ ubuntu:24.04 (base OS)
 ```dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
-# ✅ Good: Install multiple languages in one RUN command
-RUN mise install python@3.13.7 node@24.8.0 && \
-    mise use -g python@3.13.7 node@24.8.0
-
-# ✅ Good: Install packages in the same layer as language activation  
-RUN pip install fastapi && \
+# ✅ Good: Python and Node.js already available - just add packages
+RUN pip install fastapi anthropic && \
     npm install -g typescript
 
+# ✅ Good: Install additional languages efficiently
+RUN mise install go@1.25.1 ruby@3.4.5 && \
+    mise use -g go@1.25.1 ruby@3.4.5 && \
+    go install example.com/tool@latest && \
+    gem install rails rake
+
 # ❌ Avoid: Multiple RUN commands create unnecessary layers
-# RUN mise install python@3.13.7
-# RUN mise use -g python@3.13.7  
-# RUN pip install fastapi
+# RUN mise install go@1.25.1
+# RUN mise use -g go@1.25.1  
+# RUN go install example.com/tool@latest
 ```
 
 ## 🤝 Contributing

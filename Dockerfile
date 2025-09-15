@@ -116,6 +116,13 @@ RUN chmod +x /usr/local/bin/extend-image
 RUN curl -sS https://starship.rs/install.sh | FORCE=true sh \
     && echo 'eval "$(starship init bash)"' >> /etc/bash.bashrc
 
+# Install standard Python and Node.js for agent tooling, plus ast-grep for code analysis
+USER root
+RUN mise install python@3.13.7 node@24.8.0 ast-grep@latest && \
+    mise use -g python@3.13.7 node@24.8.0 ast-grep@latest
+
+USER $USERNAME
+
 # Set up enhanced shell for non-root user  
 RUN echo 'eval "$(starship init bash)"' >> /home/$USERNAME/.bashrc && \
     # Add mise shims to PATH in user shell files (for RUN commands)

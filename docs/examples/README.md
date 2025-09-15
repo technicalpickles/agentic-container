@@ -14,7 +14,7 @@ All examples extend the `latest` image, which provides a solid foundation with m
 Creates an environment optimized for Claude Desktop agents and similar AI code modification tools:
 - Python 3.13.7 runtime via mise
 - Core agent packages: anthropic, pydantic, python-dotenv
-- Code analysis tools: ast-grep, tree-sitter, libcst
+- Code analysis tools: ast-grep, libcst
 - Database tools for agent state management
 - Headless execution optimizations
 
@@ -31,7 +31,7 @@ docker run --rm -v $(pwd):/workspace my-claude-agent python agent_script.py
 
 Creates a multi-language environment for structural code analysis:
 - Python + Node.js + Go runtime support
-- Pre-installed ast-grep, tree-sitter parsers for multiple languages
+- Pre-installed ast-grep for structural analysis
 - Cross-language analysis capabilities
 - Code modification and transformation tools
 
