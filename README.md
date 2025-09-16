@@ -67,8 +67,15 @@ docker run -it --rm -v $(pwd):/workspace ghcr.io/technicalpickles/agentic-contai
 docker run -it --rm -v $(pwd):/workspace ghcr.io/technicalpickles/agentic-container:dev bash
 # Then run: claude, codex, gh copilot, goose, or opencode
 ```
+## 📦 Available Images
 
-## 🤔 When to Use Which Image?
+| Image Tag | Description | Size | Maintenance Level | Use Case |
+|-----------|-------------|------|------------------|----------|
+| `latest` | Ubuntu + mise + Python + Node.js + ast-grep + uv/uvx | ~950MB | **Actively maintained** | Production-ready base for agent deployment |
+| `dev` | Latest + all languages | ~2.2GB | **Example only** | Agent prototyping and experimentation |
+
+
+### 🤔 When to Use Which Image?
 
 | Scenario | Recommended Image | Why? |
 |----------|------------------|------|
@@ -79,19 +86,6 @@ docker run -it --rm -v $(pwd):/workspace ghcr.io/technicalpickles/agentic-contai
 | **Development environments** | `latest` + project tools | Optimized for the languages your projects use |
 | **Unknown agent requirements** | Start with `dev`, then create extension | Explore needs, then optimize |
 
-### ⚠️ Important Notes
-
-- **`latest` is actively maintained**: Regular updates with latest tools and security patches  
-- **Extension > Variants**: Better to extend `latest` than use an unmaintained variant
-- **Document your extensions**: Make it easy to reproduce your agent environment
-- **Headless by design**: All operations are non-interactive, suitable for automated agent execution
-
-## 📦 Available Images
-
-| Image Tag | Description | Size | Maintenance Level | Use Case |
-|-----------|-------------|------|------------------|----------|
-| `latest` | Ubuntu + mise + Python + Node.js + ast-grep + uv/uvx | ~950MB | **Actively maintained** | Production-ready base for agent deployment |
-| `dev` | Latest + all languages | ~2.2GB | **Example only** | Agent prototyping and experimentation |
 
 
 ## 🔧 What's Included
@@ -124,143 +118,8 @@ The `dev` image includes pre-installed language runtimes for quick agent experim
 
 The recommended approach is to extend the `latest` image with exactly the languages and tools your **application stack needs**. All AI agents are pre-installed and ready to work with any stack you configure. Focus on the runtime environment for your specific application type.
 
-### Python CLI Applications
+For examples, see [docs/cookbooks](docs/cookbooks/README.md)
 
-Perfect for CLI tools, data processing, automation scripts:
-
-```dockerfile
-FROM ghcr.io/technicalpickles/agentic-container:latest
-
-# Python already installed - add CLI-specific tools
-RUN pip install click typer rich pydantic pytest black ruff mypy && \
-    mise use -g python@3.13.7
-
-# Verify CLI development environment
-RUN python3 --version && click --version
-
-WORKDIR /workspace
-```
-
-### Backend JavaScript/Node.js Services
-
-For APIs, microservices, and server-side applications:
-
-```dockerfile
-FROM ghcr.io/technicalpickles/agentic-container:latest
-
-# Node.js already installed - add backend-specific tools
-RUN npm install -g typescript @types/node ts-node nodemon \
-    express fastify @nestjs/cli prisma && \
-    mise use -g node@22.12.0
-
-# Add database clients
-USER root
-RUN apt-get update && apt-get install -y postgresql-client redis-tools && \
-    rm -rf /var/lib/apt/lists/*
-USER $USERNAME
-
-WORKDIR /workspace
-```
-
-### Full-Stack Rails Applications
-
-Complete environment for Ruby on Rails development:
-
-```dockerfile
-FROM ghcr.io/technicalpickles/agentic-container:latest
-
-# Install Ruby and Rails ecosystem
-RUN mise use -g ruby@3.4.1 node@22.12.0 && \
-    gem install rails bundler rake rspec rubocop && \
-    npm install -g yarn @hotwired/stimulus webpack
-
-# Add database and system dependencies
-USER root
-RUN apt-get update && apt-get install -y \
-    postgresql-client \
-    redis-tools \
-    imagemagick \
-    libvips-tools && \
-    rm -rf /var/lib/apt/lists/*
-USER $USERNAME
-
-WORKDIR /workspace
-```
-
-### Go Microservices
-
-Lightweight, fast services and API backends:
-
-```dockerfile
-FROM ghcr.io/technicalpickles/agentic-container:latest
-
-# Install Go and common tools
-RUN mise use -g go@1.23.5 && \
-    go install github.com/air-verse/air@latest && \
-    go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-
-# Add service dependencies  
-USER root
-RUN apt-get update && apt-get install -y postgresql-client && \
-    rm -rf /var/lib/apt/lists/*
-USER $USERNAME
-
-WORKDIR /workspace
-```
-
-### React Frontend Applications
-
-Modern web frontends with development tooling:
-
-```dockerfile
-FROM ghcr.io/technicalpickles/agentic-container:latest
-
-# Node.js already installed - add frontend-specific tools
-RUN npm install -g @vitejs/create-vite create-react-app \
-    typescript @types/react @types/react-dom \
-    eslint prettier tailwindcss && \
-    mise use -g node@22.12.0
-
-WORKDIR /workspace
-```
-
-### Using mise.toml for Version Management (Recommended)
-
-For production deployments, use a `.mise.toml` file to pin exact versions:
-
-```dockerfile
-FROM ghcr.io/technicalpickles/agentic-container:latest
-
-# Copy your version requirements
-COPY .mise.toml ./
-RUN mise install
-
-# Install stack-specific dependencies
-RUN pip install fastapi sqlalchemy alembic && \
-    npm install -g typescript
-
-WORKDIR /workspace
-```
-
-Example `.mise.toml`:
-```toml
-[tools]
-python = "3.13.7"
-node = "22.12.0" 
-go = "1.23.5"
-```
-
-### Using Helper Scripts (Optional)
-
-If available, you can use the extension scripts for convenience:
-
-```bash
-# Use the extend-image script if it exists
-./scripts/extend-image.sh init
-./scripts/extend-image.sh add-language python@3.13.7
-./scripts/extend-image.sh add-tool gh
-./scripts/extend-image.sh build my-custom-container:v1.0.0
-```
 
 ## 🔄 Cursor Background Agent Integration
 

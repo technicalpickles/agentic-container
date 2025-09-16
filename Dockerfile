@@ -3,7 +3,7 @@
 # This stage contains build tools and compilers needed for installation
 # =============================================================================
 
-# Build arguments for language versions (can be overridden during build)
+# Build arguments for language versions and agent tools (can be overridden during build)
 ARG NODE_VERSION=24.8.0
 ARG PYTHON_VERSION=3.13.7
 ARG RUBY_VERSION=3.4.5
@@ -11,6 +11,8 @@ ARG GO_VERSION=1.25.1
 ARG AST_GREP_VERSION=0.39.5
 ARG LEFTHOOK_VERSION=1.13.0
 ARG UV_VERSION=0.8.17
+ARG CLAUDE_CODE_VERSION=1.0.0
+ARG CODEX_VERSION=2.0.0
 
 FROM ubuntu:24.04 AS builder
 
@@ -22,6 +24,7 @@ ARG PYTHON_VERSION
 ENV MISE_DATA_DIR=/usr/local/share/mise
 
 # Install build dependencies only
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
@@ -76,8 +79,11 @@ ARG NODE_VERSION
 ARG PYTHON_VERSION
 ARG AST_GREP_VERSION
 ARG UV_VERSION
+ARG CLAUDE_CODE_VERSION
+ARG CODEX_VERSION
 
 # Install essential runtime packages and development tools
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN apt-get update && apt-get install -y --no-install-recommends \
     # Core system tools
     git \
@@ -168,7 +174,7 @@ RUN mkdir -p $MISE_DATA_DIR $MISE_CONFIG_DIR $MISE_CACHE_DIR \
     # Install agent toolchain: ast-grep for structural code search, uv for MCP server support (includes uvx)
     && mise use -g ast-grep@${AST_GREP_VERSION} uv@${UV_VERSION} \
     # Install AI Coding Agents (GitHub CLI already installed above)
-    && npm install -g @anthropic-ai/claude-code @openai/codex \
+    && npm install -g @anthropic-ai/claude-code@^${CLAUDE_CODE_VERSION} @openai/codex@^${CODEX_VERSION} \
     && gh extension install github/gh-copilot \
     && curl -fsSL https://opencode.ai/install | bash \
     && curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | bash \

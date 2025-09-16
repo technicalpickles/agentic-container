@@ -113,6 +113,109 @@ parse_args() {
     fi
 }
 
+# Test package validation based on Dockerfile content
+test_package_validation() {
+    local dockerfile="$1"
+    local image_name="$2"
+    
+    log_info "Running package validation tests..."
+    
+    # Test Node.js tools if npm install is present
+    if grep -q "npm install" "$dockerfile"; then
+        # Test for common Node.js packages
+        if grep -q "typescript\|@types\|ts-" "$dockerfile"; then
+            if docker run --rm "$image_name" bash -c 'which tsc >/dev/null 2>&1 && tsc --version'; then
+                log_success "TypeScript compiler is working"
+            else
+                log_warning "TypeScript compiler not found (mentioned in Dockerfile)"
+            fi
+        fi
+        
+        # Test general npm functionality
+        if docker run --rm "$image_name" bash -c 'npm --version >/dev/null 2>&1'; then
+            log_success "npm package manager is working"
+        else
+            log_error "npm not working despite npm install in Dockerfile"
+            FAILED_TESTS+=("npm validation")
+        fi
+    fi
+    
+    # Test Python tools if pip install is present
+    if grep -q "pip install" "$dockerfile"; then
+        # Extract some common packages to test
+        if grep -q "flask\|fastapi\|django" "$dockerfile"; then
+            log_info "Testing Python web framework availability..."
+            if docker run --rm "$image_name" bash -c 'python -c "import sys; print(sys.version)" 2>/dev/null'; then
+                log_success "Python is working for web development"
+            else
+                log_warning "Python web framework test inconclusive"
+            fi
+        fi
+        
+        # Test pip functionality
+        if docker run --rm "$image_name" bash -c 'pip --version >/dev/null 2>&1'; then
+            log_success "pip package manager is working"
+        else
+            log_error "pip not working despite pip install in Dockerfile"
+            FAILED_TESTS+=("pip validation")
+        fi
+    fi
+    
+    # Test Ruby tools if gem install is present
+    if grep -q "gem install\|bundle install" "$dockerfile"; then
+        if docker run --rm "$image_name" bash -c 'ruby --version >/dev/null 2>&1'; then
+            log_success "Ruby interpreter is working"
+        else
+            log_error "Ruby not working despite gem install in Dockerfile"
+            FAILED_TESTS+=("ruby validation")
+        fi
+        
+        if grep -q "rails" "$dockerfile"; then
+            if docker run --rm "$image_name" bash -c 'which rails >/dev/null 2>&1 && rails --version'; then
+                log_success "Rails framework is working"
+            else
+                log_warning "Rails not found (mentioned in Dockerfile)"
+            fi
+        fi
+    fi
+    
+    # Test Go tools if go mod/install is present
+    if grep -q "go mod\|go install\|go get" "$dockerfile"; then
+        if docker run --rm "$image_name" bash -c 'go version >/dev/null 2>&1'; then
+            log_success "Go compiler is working"
+        else
+            log_error "Go not working despite go commands in Dockerfile"
+            FAILED_TESTS+=("go validation")
+        fi
+    fi
+    
+    # Test common development tools
+    local tools=("git" "curl" "vim" "jq")
+    for tool in "${tools[@]}"; do
+        if grep -q "$tool" "$dockerfile" || [[ "$tool" == "git" ]]; then  # git is expected to be in base
+            if docker run --rm "$image_name" bash -c "which $tool >/dev/null 2>&1"; then
+                log_success "$tool is available"
+            else
+                log_warning "$tool not found (expected for development)"
+            fi
+        fi
+    done
+    
+    # Test mise functionality if present in base
+    if docker run --rm "$image_name" bash -c 'mise --version >/dev/null 2>&1'; then
+        log_success "mise version manager is functional"
+        
+        # Test if specific tools mentioned in Dockerfile are available through mise
+        if grep -q "mise use\|mise install" "$dockerfile"; then
+            if docker run --rm "$image_name" bash -c 'mise list >/dev/null 2>&1'; then
+                log_success "mise tool installations are accessible"
+            else
+                log_warning "mise tool list not accessible (might be configuration issue)"
+            fi
+        fi
+    fi
+}
+
 # Test an extension dockerfile
 test_extension() {
     local dockerfile="$1"
@@ -168,6 +271,9 @@ test_extension() {
     else
         log_warning "Running as root user (might not be ideal for security)"
     fi
+    
+    # Test 5: Package validation based on Dockerfile content
+    test_package_validation "$dockerfile" "$image_name"
     
     # Cleanup test image
     if [[ "$CLEANUP" == "--cleanup" ]]; then

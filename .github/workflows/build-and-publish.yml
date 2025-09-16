@@ -15,7 +15,24 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  lint-dockerfiles:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Lint main Dockerfile with Hadolint
+      uses: hadolint/hadolint-action@v3.1.0
+      with:
+        dockerfile: Dockerfile
+    
+    - name: Lint cookbook Dockerfiles
+      run: find docs/cookbooks -name "Dockerfile" -exec hadolint {} \;
+    
+    - name: Lint template Dockerfiles  
+      run: find templates -name "Dockerfile*" -exec hadolint {} \;
   build-standard:
+    needs: lint-dockerfiles
     runs-on: ubuntu-latest
     permissions:
       contents: read
