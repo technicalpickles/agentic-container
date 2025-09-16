@@ -14,9 +14,9 @@ ARG UV_VERSION=0.8.17
 
 FROM ubuntu:24.04 AS builder
 
-# Re-declare ARGs needed in this stage
-ARG NODE_VERSION=24.8.0
-ARG PYTHON_VERSION=3.13.7
+# Re-declare ARGs needed in this stage (inherit from global)
+ARG NODE_VERSION
+ARG PYTHON_VERSION
 
 # Set mise environment for consistent installation paths
 ENV MISE_DATA_DIR=/usr/local/share/mise
@@ -47,21 +47,21 @@ RUN mise install node@${NODE_VERSION} \
 # =============================================================================
 
 FROM builder AS ruby-stage
-# Re-declare ARG for this stage
-ARG RUBY_VERSION=3.4.5
+# Re-declare ARG for this stage (inherit from global)
+ARG RUBY_VERSION
 # https://endoflife.date/ruby - Install to global mise directory using rv (fast precompiled binaries)
 RUN rv ruby install --install-dir $MISE_DATA_DIR/installs/ruby/ ruby-${RUBY_VERSION} && \
     mv $MISE_DATA_DIR/installs/ruby/ruby-${RUBY_VERSION} $MISE_DATA_DIR/installs/ruby/${RUBY_VERSION}
 
 FROM builder AS go-stage
-# Re-declare ARG for this stage
-ARG GO_VERSION=1.25.1
+# Re-declare ARG for this stage (inherit from global)
+ARG GO_VERSION
 # https://endoflife.date/go - Install to global mise directory  
 RUN mise install go@${GO_VERSION}
 
 FROM builder AS lefthook-stage
-# Re-declare ARG for this stage
-ARG LEFTHOOK_VERSION=1.13.0
+# Re-declare ARG for this stage (inherit from global)
+ARG LEFTHOOK_VERSION
 RUN mise install lefthook@${LEFTHOOK_VERSION}
 
 # =============================================================================
@@ -71,11 +71,11 @@ RUN mise install lefthook@${LEFTHOOK_VERSION}
 # =============================================================================
 FROM ubuntu:24.04 AS standard
 
-# Re-declare ARGs needed in this stage
-ARG NODE_VERSION=24.8.0
-ARG PYTHON_VERSION=3.13.7
-ARG AST_GREP_VERSION=0.39.5
-ARG UV_VERSION=0.8.17
+# Re-declare ARGs needed in this stage (inherit from global)
+ARG NODE_VERSION
+ARG PYTHON_VERSION
+ARG AST_GREP_VERSION
+ARG UV_VERSION
 
 # Install essential runtime packages and development tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -253,12 +253,12 @@ CMD ["/bin/bash", "--login"]
 # =============================================================================
 FROM standard AS dev
 
-# Re-declare ARGs needed in this stage
-ARG NODE_VERSION=24.8.0
-ARG PYTHON_VERSION=3.13.7
-ARG RUBY_VERSION=3.4.5
-ARG GO_VERSION=1.25.1
-ARG LEFTHOOK_VERSION=1.13.0
+# Re-declare ARGs needed in this stage (inherit from global)
+ARG NODE_VERSION
+ARG PYTHON_VERSION
+ARG RUBY_VERSION
+ARG GO_VERSION
+ARG LEFTHOOK_VERSION
 
 # Copy additional language installations from build stages
 # (python and node are already available from the standard stage)
