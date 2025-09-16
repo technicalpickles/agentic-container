@@ -2,6 +2,16 @@
 # BUILDER STAGE: Tools that need compilation or build dependencies
 # This stage contains build tools and compilers needed for installation
 # =============================================================================
+
+# Build arguments for language versions (can be overridden during build)
+ARG NODE_VERSION=24.8.0
+ARG PYTHON_VERSION=3.13.7
+ARG RUBY_VERSION=3.4.5
+ARG GO_VERSION=1.25.1
+ARG AST_GREP_VERSION=0.39.5
+ARG LEFTHOOK_VERSION=1.13.0
+ARG UV_VERSION=0.8.17
+
 FROM ubuntu:24.04 AS builder
 
 # Set mise environment for consistent installation paths
@@ -23,8 +33,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Install commonly used languages in builder stage
 # Install Node.js (https://endoflife.date/nodejs) and Python (https://endoflife.date/python)
-RUN mise install node@latest \
-    && mise install python@latest
+RUN mise install node@${NODE_VERSION} \
+    && mise install python@${PYTHON_VERSION}
 
 # =============================================================================
 # LANGUAGE-SPECIFIC BUILD STAGES FOR DEV IMAGE
@@ -34,15 +44,15 @@ RUN mise install node@latest \
 
 FROM builder AS ruby-stage
 # https://endoflife.date/ruby - Install to global mise directory using rv (fast precompiled binaries)
-RUN rv ruby install --install-dir $MISE_DATA_DIR/installs/ruby/ ruby-3.4.5 && \
-    mv $MISE_DATA_DIR/installs/ruby/ruby-3.4.5 $MISE_DATA_DIR/installs/ruby/3.4.5
+RUN rv ruby install --install-dir $MISE_DATA_DIR/installs/ruby/ ruby-${RUBY_VERSION} && \
+    mv $MISE_DATA_DIR/installs/ruby/ruby-${RUBY_VERSION} $MISE_DATA_DIR/installs/ruby/${RUBY_VERSION}
 
 FROM builder AS go-stage
 # https://endoflife.date/go - Install to global mise directory  
-RUN mise install go@latest
+RUN mise install go@${GO_VERSION}
 
 FROM builder AS lefthook-stage
-RUN mise install lefthook@latest
+RUN mise install lefthook@${LEFTHOOK_VERSION}
 
 # =============================================================================
 # STANDARD LAYER: Main development image with enhanced experience
@@ -138,9 +148,9 @@ RUN mkdir -p $MISE_DATA_DIR $MISE_CONFIG_DIR $MISE_CACHE_DIR \
     # Also add mise activation for interactive shell features (auto-switching, etc.)
     && echo 'eval "$(mise activate bash)"' >> /etc/bash.bashrc \
     && echo 'eval "$(mise activate bash)"' >> /etc/profile \
-    && mise use -g node@latest python@latest \
+    && mise use -g node@${NODE_VERSION} python@${PYTHON_VERSION} \
     # Install agent toolchain: ast-grep for structural code search, uv for MCP server support (includes uvx)
-    && mise use -g ast-grep@latest uv@latest \
+    && mise use -g ast-grep@${AST_GREP_VERSION} uv@${UV_VERSION} \
     # Install AI Coding Agents (GitHub CLI already installed above)
     && npm install -g @anthropic-ai/claude-code @openai/codex \
     && gh extension install github/gh-copilot \
@@ -235,10 +245,10 @@ COPY --from=go-stage $MISE_DATA_DIR/installs/go $MISE_DATA_DIR/installs/go
 
 USER root
 # Configure global tool versions in system-wide mise config 
-RUN mise use -g python@latest \
-    node@latest \
-    ruby@latest \
-    go@latest \
-    lefthook@latest
+RUN mise use -g python@${PYTHON_VERSION} \
+    node@${NODE_VERSION} \
+    ruby@${RUBY_VERSION} \
+    go@${GO_VERSION} \
+    lefthook@${LEFTHOOK_VERSION}
 
 USER $USERNAME
