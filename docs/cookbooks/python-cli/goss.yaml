@@ -1,0 +1,55 @@
+# Goss test configuration for python-cli cookbook example
+# Tests the Python packages and tools installed in the Dockerfile
+
+# Test commands (Python, packages, CLI tools, development tools)
+command:
+  "python3 --version":
+    exit-status: 0
+    stdout:
+      - "Python 3"
+  "pip --version":
+    exit-status: 0
+    stdout:
+      - "pip"
+  "python3 -c 'import click; print(click.__version__)'":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+/
+  "python3 -c 'import typer; print(typer.__version__)'":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+/
+  "python3 -c 'import rich; print(\"rich imported successfully\")'":
+    exit-status: 0
+    stdout:
+      - "rich imported successfully"
+  "python3 -c 'import pydantic; print(pydantic.__version__)'":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+/
+  "python3 -c 'import click; click.echo(\"CLI works\")'":
+    exit-status: 0
+    stdout:
+      - "CLI works"
+  "git --version":
+    exit-status: 0
+    stdout:
+      - "git version"
+  "mise --version":
+    exit-status: 0
+    stdout:
+      - /\d{4}\.\d+\.\d+/
+
+# Test working directory
+file:
+  /workspace:
+    exists: true
+    filetype: directory
+    mode: "0755"
+
+# Test user setup
+user:
+  agent:
+    exists: true
+    groups:
+      - agent
