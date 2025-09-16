@@ -1,0 +1,185 @@
+# Extension Testing Rules
+
+## Overview
+When working with Docker extensions for agentic-container, always follow these patterns for consistency and reliability.
+
+## 1. Extension Storage Pattern
+- **All extensions MUST be captured as cookbooks** in `docs/cookbooks/`
+- Each cookbook should demonstrate a specific use case or technology stack
+- Follow the naming pattern: `{technology}-{purpose}/Dockerfile` (e.g., `nodejs-backend/`, `python-cli/`)
+
+## 2. Dockerfile Structure Requirements
+
+### Required Elements
+```dockerfile
+# {Technology} Development Extension
+# Demonstrates: {specific features showcased}
+FROM ghcr.io/technicalpickles/agentic-container:latest
+
+# Build arguments for versions (if installing new language runtimes)
+ARG {LANGUAGE}_VERSION=x.y.z
+
+# Installation pattern
+USER root
+RUN {installation commands}
+USER agent
+
+WORKDIR /workspace
+```
+
+### Best Practices
+- Use build arguments for version management following main Dockerfile patterns
+- Use `USER root` for system-level installations, return to `USER agent`
+- Use `mise use -g` for language runtime management
+- Use `rv` for Ruby installations (faster precompiled binaries)
+- Consolidate RUN commands to minimize layers
+- Include cleanup commands (`rm -rf /var/lib/apt/lists/*`)
+
+## 3. Testing Workflow
+
+### Always Use the Standard Test Script
+```bash
+cd docs/cookbooks
+./test-extensions.sh {example}/Dockerfile [--cleanup]
+```
+
+### Testing Requirements
+- **Before testing**: Ensure base image is current
+- **During development**: Test without `--cleanup` to debug issues
+- **Before committing**: Test with `--cleanup` for clean validation
+- **All examples must pass**: Zero tolerance for broken cookbook examples
+
+### Base Image Rebuild Process
+```bash
+# If base image needs updating:
+docker build --target standard -t agentic-container:latest .
+
+# Then test the extension:
+cd docs/cookbooks  
+./test-extensions.sh {example}/Dockerfile --cleanup
+```
+
+## 4. Extension Development Workflow
+
+### Step 1: Create the Cookbook Structure
+```bash
+mkdir -p docs/cookbooks/{technology-purpose}
+cd docs/cookbooks/{technology-purpose}
+```
+
+### Step 2: Write the Dockerfile
+- Start with the template structure above
+- Add specific technology requirements
+- Use build arguments for version management
+- Follow USER root/agent patterns
+
+### Step 3: Test Iteratively
+```bash
+# Initial testing (keep image for debugging)
+cd docs/cookbooks
+./test-extensions.sh {example}/Dockerfile
+
+# If issues found, investigate:
+docker run -it --rm {test-image-name} bash
+
+# Final validation (clean test)
+./test-extensions.sh {example}/Dockerfile --cleanup
+```
+
+### Step 4: Validate with Hadolint
+```bash
+cd ../../  # back to project root
+hadolint docs/cookbooks/{example}/Dockerfile
+```
+
+## 5. Common Patterns by Technology
+
+### Node.js Extensions
+```dockerfile
+# Add npm packages as root
+USER root  
+RUN npm install -g {packages}
+USER agent
+```
+
+### Python Extensions  
+```dockerfile
+# Python runtime already available in base
+RUN pip install --no-cache-dir {packages}
+```
+
+### Ruby Extensions
+```dockerfile
+ARG RUBY_VERSION=3.4.5
+USER root
+RUN apt-get update && apt-get install -y build-essential \
+    && rv ruby install --install-dir $MISE_DATA_DIR/installs/ruby/ ruby-${RUBY_VERSION} \
+    && mv $MISE_DATA_DIR/installs/ruby/ruby-${RUBY_VERSION} $MISE_DATA_DIR/installs/ruby/${RUBY_VERSION} \
+    && mise use -g ruby@${RUBY_VERSION}
+USER agent
+```
+
+### Go Extensions
+```dockerfile
+ARG GO_VERSION=1.23.5
+USER root
+RUN mise use -g go@${GO_VERSION}
+USER agent
+```
+
+## 6. What the Test Script Validates
+
+The `test-extensions.sh` automatically checks:
+- ✅ Container builds successfully  
+- ✅ Container starts and runs basic commands
+- ✅ mise version manager functionality
+- ✅ Working directory accessibility  
+- ✅ Non-root user execution
+- ✅ Package-specific validation based on Dockerfile content:
+  - npm packages and TypeScript compiler (if npm install detected)
+  - pip packages and Python functionality (if pip install detected)  
+  - Ruby interpreter and Rails (if gem install detected)
+  - Go compiler (if go commands detected)
+  - Common development tools (git, curl, etc.)
+
+## 7. Troubleshooting Common Issues
+
+### Permission Errors
+- Ensure npm global installs happen as `USER root`
+- Return to `USER agent` before WORKDIR
+
+### Missing Tools
+- Check that base image is rebuilt with latest changes
+- Verify mise/rv installations are in PATH
+
+### Build Failures
+- Run hadolint on the Dockerfile
+- Check that build arguments are properly declared and used
+- Ensure cleanup commands don't break subsequent steps
+
+## 8. Commit Requirements
+
+Before committing any extension:
+- [ ] Extension is in `docs/cookbooks/{name}/Dockerfile`
+- [ ] Uses build arguments for version management  
+- [ ] Passes `hadolint docs/cookbooks/{name}/Dockerfile`
+- [ ] Passes `./test-extensions.sh {name}/Dockerfile --cleanup`
+- [ ] Follows established USER root/agent patterns
+- [ ] Includes descriptive comments about what it demonstrates
+
+## 9. Integration with CI
+
+All cookbook examples are automatically:
+- Linted with Hadolint in CI pipeline
+- Validated that they follow best practices
+- Available as working examples for users
+
+## 10. When NOT to Create a Cookbook
+
+- Simple one-liner installations that don't demonstrate patterns
+- Temporary testing or debugging Dockerfiles  
+- Personal customizations not useful to other users
+
+## Remember
+
+**Every extension should be a teaching example** - if someone finds it in the cookbooks, it should work perfectly and demonstrate best practices for that technology stack.
