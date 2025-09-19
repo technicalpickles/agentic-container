@@ -1,0 +1,60 @@
+# Goss test configuration for multistage-production cookbook example
+# Tests Python packages and multistage build setup
+
+# Test commands (Python, pip, packages, development tools)
+command:
+  "python3 --version":
+    exit-status: 0
+    stdout:
+      - "Python 3"
+  "pip --version":
+    exit-status: 0
+    stdout:
+      - "pip"
+  "python3 -c 'import requests; print(\"requests imported successfully\")'":
+    exit-status: 0
+    stdout:
+      - "requests imported successfully"
+  "python3 -c 'import requests; print(requests.__version__)'":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+/
+  "pip list | grep requests":
+    exit-status: 0
+    stdout:
+      - "requests"
+  "python3 -c 'import sys; print(\"Python works from runtime stage\")'":
+    exit-status: 0
+    stdout:
+      - "Python works from runtime stage"
+  "git --version":
+    exit-status: 0
+    stdout:
+      - "git version"
+  "mise --version":
+    exit-status: 0
+    stdout:
+      - /\d{4}\.\d+\.\d+/
+
+# Test working directory
+file:
+  /workspace:
+    exists: true
+    filetype: directory
+    mode: "0755"
+
+# Test user setup
+user:
+  agent:
+    exists: true
+    groups:
+      - agent
+
+# Test that build-time dependencies are NOT present (this is the runtime stage)
+command:
+  "which gcc":
+    exit-status: 1  # Should not be found in runtime stage
+  "pip show wheel":
+    exit-status: 1  # Build dependency should not be in runtime stage
+  "pip show setuptools":
+    exit-status: 1  # Build dependency should not be in runtime stage

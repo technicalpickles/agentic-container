@@ -1,0 +1,66 @@
+# Goss test configuration for react-frontend cookbook example
+# Tests Node.js and frontend development tools
+
+# Test commands (Node.js, npm, frontend tools, development tools)
+command:
+  "node --version":
+    exit-status: 0
+    stdout:
+      - /v\d+\.\d+\.\d+/
+  "npm --version":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+\.\d+/
+  "which create-vite":
+    exit-status: 0
+    stdout:
+      - "/usr/local/share/mise/installs/node"
+  "tsc --version":
+    exit-status: 0
+    stdout:
+      - /Version \d+\.\d+\.\d+/
+  "which eslint":
+    exit-status: 0
+    stdout:
+      - "/usr/local/share/mise/installs/node"
+  "eslint --version":
+    exit-status: 0
+    stdout:
+      - /v\d+\.\d+\.\d+/
+  "prettier --version":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+\.\d+/
+  "npm list -g --depth=0":
+    exit-status: 0
+    stdout:
+      - "create-vite@"
+      - "typescript@" 
+      - "eslint@"
+      - "prettier@"
+  "node -e 'console.log(\"Node.js is working\")'":
+    exit-status: 0
+    stdout:
+      - "Node.js is working"
+  "git --version":
+    exit-status: 0
+    stdout:
+      - "git version"
+  "mise --version":
+    exit-status: 0
+    stdout:
+      - /\d{4}\.\d+\.\d+/
+
+# Test working directory
+file:
+  /workspace:
+    exists: true
+    filetype: directory
+    mode: "0755"
+
+# Test user setup
+user:
+  agent:
+    exists: true
+    groups:
+      - agent

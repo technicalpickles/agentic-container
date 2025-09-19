@@ -1,0 +1,70 @@
+# Goss test configuration for rails-fullstack cookbook example
+# Tests Ruby toolchain, Rails framework, and build tools
+
+# Test commands (Ruby, gem, Rails, build tools, development tools)
+command:
+  "ruby --version":
+    exit-status: 0
+    stdout:
+      - /ruby 3\.\d+\.\d+/
+  "which ruby":
+    exit-status: 0
+    stdout:
+      - "/usr/local/share/mise/installs/ruby"
+  "gem --version":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+\.\d+/
+  "rails --version":
+    exit-status: 0
+    stdout:
+      - /Rails \d+\.\d+\.\d+/
+  "which rails":
+    exit-status: 0
+    stdout:
+      - "/usr/local/share/mise/installs/ruby"
+  "ruby -e 'puts \"Ruby is working\"'":
+    exit-status: 0
+    stdout:
+      - "Ruby is working"
+  "gem list --local rails":
+    exit-status: 0
+    stdout:
+      - "rails "
+  "which gcc":
+    exit-status: 0
+    stdout:
+      - "/usr/bin/gcc"
+  "which make":
+    exit-status: 0
+    stdout:
+      - "/usr/bin/make"
+  "git --version":
+    exit-status: 0
+    stdout:
+      - "git version"
+  "mise --version":
+    exit-status: 0
+    stdout:
+      - /\d{4}\.\d+\.\d+/
+
+# Test working directory
+file:
+  /workspace:
+    exists: true
+    filetype: directory
+    mode: "0755"
+
+# Test user setup
+user:
+  agent:
+    exists: true
+    groups:
+      - agent
+
+# Test build tools are installed
+command:
+  "dpkg -l | grep build-essential":
+    exit-status: 0
+    stdout:
+      - "build-essential"

@@ -1,0 +1,46 @@
+# Goss test configuration for go-microservices cookbook example
+# Tests Go toolchain and basic functionality
+
+# Test commands
+command:
+  "go version":
+    exit-status: 0
+    stdout:
+      - /go version go1\.\d+\.\d+/
+  "go env GOOS":
+    exit-status: 0
+    stdout:
+      - "linux"
+  "go env GOROOT":
+    exit-status: 0
+    stdout:
+      - "/usr/local/share/mise/installs/go"
+  "go help":
+    exit-status: 0
+    stdout:
+      - "Go is a tool for managing Go source code"
+  "git --version":
+    exit-status: 0
+    stdout:
+      - "git version"
+  "mise --version":
+    exit-status: 0
+    stdout:
+      - /\d{4}\.\d+\.\d+/
+
+# Test files and directories
+file:
+  /workspace:
+    exists: true
+    filetype: directory
+    mode: "0755"
+  /usr/local/share/mise/installs/go:
+    exists: true
+    filetype: directory
+
+# Test user setup
+user:
+  agent:
+    exists: true
+    groups:
+      - agent
