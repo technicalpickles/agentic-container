@@ -45,11 +45,11 @@ Shows multi-stage Docker builds for optimized production images.
 Test any of these patterns:
 
 ```bash
-# Test a specific pattern
-./test-extensions.sh python-cli/Dockerfile
+# Test a specific pattern (from project root)
+./scripts/test-dockerfile.sh docs/cookbooks/python-cli/Dockerfile
 
 # Test with cleanup
-./test-extensions.sh go-microservices/Dockerfile --cleanup
+./scripts/test-dockerfile.sh docs/cookbooks/go-microservices/Dockerfile --cleanup
 ```
 
 ## 🔑 Key Patterns Demonstrated

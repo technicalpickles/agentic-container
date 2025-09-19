@@ -30,52 +30,44 @@ mise install
 ### Per-Cookbook Testing
 
 Each cookbook directory has:
-- `goss.yaml` - Test configuration
-- `test-goss.sh` - Self-contained test runner
+- `goss.yaml` - Test configuration for comprehensive validation
+- Tests are run using the unified `scripts/test-dockerfile.sh` script
 
 ## Usage
 
 ### Testing a cookbook example
 
 ```bash
-# 1. Build the image first
-cd /project/root
-./docs/cookbooks/test-extensions.sh docs/cookbooks/python-cli/Dockerfile
+# Build and test a cookbook (from project root)
+./scripts/test-dockerfile.sh docs/cookbooks/python-cli/Dockerfile
 
-# 2. Run goss tests
-cd docs/cookbooks/python-cli
-./test-goss.sh
-
-# Or specify a specific image
-./test-goss.sh test-extension-1234567890
+# Test with cleanup
+./scripts/test-dockerfile.sh docs/cookbooks/python-cli/Dockerfile --cleanup
 ```
 
 ### Adding tests to a new cookbook
 
 ```bash
-# 1. Copy template files
+# 1. Copy goss template
 cd docs/cookbooks/my-new-cookbook
-cp ../_templates/test-goss.sh .
 cp ../_templates/goss-template.yaml goss.yaml
 
-# 2. Make test script executable
-chmod +x test-goss.sh
-
-# 3. Customize goss.yaml for your cookbook
+# 2. Customize goss.yaml for your cookbook
 # Edit goss.yaml to test your specific packages/tools
 
-# 4. Test your configuration  
-./test-goss.sh
+# 3. Test your configuration (from project root)
+cd /project/root
+./scripts/test-dockerfile.sh docs/cookbooks/my-new-cookbook/Dockerfile
 ```
 
 ### How it works internally
 
-The `test-goss.sh` script:
-1. Verifies the container image exists
-2. Runs the container as root
-3. **Container installs goss using mise**
-4. **Container runs goss tests directly**
-5. Reports results with detailed output
+The `test-dockerfile.sh` script:
+1. **Builds the Docker image** from the provided Dockerfile
+2. **Tests basic functionality** (startup, working directory)
+3. **Runs comprehensive goss tests** using pre-installed goss
+4. **Reports detailed results** with clear success/failure indicators
+5. **Cleans up test image** (optional with --cleanup flag)
 
 ### Creating new tests
 
@@ -99,31 +91,27 @@ user:
       - agent
 ```
 
-2. Copy and adapt `test-goss.sh` from existing cookbook
+2. Test using the unified script from project root
 
-## Integration with test-extensions.sh
+## Unified Testing Approach
 
-### Current Plan
+### Consolidated Script
 
-**Phase 1**: goss tests **complement** existing validation
-- `test-extensions.sh` continues basic validation
-- `test-goss.sh` provides comprehensive testing
-- Both run independently
+We use a **single unified script** for all Dockerfile testing:
 
-**Phase 2**: goss tests **replace** parts of test-extensions.sh
-- Migrate package validation to goss
-- Keep build and basic functionality in test-extensions.sh
-- Single entry point for all testing
+- **`./scripts/test-dockerfile.sh`** - Builds Docker images and runs comprehensive goss tests
+- **Single entry point** - No need for separate build and test scripts
+- **Complete workflow** - Build → Test → Report → Cleanup (optional)
 
-### Migration Strategy
+### Usage Pattern
 
 ```bash
-# Current: 
-./test-extensions.sh Dockerfile              # Build + basic tests
-./test-goss.sh                               # Comprehensive tests
+# Standard pattern for all testing
+./scripts/test-dockerfile.sh <dockerfile-path> [--cleanup]
 
-# Future:
-./test-extensions.sh Dockerfile --with-goss  # Build + basic + comprehensive tests
+# Examples:
+./scripts/test-dockerfile.sh docs/cookbooks/python-cli/Dockerfile
+./scripts/test-dockerfile.sh my-custom-app.dockerfile --cleanup
 ```
 
 ## CI Integration
@@ -132,12 +120,8 @@ For CI (GitHub Actions):
 ```yaml
 - name: Test cookbook examples
   run: |
-    # Build image
-    ./docs/cookbooks/test-extensions.sh docs/cookbooks/${{ matrix.example }}/Dockerfile
-    
-    # Run comprehensive goss tests
-    cd docs/cookbooks/${{ matrix.example }}
-    ./test-goss.sh
+    # Build and test with unified script
+    ./scripts/test-dockerfile.sh docs/cookbooks/${{ matrix.example }}/Dockerfile --cleanup
 ```
 
 ## Success Metrics ✅

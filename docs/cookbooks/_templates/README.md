@@ -27,12 +27,9 @@ Edit `goss.yaml` to test the specific tools/packages your Dockerfile installs:
 ### 3. Test Your Configuration
 
 ```bash
-# Build your cookbook image first
+# Build and test your cookbook with unified script
 cd /project/root
-./docs/cookbooks/test-extensions.sh docs/cookbooks/my-new-cookbook/Dockerfile
-
-# Run goss tests using the centralized script
-./scripts/test-goss.sh my-new-cookbook
+./scripts/test-dockerfile.sh docs/cookbooks/my-new-cookbook/Dockerfile
 ```
 
 ## Template Files
@@ -43,24 +40,24 @@ cd /project/root
 - **Consistent baseline** tests (workspace, user, git, mise)
 - **Extensible** - add your own tests as needed
 
-## Centralized Testing
+## Unified Testing
 
-All cookbooks use the **centralized test script** at `scripts/test-goss.sh`:
+All cookbooks use the **unified test script** at `scripts/test-dockerfile.sh`:
 
 ```bash
-# Test any cookbook by name
-./scripts/test-goss.sh cookbook-name [optional-image-name]
+# Test any cookbook Dockerfile
+./scripts/test-dockerfile.sh docs/cookbooks/<cookbook-name>/Dockerfile [--cleanup]
 
 # Examples
-./scripts/test-goss.sh python-cli          # Auto-detect latest test image
-./scripts/test-goss.sh nodejs-backend      # Auto-detect latest test image
-./scripts/test-goss.sh python-cli my-img:latest  # Use specific image
+./scripts/test-dockerfile.sh docs/cookbooks/python-cli/Dockerfile
+./scripts/test-dockerfile.sh docs/cookbooks/nodejs-backend/Dockerfile --cleanup
 ```
 
-**Benefits of centralized approach:**
-- ✅ **Single source of truth** - One script to maintain
+**Benefits of unified approach:**
+- ✅ **Single source of truth** - One script to maintain  
+- ✅ **Complete workflow** - Builds, tests, and cleans up automatically
 - ✅ **Consistent behavior** - Same testing logic for all cookbooks
-- ✅ **Auto-detection** - Finds latest test images automatically
+- ✅ **No image management** - Always tests what you build
 - ✅ **Better error handling** - Centralized improvements benefit all
 
 ## Testing Strategy

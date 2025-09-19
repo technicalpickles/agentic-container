@@ -13,6 +13,8 @@ ARG LEFTHOOK_VERSION=1.13.0
 ARG UV_VERSION=0.8.17
 ARG CLAUDE_CODE_VERSION=1.0.0
 ARG CODEX_VERSION=2.0.0
+# GitHub token for API access (avoids rate limits)
+ARG GITHUB_TOKEN
 
 FROM ubuntu:24.04 AS builder
 
@@ -81,6 +83,7 @@ ARG AST_GREP_VERSION
 ARG UV_VERSION
 ARG CLAUDE_CODE_VERSION
 ARG CODEX_VERSION
+ARG GITHUB_TOKEN
 
 # Install essential runtime packages and development tools
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -171,8 +174,8 @@ RUN mkdir -p $MISE_DATA_DIR $MISE_CONFIG_DIR $MISE_CACHE_DIR \
     && echo 'eval "$(mise activate bash)"' >> /etc/bash.bashrc \
     && echo 'eval "$(mise activate bash)"' >> /etc/profile \
     && mise use -g node@${NODE_VERSION} python@${PYTHON_VERSION} \
-    # Install agent toolchain: ast-grep for structural code search, uv for MCP server support (includes uvx)
-    && mise use -g ast-grep@${AST_GREP_VERSION} uv@${UV_VERSION} \
+    # Install agent toolchain: ast-grep for structural code search, uv for MCP server support (includes uvx), goss for testing
+    && GITHUB_TOKEN=${GITHUB_TOKEN} mise use -g ast-grep@${AST_GREP_VERSION} uv@${UV_VERSION} goss@latest \
     # Install AI Coding Agents (GitHub CLI already installed above)
     && npm install -g @anthropic-ai/claude-code@^${CLAUDE_CODE_VERSION} @openai/codex@^${CODEX_VERSION} \
     && gh extension install github/gh-copilot \
