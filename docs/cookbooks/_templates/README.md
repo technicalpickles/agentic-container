@@ -4,17 +4,13 @@ This directory contains template files to help you add goss testing to new cookb
 
 ## Quick Start
 
-### 1. Copy Template Files
+### 1. Create goss.yaml Configuration
 
 For a new cookbook (e.g., `my-new-cookbook`):
 
 ```bash
 # From project root
 cd docs/cookbooks/my-new-cookbook
-
-# Copy and customize the test script
-cp ../_templates/test-goss.sh .
-chmod +x test-goss.sh
 
 # Copy and customize the goss configuration
 cp ../_templates/goss-template.yaml goss.yaml
@@ -35,24 +31,37 @@ Edit `goss.yaml` to test the specific tools/packages your Dockerfile installs:
 cd /project/root
 ./docs/cookbooks/test-extensions.sh docs/cookbooks/my-new-cookbook/Dockerfile
 
-# Run goss tests
-cd docs/cookbooks/my-new-cookbook
-./test-goss.sh
+# Run goss tests using the centralized script
+./scripts/test-goss.sh my-new-cookbook
 ```
 
 ## Template Files
-
-### `test-goss.sh`
-- **Generalized test runner** that works for any cookbook
-- **Auto-detects** the latest test image if not specified
-- **Helpful error messages** and debugging guidance
-- **Self-contained** - containers install their own goss binary
 
 ### `goss-template.yaml`  
 - **Starting template** with common tests and examples
 - **Language-specific examples** commented out for easy copying
 - **Consistent baseline** tests (workspace, user, git, mise)
 - **Extensible** - add your own tests as needed
+
+## Centralized Testing
+
+All cookbooks use the **centralized test script** at `scripts/test-goss.sh`:
+
+```bash
+# Test any cookbook by name
+./scripts/test-goss.sh cookbook-name [optional-image-name]
+
+# Examples
+./scripts/test-goss.sh python-cli          # Auto-detect latest test image
+./scripts/test-goss.sh nodejs-backend      # Auto-detect latest test image
+./scripts/test-goss.sh python-cli my-img:latest  # Use specific image
+```
+
+**Benefits of centralized approach:**
+- ✅ **Single source of truth** - One script to maintain
+- ✅ **Consistent behavior** - Same testing logic for all cookbooks
+- ✅ **Auto-detection** - Finds latest test images automatically
+- ✅ **Better error handling** - Centralized improvements benefit all
 
 ## Testing Strategy
 
