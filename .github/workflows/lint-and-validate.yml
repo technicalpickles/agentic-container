@@ -79,13 +79,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+      - name: Install Trivy
+        uses: aquasecurity/setup-trivy@v0.2.3
         with:
-          scan-type: "config"
-          scan-ref: "."
-          format: "sarif"
-          output: "trivy-results.sarif"
+          version: v0.66.0
+
+      - name: Run Trivy vulnerability scanner
+        run: |
+          trivy config --format sarif --output trivy-results.sarif .
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
