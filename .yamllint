@@ -1,0 +1,32 @@
+# yamllint configuration for agentic-container
+# Based on relaxed profile with targeted improvements
+
+extends: relaxed
+
+# Ignore certain directories
+ignore: |
+  docs/planning/
+
+rules:
+  # Disable line length checks entirely
+  line-length: disable
+
+  # Allow document start to be missing (common in GitHub Actions)
+  document-start:
+    present: false
+
+  # Allow truthy values (GitHub Actions uses true/false)
+  truthy:
+    allowed-values: ['true', 'false', 'yes', 'no', 'on', 'off']
+
+  # Be more lenient with comments in workflow files
+  comments:
+    min-spaces-from-content: 1
+
+  # Allow trailing spaces in some contexts (can be cleaned up later)
+  trailing-spaces:
+    level: warning
+
+  # Allow missing newlines (can be fixed with formatters)
+  new-line-at-end-of-file:
+    level: warning

@@ -269,7 +269,7 @@ jobs:
           {
             echo "## 🚀 Published Images"
             echo ""
-            echo "| Image | Status | Tests |"  
+            echo "| Image | Status | Tests |"
             echo "|-------|--------|-------|"
             echo "| Standard | ✅ Published | ✅ All cookbooks passed |"
             echo "| Dev | ✅ Published | ✅ Included |"

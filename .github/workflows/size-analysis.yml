@@ -56,7 +56,7 @@ jobs:
             # Try to get previous main commit for comparison
             echo "baseline_tag=main" >> "$GITHUB_OUTPUT"
           else
-            echo "current_tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"  
+            echo "current_tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
             echo "baseline_tag=main" >> "$GITHUB_OUTPUT"
           fi
 
@@ -68,7 +68,7 @@ jobs:
             exit 0
           }
 
-          # Pull baseline image for comparison  
+          # Pull baseline image for comparison
           docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tags.outputs.baseline_tag }}-${{ matrix.target }} || {
             echo "No baseline image found, analyzing without comparison"
           }
@@ -142,20 +142,20 @@ jobs:
           for dir in all-analyses/size-analysis-*; do
             if [[ -d "$dir" ]]; then
               target=$(basename "$dir" | sed 's/size-analysis-//')
-              
+
               # Find the analysis JSON file
               analysis_file=$(find "$dir" -name "*-analysis.json" | head -1)
               if [[ -f "$analysis_file" ]]; then
                 size_mb=$(jq -r '.image.sizeBytes / 1024 / 1024 | floor' "$analysis_file")
-                efficiency=$(jq -r '(.image.efficiency * 100) | floor' "$analysis_file")  
+                efficiency=$(jq -r '(.image.efficiency * 100) | floor' "$analysis_file")
                 waste_mb=$(jq -r '.image.userSizeBytesWasted / 1024 / 1024 | floor' "$analysis_file")
-                
+
                 # Determine status emoji
                 status="🟢"
                 if (( efficiency < 80 )); then status="🔴"
                 elif (( efficiency < 90 )); then status="🟡"
                 fi
-                
+
                 echo "| $target | ${size_mb}MB | ${efficiency}% | ${waste_mb}MB | $status |" >> consolidated-reports/summary.md
                 total_size=$((total_size + size_mb))
               fi
@@ -200,18 +200,18 @@ jobs:
 
             try {
               const summary = fs.readFileSync('consolidated-reports/summary.md', 'utf8');
-              
+
               // Find existing comment
               const comments = await github.rest.issues.listComments({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
               });
-              
-              const existingComment = comments.data.find(comment => 
+
+              const existingComment = comments.data.find(comment =>
                 comment.body.includes('📊 Complete Image Size Analysis')
               );
-              
+
               if (existingComment) {
                 // Update existing comment
                 await github.rest.issues.updateComment({
@@ -245,14 +245,14 @@ jobs:
           # Parse JSON summary to check for critical regressions
           if command -v jq >/dev/null 2>&1 && [[ -f consolidated-reports/summary.json ]]; then
             total_size=$(jq -r '.total_size_mb' consolidated-reports/summary.json)
-            
+
             echo "Total size of all images: ${total_size}MB"
-            
+
             # Set reasonable limits (adjust as needed)
             if (( total_size > 5000 )); then  # 5GB total
               echo "::warning::Total image size (${total_size}MB) is quite large. Consider optimization."
             fi
-            
+
             # Check individual image efficiency
             jq -r '.images | to_entries[] | select(.value.efficiency < 80) | "::warning::Image \(.key) has low efficiency: \(.value.efficiency)%"' consolidated-reports/summary.json || true
           fi

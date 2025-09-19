@@ -17,5 +17,5 @@ services:
     stdin_open: true
     # Enable privileged mode for Docker-in-Docker (can be removed if not needed)
     privileged: true
-    # Use non-root user for devcontainer compatibility  
+    # Use non-root user for devcontainer compatibility
     user: "1001:1001"

@@ -45,19 +45,11 @@ jobs:
       - name: Validate YAML files
         run: |
           echo "🔍 Validating YAML configuration files..."
+          yamllint .
 
-          # Validate goss test files
-          find docs/cookbooks -name "goss.yaml" -exec echo "Validating {}" \; -exec yamllint {} \;
-
-          # Validate workflow files
-          yamllint .github/workflows/*.yml
-
-          # Validate other YAML configs
+          # Check for required files
           if [ -f "mise.toml" ]; then
             echo "✅ mise.toml exists"
-          fi
-          if [ -f "docker-compose.yml" ]; then
-            yamllint docker-compose.yml
           fi
 
       - name: Check for required files

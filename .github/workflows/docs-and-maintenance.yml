@@ -57,27 +57,27 @@ jobs:
           for cookbook_dir in docs/cookbooks/*/; do
             if [[ -d "$cookbook_dir" && "$cookbook_dir" != *"_templates"* ]]; then
               cookbook_name=$(basename "$cookbook_dir")
-              
+
               # Check for Dockerfile
               dockerfile_status="❌"
               if [[ -f "$cookbook_dir/Dockerfile" ]]; then
                 dockerfile_status="✅"
               fi
-              
-              # Check for goss tests  
+
+              # Check for goss tests
               goss_status="❌"
               if [[ -f "$cookbook_dir/goss.yaml" ]]; then
                 goss_status="✅"
                 test_count=$(grep -c "command\|file\|port\|service\|user\|group\|package\|process" "$cookbook_dir/goss.yaml" 2>/dev/null || echo "0")
                 goss_status="✅ ($test_count tests)"
               fi
-              
+
               # Extract description from README if it exists
               description="Container for $cookbook_name development"
               if [[ -f "$cookbook_dir/README.md" ]]; then
                 description=$(head -5 "$cookbook_dir/README.md" | grep -v "^#" | grep -v "^$" | head -1 || echo "$description")
               fi
-              
+
               echo "| [$cookbook_name](${cookbook_dir}README.md) | $description | $dockerfile_status | $goss_status |" >> docs/cookbooks/GENERATED_INDEX.md
             fi
           done
@@ -95,7 +95,7 @@ jobs:
               sed -i "s/Last updated:.*/Last updated: $(date -Iseconds)/" README.md
               echo "✅ Updated last-updated timestamp in README.md"
             fi
-            
+
             # Add a simple status badge update area (if it doesn't exist)
             if ! grep -q "<!-- AUTO-GENERATED-CONTENT-START -->" README.md; then
               {
@@ -111,7 +111,7 @@ jobs:
                   /<!-- AUTO-GENERATED-CONTENT-END -->/!d
                 }
               }' README.md
-              
+
               # Insert updated content
               current_date=$(date -Iseconds)
               sed -i "/<!-- AUTO-GENERATED-CONTENT-START -->/a\\
@@ -203,24 +203,24 @@ jobs:
             if (issues.length === 0) {
               const maintenanceContent = `
               # Weekly Maintenance Check
-              
+
               This automated issue tracks weekly maintenance tasks for the agentic-container project.
-              
+
               ## Checklist
               - [ ] Review dependency versions in Dockerfiles
-              - [ ] Check for security updates in base images  
+              - [ ] Check for security updates in base images
               - [ ] Review and update documentation
               - [ ] Monitor image sizes for significant changes
               - [ ] Clean up old branches and tags if needed
-              
+
               ## Automated Findings
               - Documentation was automatically updated
               - No immediate action required based on automated checks
-              
+
               **Created:** ${new Date().toISOString()}
               **Next Check:** ${new Date(Date.now() + 7*24*60*60*1000).toISOString().split('T')[0]}
               `;
-              
+
               await github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -228,7 +228,7 @@ jobs:
                 body: maintenanceContent,
                 labels: ['maintenance', 'automated']
               });
-              
+
               console.log('Created weekly maintenance tracking issue');
             } else {
               console.log('Maintenance issue already exists, skipping creation');
