@@ -1,0 +1,81 @@
+# Goss test configuration template
+# Copy this file to your cookbook directory as goss.yaml and customize
+
+# Test commands - customize based on what your Dockerfile installs
+command:
+  # Basic system commands (usually present in base image)
+  "git --version":
+    exit-status: 0
+    stdout:
+      - "git version"
+  
+  "mise --version":
+    exit-status: 0
+    stdout:
+      - /\d{4}\.\d+\.\d+/
+
+  # Add your specific tool/language tests here
+  # Examples:
+  
+  # For Python-based cookbooks:
+  # "python3 --version":
+  #   exit-status: 0
+  #   stdout:
+  #     - "Python 3"
+  # "pip --version":
+  #   exit-status: 0
+  #   stdout:
+  #     - "pip"
+  # "python3 -c 'import your_package; print(\"package works\")'":
+  #   exit-status: 0
+  #   stdout:
+  #     - "package works"
+
+  # For Node.js-based cookbooks:
+  # "node --version":
+  #   exit-status: 0
+  #   stdout:
+  #     - /v\d+\.\d+\.\d+/
+  # "npm --version":
+  #   exit-status: 0
+  #   stdout:
+  #     - /\d+\.\d+\.\d+/
+
+  # For Go-based cookbooks:
+  # "go version":
+  #   exit-status: 0
+  #   stdout:
+  #     - /go version go\d+\.\d+/
+
+  # For Ruby-based cookbooks:
+  # "ruby --version":
+  #   exit-status: 0
+  #   stdout:
+  #     - /ruby \d+\.\d+/
+  # "gem --version":
+  #   exit-status: 0
+  #   stdout:
+  #     - /\d+\.\d+/
+
+# Test working directory (should be consistent across cookbooks)
+file:
+  /workspace:
+    exists: true
+    filetype: directory
+    mode: "0755"
+
+# Test user setup (should be consistent across cookbooks)  
+user:
+  agent:
+    exists: true
+    groups:
+      - agent
+
+# Add additional file tests if your cookbook creates specific files
+# Examples:
+# file:
+#   /path/to/config/file:
+#     exists: true
+#     mode: "0644"
+#     contains:
+#       - "expected content"

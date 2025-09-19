@@ -45,6 +45,27 @@ cd /project/root
 # 2. Run goss tests
 cd docs/cookbooks/python-cli
 ./test-goss.sh
+
+# Or specify a specific image
+./test-goss.sh test-extension-1234567890
+```
+
+### Adding tests to a new cookbook
+
+```bash
+# 1. Copy template files
+cd docs/cookbooks/my-new-cookbook
+cp ../_templates/test-goss.sh .
+cp ../_templates/goss-template.yaml goss.yaml
+
+# 2. Make test script executable
+chmod +x test-goss.sh
+
+# 3. Customize goss.yaml for your cookbook
+# Edit goss.yaml to test your specific packages/tools
+
+# 4. Test your configuration  
+./test-goss.sh
 ```
 
 ### How it works internally
@@ -121,12 +142,14 @@ For CI (GitHub Actions):
 
 ## Success Metrics ✅
 
-**Phase 2 Complete**: python-cli cookbook
-- ✅ 23/23 tests passing
+**Phase 2 Complete**: Both pilot cookbooks implemented
+- ✅ **python-cli**: 23/23 tests passing
+- ✅ **nodejs-backend**: 27/27 tests passing  
 - ✅ Container self-installs goss using mise
-- ✅ No architecture compatibility issues
-- ✅ Clean, maintainable test configuration
-- ✅ Ready for CI integration
+- ✅ No architecture compatibility issues  
+- ✅ Template files for easy adoption
+- ✅ Individual test scripts per cookbook
+- ✅ Ready for CI integration and expansion to other cookbooks
 
 ## Architecture Benefits
 

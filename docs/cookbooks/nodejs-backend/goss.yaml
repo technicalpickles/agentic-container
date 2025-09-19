@@ -1,0 +1,66 @@
+# Goss test configuration for nodejs-backend cookbook example
+# Tests Node.js packages, TypeScript tooling, and system dependencies
+
+# Test commands (Node.js, npm, TypeScript, system tools, development tools)
+command:
+  "node --version":
+    exit-status: 0
+    stdout:
+      - /v\d+\.\d+\.\d+/
+  "npm --version":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+\.\d+/
+  "tsc --version":
+    exit-status: 0
+    stdout:
+      - /Version \d+\.\d+\.\d+/
+  "ts-node --version":
+    exit-status: 0
+    stdout:
+      - /v\d+\.\d+\.\d+/
+  "nodemon --version":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+\.\d+/
+  "which psql":
+    exit-status: 0
+    stdout:
+      - "/usr/bin/psql"
+  "psql --version":
+    exit-status: 0
+    stdout:
+      - /psql \(PostgreSQL\) \d+\.\d+/
+  "npm list -g --depth=0":
+    exit-status: 0
+    stdout:
+      - "typescript@"
+      - "@types/node@"
+      - "ts-node@"
+      - "nodemon@"
+  "node -e 'console.log(\"Node.js is working\")'":
+    exit-status: 0
+    stdout:
+      - "Node.js is working"
+  "git --version":
+    exit-status: 0
+    stdout:
+      - "git version"
+  "mise --version":
+    exit-status: 0
+    stdout:
+      - /\d{4}\.\d+\.\d+/
+
+# Test working directory
+file:
+  /workspace:
+    exists: true
+    filetype: directory
+    mode: "0755"
+
+# Test user setup
+user:
+  agent:
+    exists: true
+    groups:
+      - agent
