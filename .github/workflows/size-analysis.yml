@@ -49,15 +49,15 @@ jobs:
       id: tags
       run: |
         if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-          echo "current_tag=latest" >> $GITHUB_OUTPUT
-          echo "baseline_tag=main" >> $GITHUB_OUTPUT
+          echo "current_tag=latest" >> "$GITHUB_OUTPUT"
+          echo "baseline_tag=main" >> "$GITHUB_OUTPUT"
         elif [[ "${{ github.ref_name }}" == "main" ]]; then
-          echo "current_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "current_tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
           # Try to get previous main commit for comparison
-          echo "baseline_tag=main" >> $GITHUB_OUTPUT
+          echo "baseline_tag=main" >> "$GITHUB_OUTPUT"
         else
-          echo "current_tag=${{ github.sha }}" >> $GITHUB_OUTPUT  
-          echo "baseline_tag=main" >> $GITHUB_OUTPUT
+          echo "current_tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"  
+          echo "baseline_tag=main" >> "$GITHUB_OUTPUT"
         fi
     
     - name: Pull images
@@ -125,17 +125,18 @@ jobs:
     - name: Consolidate analysis results
       run: |
         mkdir -p consolidated-reports
-        echo "# 📊 Complete Image Size Analysis" >> consolidated-reports/summary.md
-        echo "" >> consolidated-reports/summary.md
-        echo "**Analysis Date:** $(date -Iseconds)" >> consolidated-reports/summary.md
-        echo "**Commit:** ${{ github.sha }}" >> consolidated-reports/summary.md
-        echo "**Branch:** ${{ github.ref_name }}" >> consolidated-reports/summary.md
-        echo "" >> consolidated-reports/summary.md
-        
-        echo "## Size Summary" >> consolidated-reports/summary.md
-        echo "" >> consolidated-reports/summary.md
-        echo "| Image | Size | Efficiency | Waste | Status |" >> consolidated-reports/summary.md
-        echo "|-------|------|------------|-------|--------|" >> consolidated-reports/summary.md
+        {
+          echo "# 📊 Complete Image Size Analysis"
+          echo ""
+          echo "**Analysis Date:** $(date -Iseconds)"
+          echo "**Commit:** ${{ github.sha }}"
+          echo "**Branch:** ${{ github.ref_name }}"
+          echo ""
+          echo "## Size Summary"
+          echo ""
+          echo "| Image | Size | Efficiency | Waste | Status |"
+          echo "|-------|------|------------|-------|--------|"
+        } > consolidated-reports/summary.md
         
         total_size=0
         for dir in all-analyses/size-analysis-*; do
@@ -161,8 +162,10 @@ jobs:
           fi
         done
         
-        echo "" >> consolidated-reports/summary.md
-        echo "**Total Size of All Images:** ${total_size}MB" >> consolidated-reports/summary.md
+        {
+          echo ""
+          echo "**Total Size of All Images:** ${total_size}MB"
+        } >> consolidated-reports/summary.md
         
         # Create JSON summary for external tools
         cat > consolidated-reports/summary.json << EOF
@@ -176,7 +179,6 @@ jobs:
         EOF
         
         # Add individual image data to JSON
-        jq_filter='.'
         for dir in all-analyses/size-analysis-*; do
           if [[ -d "$dir" ]]; then
             target=$(basename "$dir" | sed 's/size-analysis-//')
@@ -190,7 +192,7 @@ jobs:
         done
     
     - name: Post size summary to PR
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       if: github.event_name == 'pull_request' || (github.event.workflow_run && github.event.workflow_run.event == 'pull_request')
       with:
         script: |

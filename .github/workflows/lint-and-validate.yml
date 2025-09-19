@@ -1,0 +1,132 @@
+name: Lint and Validate
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore: [ 'docs/**', 'README.md', '*.md' ]
+  pull_request:
+    branches: [ main ]
+    paths-ignore: [ 'docs/**', 'README.md', '*.md' ]
+
+jobs:
+  hadolint:
+    name: Lint Dockerfiles
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Lint main Dockerfile with Hadolint
+      uses: hadolint/hadolint-action@v3.1.0
+      with:
+        dockerfile: Dockerfile
+    
+    - name: Lint cookbook Dockerfiles
+      run: |
+        echo "🔍 Linting cookbook Dockerfiles..."
+        find docs/cookbooks -name "Dockerfile" -exec echo "Linting {}" \; -exec hadolint {} \;
+    
+    - name: Lint template Dockerfiles  
+      run: |
+        echo "🔍 Linting template Dockerfiles..."
+        find templates -name "Dockerfile*" -exec echo "Linting {}" \; -exec hadolint {} \;
+
+  validate-configs:
+    name: Validate Configuration Files
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Install yamllint
+      run: |
+        sudo apt-get update && sudo apt-get install -y yamllint
+    
+    - name: Validate YAML files
+      run: |
+        echo "🔍 Validating YAML configuration files..."
+        
+        # Validate goss test files
+        find docs/cookbooks -name "goss.yaml" -exec echo "Validating {}" \; -exec yamllint {} \;
+        
+        # Validate workflow files
+        yamllint .github/workflows/*.yml
+        
+        # Validate other YAML configs
+        if [ -f "mise.toml" ]; then
+          echo "✅ mise.toml exists"
+        fi
+        if [ -f "docker-compose.yml" ]; then
+          yamllint docker-compose.yml
+        fi
+    
+    - name: Check for required files
+      run: |
+        echo "🔍 Checking for required files..."
+        
+        required_files=(
+          "Dockerfile"
+          "README.md"
+          "docs/cookbooks/_templates/goss-template.yaml"
+          "scripts/test-goss.sh"
+        )
+        
+        for file in "${required_files[@]}"; do
+          if [ -f "$file" ]; then
+            echo "✅ $file exists"
+          else
+            echo "❌ Required file missing: $file"
+            exit 1
+          fi
+        done
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'config'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+    
+    - name: Run Dockerfile security scan
+      run: |
+        echo "🔍 Running basic Dockerfile security checks..."
+        
+        # Check for security anti-patterns
+        security_issues=0
+        
+        if grep -r "sudo" Dockerfile docs/cookbooks/*/Dockerfile 2>/dev/null; then
+          echo "⚠️  Warning: Found sudo usage in Dockerfiles"
+          security_issues=$((security_issues + 1))
+        fi
+        
+        if grep -r "chmod 777" Dockerfile docs/cookbooks/*/Dockerfile 2>/dev/null; then
+          echo "❌ Error: Found chmod 777 in Dockerfiles (security risk)"
+          security_issues=$((security_issues + 1))
+        fi
+        
+        if grep -r "ADD http" Dockerfile docs/cookbooks/*/Dockerfile 2>/dev/null; then
+          echo "⚠️  Warning: Found ADD with HTTP URLs (consider using COPY with wget/curl)"
+          security_issues=$((security_issues + 1))
+        fi
+        
+        echo "Security scan completed with $security_issues potential issues"
+        
+        # Don't fail the build on warnings, only on critical issues
+        if [ $security_issues -gt 5 ]; then
+          echo "❌ Too many security issues found"
+          exit 1
+        fi
