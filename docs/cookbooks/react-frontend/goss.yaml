@@ -35,10 +35,10 @@ command:
     exit-status: 0
     stdout:
       - "create-vite@"
-      - "typescript@" 
+      - "typescript@"
       - "eslint@"
       - "prettier@"
-  "node -e 'console.log(\"Node.js is working\")'":
+  'node -e ''console.log("Node.js is working")''':
     exit-status: 0
     stdout:
       - "Node.js is working"

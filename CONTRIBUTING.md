@@ -1,6 +1,7 @@
 # Contributing to Agentic Container
 
-Thank you for your interest in contributing to agentic-container! This document provides guidelines and information for contributors.
+Thank you for your interest in contributing to agentic-container! This document
+provides guidelines and information for contributors.
 
 ## Table of Contents
 
@@ -94,7 +95,7 @@ We welcome several types of contributions:
 
 1. **Bug Fixes**: Fix issues in existing functionality
 2. **Feature Additions**: Add new capabilities or tools
-3. **Language Support**: Add support for new programming languages  
+3. **Language Support**: Add support for new programming languages
 4. **Templates**: Create new templates for specific use cases
 5. **Documentation**: Improve or add documentation
 6. **Testing**: Add or improve tests
@@ -103,7 +104,8 @@ We welcome several types of contributions:
 
 To add support for a new programming language:
 
-1. **Research latest stable versions** using sites like [endoflife.date](https://endoflife.date/)
+1. **Research latest stable versions** using sites like
+   [endoflife.date](https://endoflife.date/)
 2. **Create a build stage** in the Dockerfile:
 
 ```dockerfile
@@ -188,7 +190,7 @@ git push origin feature/your-feature-name
 Your pull request must:
 
 - [ ] **Build successfully** on all targets
-- [ ] **Include tests** for new functionality  
+- [ ] **Include tests** for new functionality
 - [ ] **Update documentation** for user-facing changes
 - [ ] **Follow commit message conventions**
 - [ ] **Be based on the latest main branch**
@@ -206,6 +208,7 @@ type(scope): description
 ```
 
 Types:
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation changes
@@ -215,6 +218,7 @@ Types:
 - `chore`: Build process or auxiliary tool changes
 
 Examples:
+
 ```
 feat(docker): add Rust language support
 fix(scripts): resolve extension script path issue
@@ -274,12 +278,12 @@ EOF
 # Error handling
 main() {
     local argument="${1:-}"
-    
+
     if [[ -z "$argument" ]]; then
         echo "ERROR: Argument required" >&2
         exit 1
     fi
-    
+
     # Implementation
 }
 
@@ -331,7 +335,7 @@ cd test && docker build -f Dockerfile.your-template .
 ### Testing Checklist
 
 - [ ] **All image targets build** successfully
-- [ ] **Language runtimes work** as expected  
+- [ ] **Language runtimes work** as expected
 - [ ] **Tools are accessible** and functional
 - [ ] **Extension scripts work** with your changes
 - [ ] **Templates build and run** correctly
@@ -344,7 +348,7 @@ cd test && docker build -f Dockerfile.your-template .
 Document your changes if they:
 
 - Add new functionality or tools
-- Change existing behavior  
+- Change existing behavior
 - Introduce new configuration options
 - Add new templates or examples
 - Modify the extension API
@@ -360,7 +364,7 @@ Document your changes if they:
 ### Documentation Style
 
 - Start with purpose and use cases
-- Provide working examples  
+- Provide working examples
 - Explain configuration options
 - Include troubleshooting information
 - Link to related documentation
@@ -377,7 +381,7 @@ Document your changes if they:
 Contributors are recognized in:
 
 - GitHub commit history
-- Release notes for significant contributions  
+- Release notes for significant contributions
 - CONTRIBUTORS.md file (if created)
 
 Thank you for contributing to agentic-container! 🚀

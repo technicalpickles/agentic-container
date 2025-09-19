@@ -1,3 +1,4 @@
 [tools]
 hadolint = "latest"
 goss = "latest"
+yamllint = "latest"

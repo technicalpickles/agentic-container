@@ -1,0 +1,20 @@
+{
+  "name": "agentic-container",
+  "version": "1.0.0",
+  "description": "Agentic container with comprehensive tooling and testing",
+  "private": true,
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "format:yaml": "prettier --write '**/*.{yaml,yml}'",
+    "format:markdown": "prettier --write '**/*.md'",
+    "format:yaml:check": "prettier --check '**/*.{yaml,yml}'",
+    "format:markdown:check": "prettier --check '**/*.md'"
+  },
+  "devDependencies": {
+    "prettier": "^3.2.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

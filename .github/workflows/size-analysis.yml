@@ -11,9 +11,9 @@ on:
   workflow_dispatch:
     inputs:
       images_to_analyze:
-        description: 'Comma-separated list of image tags to analyze'
+        description: "Comma-separated list of image tags to analyze"
         required: false
-        default: 'base,tools,python,node,ruby,go,dev'
+        default: "base,tools,python,node,ruby,go,dev"
 
 env:
   REGISTRY: ghcr.io
@@ -23,236 +23,236 @@ jobs:
   analyze-sizes:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
-    
+
     strategy:
       fail-fast: false
       matrix:
-        target: 
+        target:
           - base
-          - tools  
+          - tools
           - python
           - node
           - ruby
           - go
           - dev
-    
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    
-    - name: Set up analysis environment
-      run: |
-        sudo apt-get update && sudo apt-get install -y bc jq
-        chmod +x scripts/analyze-image-size.sh
-    
-    - name: Determine image tags
-      id: tags
-      run: |
-        if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-          echo "current_tag=latest" >> "$GITHUB_OUTPUT"
-          echo "baseline_tag=main" >> "$GITHUB_OUTPUT"
-        elif [[ "${{ github.ref_name }}" == "main" ]]; then
-          echo "current_tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
-          # Try to get previous main commit for comparison
-          echo "baseline_tag=main" >> "$GITHUB_OUTPUT"
-        else
-          echo "current_tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"  
-          echo "baseline_tag=main" >> "$GITHUB_OUTPUT"
-        fi
-    
-    - name: Pull images
-      run: |
-        # Pull current image
-        docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tags.outputs.current_tag }}-${{ matrix.target }} || {
-          echo "Failed to pull current image, skipping analysis"
-          exit 0
-        }
-        
-        # Pull baseline image for comparison  
-        docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tags.outputs.baseline_tag }}-${{ matrix.target }} || {
-          echo "No baseline image found, analyzing without comparison"
-        }
-    
-    - name: Analyze image size
-      run: |
-        current_image="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tags.outputs.current_tag }}-${{ matrix.target }}"
-        baseline_image="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tags.outputs.baseline_tag }}-${{ matrix.target }}"
-        
-        # Check if baseline exists
-        if docker image inspect "$baseline_image" >/dev/null 2>&1; then
-          echo "Running analysis with baseline comparison"
-          ./scripts/analyze-image-size.sh \
-            --install-dive \
-            --format github \
-            --max-increase-percent 15 \
-            --max-increase-mb 150 \
-            --min-efficiency 0.8 \
-            "$current_image" \
-            "$baseline_image"
-        else
-          echo "Running analysis without baseline"
-          ./scripts/analyze-image-size.sh \
-            --install-dive \
-            --format github \
-            --min-efficiency 0.8 \
-            "$current_image"
-        fi
-    
-    - name: Upload analysis artifacts
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: size-analysis-${{ matrix.target }}
-        path: |
-          reports/*.json
-          reports/*.txt
-        retention-days: 30
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up analysis environment
+        run: |
+          sudo apt-get update && sudo apt-get install -y bc jq
+          chmod +x scripts/analyze-image-size.sh
+
+      - name: Determine image tags
+        id: tags
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "current_tag=latest" >> "$GITHUB_OUTPUT"
+            echo "baseline_tag=main" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "current_tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+            # Try to get previous main commit for comparison
+            echo "baseline_tag=main" >> "$GITHUB_OUTPUT"
+          else
+            echo "current_tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"  
+            echo "baseline_tag=main" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Pull images
+        run: |
+          # Pull current image
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tags.outputs.current_tag }}-${{ matrix.target }} || {
+            echo "Failed to pull current image, skipping analysis"
+            exit 0
+          }
+
+          # Pull baseline image for comparison  
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tags.outputs.baseline_tag }}-${{ matrix.target }} || {
+            echo "No baseline image found, analyzing without comparison"
+          }
+
+      - name: Analyze image size
+        run: |
+          current_image="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tags.outputs.current_tag }}-${{ matrix.target }}"
+          baseline_image="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tags.outputs.baseline_tag }}-${{ matrix.target }}"
+
+          # Check if baseline exists
+          if docker image inspect "$baseline_image" >/dev/null 2>&1; then
+            echo "Running analysis with baseline comparison"
+            ./scripts/analyze-image-size.sh \
+              --install-dive \
+              --format github \
+              --max-increase-percent 15 \
+              --max-increase-mb 150 \
+              --min-efficiency 0.8 \
+              "$current_image" \
+              "$baseline_image"
+          else
+            echo "Running analysis without baseline"
+            ./scripts/analyze-image-size.sh \
+              --install-dive \
+              --format github \
+              --min-efficiency 0.8 \
+              "$current_image"
+          fi
+
+      - name: Upload analysis artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: size-analysis-${{ matrix.target }}
+          path: |
+            reports/*.json
+            reports/*.txt
+          retention-days: 30
 
   consolidate-results:
     runs-on: ubuntu-latest
     needs: analyze-sizes
     if: always()
-    
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      
-    - name: Download all analysis artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: all-analyses
-        
-    - name: Consolidate analysis results
-      run: |
-        mkdir -p consolidated-reports
-        {
-          echo "# 📊 Complete Image Size Analysis"
-          echo ""
-          echo "**Analysis Date:** $(date -Iseconds)"
-          echo "**Commit:** ${{ github.sha }}"
-          echo "**Branch:** ${{ github.ref_name }}"
-          echo ""
-          echo "## Size Summary"
-          echo ""
-          echo "| Image | Size | Efficiency | Waste | Status |"
-          echo "|-------|------|------------|-------|--------|"
-        } > consolidated-reports/summary.md
-        
-        total_size=0
-        for dir in all-analyses/size-analysis-*; do
-          if [[ -d "$dir" ]]; then
-            target=$(basename "$dir" | sed 's/size-analysis-//')
-            
-            # Find the analysis JSON file
-            analysis_file=$(find "$dir" -name "*-analysis.json" | head -1)
-            if [[ -f "$analysis_file" ]]; then
-              size_mb=$(jq -r '.image.sizeBytes / 1024 / 1024 | floor' "$analysis_file")
-              efficiency=$(jq -r '(.image.efficiency * 100) | floor' "$analysis_file")  
-              waste_mb=$(jq -r '.image.userSizeBytesWasted / 1024 / 1024 | floor' "$analysis_file")
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all analysis artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all-analyses
+
+      - name: Consolidate analysis results
+        run: |
+          mkdir -p consolidated-reports
+          {
+            echo "# 📊 Complete Image Size Analysis"
+            echo ""
+            echo "**Analysis Date:** $(date -Iseconds)"
+            echo "**Commit:** ${{ github.sha }}"
+            echo "**Branch:** ${{ github.ref_name }}"
+            echo ""
+            echo "## Size Summary"
+            echo ""
+            echo "| Image | Size | Efficiency | Waste | Status |"
+            echo "|-------|------|------------|-------|--------|"
+          } > consolidated-reports/summary.md
+
+          total_size=0
+          for dir in all-analyses/size-analysis-*; do
+            if [[ -d "$dir" ]]; then
+              target=$(basename "$dir" | sed 's/size-analysis-//')
               
-              # Determine status emoji
-              status="🟢"
-              if (( efficiency < 80 )); then status="🔴"
-              elif (( efficiency < 90 )); then status="🟡"
+              # Find the analysis JSON file
+              analysis_file=$(find "$dir" -name "*-analysis.json" | head -1)
+              if [[ -f "$analysis_file" ]]; then
+                size_mb=$(jq -r '.image.sizeBytes / 1024 / 1024 | floor' "$analysis_file")
+                efficiency=$(jq -r '(.image.efficiency * 100) | floor' "$analysis_file")  
+                waste_mb=$(jq -r '.image.userSizeBytesWasted / 1024 / 1024 | floor' "$analysis_file")
+                
+                # Determine status emoji
+                status="🟢"
+                if (( efficiency < 80 )); then status="🔴"
+                elif (( efficiency < 90 )); then status="🟡"
+                fi
+                
+                echo "| $target | ${size_mb}MB | ${efficiency}% | ${waste_mb}MB | $status |" >> consolidated-reports/summary.md
+                total_size=$((total_size + size_mb))
               fi
+            fi
+          done
+
+          {
+            echo ""
+            echo "**Total Size of All Images:** ${total_size}MB"
+          } >> consolidated-reports/summary.md
+
+          # Create JSON summary for external tools
+          cat > consolidated-reports/summary.json << EOF
+          {
+            "timestamp": "$(date -Iseconds)",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}",
+            "total_size_mb": $total_size,
+            "images": {}
+          }
+          EOF
+
+          # Add individual image data to JSON
+          for dir in all-analyses/size-analysis-*; do
+            if [[ -d "$dir" ]]; then
+              target=$(basename "$dir" | sed 's/size-analysis-//')
+              analysis_file=$(find "$dir" -name "*-analysis.json" | head -1)
+              if [[ -f "$analysis_file" ]]; then
+                jq --arg target "$target" \
+                   --argjson data "$(jq '{size_mb: (.image.sizeBytes/1024/1024|floor), efficiency: (.image.efficiency*100|floor), waste_mb: (.image.userSizeBytesWasted/1024/1024|floor)}' "$analysis_file")" \
+                   '.images[$target] = $data' consolidated-reports/summary.json > tmp.json && mv tmp.json consolidated-reports/summary.json
+              fi
+            fi
+          done
+
+      - name: Post size summary to PR
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request' || (github.event.workflow_run && github.event.workflow_run.event == 'pull_request')
+        with:
+          script: |
+            const fs = require('fs');
+
+            try {
+              const summary = fs.readFileSync('consolidated-reports/summary.md', 'utf8');
               
-              echo "| $target | ${size_mb}MB | ${efficiency}% | ${waste_mb}MB | $status |" >> consolidated-reports/summary.md
-              total_size=$((total_size + size_mb))
-            fi
-          fi
-        done
-        
-        {
-          echo ""
-          echo "**Total Size of All Images:** ${total_size}MB"
-        } >> consolidated-reports/summary.md
-        
-        # Create JSON summary for external tools
-        cat > consolidated-reports/summary.json << EOF
-        {
-          "timestamp": "$(date -Iseconds)",
-          "commit": "${{ github.sha }}",
-          "branch": "${{ github.ref_name }}",
-          "total_size_mb": $total_size,
-          "images": {}
-        }
-        EOF
-        
-        # Add individual image data to JSON
-        for dir in all-analyses/size-analysis-*; do
-          if [[ -d "$dir" ]]; then
-            target=$(basename "$dir" | sed 's/size-analysis-//')
-            analysis_file=$(find "$dir" -name "*-analysis.json" | head -1)
-            if [[ -f "$analysis_file" ]]; then
-              jq --arg target "$target" \
-                 --argjson data "$(jq '{size_mb: (.image.sizeBytes/1024/1024|floor), efficiency: (.image.efficiency*100|floor), waste_mb: (.image.userSizeBytesWasted/1024/1024|floor)}' "$analysis_file")" \
-                 '.images[$target] = $data' consolidated-reports/summary.json > tmp.json && mv tmp.json consolidated-reports/summary.json
-            fi
-          fi
-        done
-    
-    - name: Post size summary to PR
-      uses: actions/github-script@v7
-      if: github.event_name == 'pull_request' || (github.event.workflow_run && github.event.workflow_run.event == 'pull_request')
-      with:
-        script: |
-          const fs = require('fs');
-          
-          try {
-            const summary = fs.readFileSync('consolidated-reports/summary.md', 'utf8');
-            
-            // Find existing comment
-            const comments = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            
-            const existingComment = comments.data.find(comment => 
-              comment.body.includes('📊 Complete Image Size Analysis')
-            );
-            
-            if (existingComment) {
-              // Update existing comment
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existingComment.id,
-                body: summary
-              });
-            } else {
-              // Create new comment
-              await github.rest.issues.createComment({
+              // Find existing comment
+              const comments = await github.rest.issues.listComments({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.issue.number,
-                body: summary
               });
+              
+              const existingComment = comments.data.find(comment => 
+                comment.body.includes('📊 Complete Image Size Analysis')
+              );
+              
+              if (existingComment) {
+                // Update existing comment
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existingComment.id,
+                  body: summary
+                });
+              } else {
+                // Create new comment
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  body: summary
+                });
+              }
+            } catch (error) {
+              console.log('Could not post PR comment (this is normal for push events):', error.message);
             }
-          } catch (error) {
-            console.log('Could not post PR comment (this is normal for push events):', error.message);
-          }
-    
-    - name: Upload consolidated reports  
-      uses: actions/upload-artifact@v4
-      with:
-        name: consolidated-size-analysis
-        path: consolidated-reports/
-        retention-days: 90
-        
-    - name: Check size regressions
-      run: |
-        # Parse JSON summary to check for critical regressions
-        if command -v jq >/dev/null 2>&1 && [[ -f consolidated-reports/summary.json ]]; then
-          total_size=$(jq -r '.total_size_mb' consolidated-reports/summary.json)
-          
-          echo "Total size of all images: ${total_size}MB"
-          
-          # Set reasonable limits (adjust as needed)
-          if (( total_size > 5000 )); then  # 5GB total
-            echo "::warning::Total image size (${total_size}MB) is quite large. Consider optimization."
+
+      - name: Upload consolidated reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: consolidated-size-analysis
+          path: consolidated-reports/
+          retention-days: 90
+
+      - name: Check size regressions
+        run: |
+          # Parse JSON summary to check for critical regressions
+          if command -v jq >/dev/null 2>&1 && [[ -f consolidated-reports/summary.json ]]; then
+            total_size=$(jq -r '.total_size_mb' consolidated-reports/summary.json)
+            
+            echo "Total size of all images: ${total_size}MB"
+            
+            # Set reasonable limits (adjust as needed)
+            if (( total_size > 5000 )); then  # 5GB total
+              echo "::warning::Total image size (${total_size}MB) is quite large. Consider optimization."
+            fi
+            
+            # Check individual image efficiency
+            jq -r '.images | to_entries[] | select(.value.efficiency < 80) | "::warning::Image \(.key) has low efficiency: \(.value.efficiency)%"' consolidated-reports/summary.json || true
           fi
-          
-          # Check individual image efficiency
-          jq -r '.images | to_entries[] | select(.value.efficiency < 80) | "::warning::Image \(.key) has low efficiency: \(.value.efficiency)%"' consolidated-reports/summary.json || true
-        fi

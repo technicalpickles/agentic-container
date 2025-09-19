@@ -1,12 +1,16 @@
 # Docker Image Structure Guide
 
 **Created**: 2024-09-15  
-**Purpose**: Reference guide for contributors modifying the agentic-container Dockerfile  
+**Purpose**: Reference guide for contributors modifying the agentic-container
+Dockerfile  
 **Scope**: Docker layer optimization, multi-stage builds, and best practices
 
 ## Overview
 
-This document outlines the architectural decisions, layer optimization strategies, and best practices used in the agentic-container Docker image. Understanding these patterns is crucial for anyone modifying the Dockerfile to ensure optimal build times, image size, and maintainability.
+This document outlines the architectural decisions, layer optimization
+strategies, and best practices used in the agentic-container Docker image.
+Understanding these patterns is crucial for anyone modifying the Dockerfile to
+ensure optimal build times, image size, and maintainability.
 
 ## Table of Contents
 
@@ -22,12 +26,13 @@ This document outlines the architectural decisions, layer optimization strategie
 
 ## Architecture Overview
 
-Our Dockerfile uses a sophisticated multi-stage build approach with the following structure:
+Our Dockerfile uses a sophisticated multi-stage build approach with the
+following structure:
 
 ```
 ├── builder (FROM ubuntu:24.04)          # Build dependencies + common tools
 ├── ruby-stage (FROM builder)            # Ruby runtime compilation
-├── go-stage (FROM builder)              # Go installation  
+├── go-stage (FROM builder)              # Go installation
 ├── lefthook-stage (FROM builder)        # Git hooks tooling
 ├── standard (FROM ubuntu:24.04)         # Main maintained image
 └── dev (FROM standard)                  # Kitchen sink example
@@ -36,8 +41,10 @@ Our Dockerfile uses a sophisticated multi-stage build approach with the followin
 ### Design Philosophy
 
 1. **Parallel builds**: Language-specific stages enable parallel compilation
-2. **Layer reuse**: Common tools installed once in builder, copied to final stages
-3. **Minimal final image**: Only runtime dependencies in the final standard image
+2. **Layer reuse**: Common tools installed once in builder, copied to final
+   stages
+3. **Minimal final image**: Only runtime dependencies in the final standard
+   image
 4. **Selective copying**: Only necessary artifacts from build stages
 
 ## Multi-Stage Build Strategy
@@ -62,6 +69,7 @@ RUN mise install node@latest \
 ```
 
 **Why this works:**
+
 - Build dependencies are isolated from the final image
 - Common languages installed once, shared across language-specific stages
 - Parallel language stages can reference the same base builder
@@ -72,7 +80,7 @@ RUN mise install node@latest \
 FROM builder AS ruby-stage
 RUN rv ruby install --install-dir $MISE_DATA_DIR/installs/ruby/ ruby-3.4.5
 
-FROM builder AS go-stage  
+FROM builder AS go-stage
 RUN mise install go@latest
 
 FROM builder AS lefthook-stage
@@ -80,6 +88,7 @@ RUN mise install lefthook@latest
 ```
 
 **Benefits:**
+
 - **Parallelization**: Docker can build these stages concurrently
 - **Specialization**: Each stage focuses on one runtime
 - **Layer caching**: Changes to one language don't invalidate others
@@ -121,7 +130,8 @@ RUN apt-get install -y curl
 RUN apt-get install -y vim
 ```
 
-**Impact**: The bad approach creates 4 layers (~40MB each), while good creates 1 layer (~120MB total).
+**Impact**: The bad approach creates 4 layers (~40MB each), while good creates 1
+layer (~120MB total).
 
 ### 2. Strategic Layer Separation
 
@@ -137,7 +147,8 @@ RUN mise install node@latest python@latest
 RUN useradd -m agent && usermod -aG docker agent
 ```
 
-**Why**: Stable system packages are cached longer, while version updates only invalidate specific layers.
+**Why**: Stable system packages are cached longer, while version updates only
+invalidate specific layers.
 
 ### 3. Order Dependencies by Change Frequency
 
@@ -145,7 +156,7 @@ RUN useradd -m agent && usermod -aG docker agent
 # System packages (rarely change) - early in Dockerfile
 RUN apt-get update && apt-get install -y base-packages
 
-# Language runtimes (monthly updates) - middle  
+# Language runtimes (monthly updates) - middle
 RUN mise install node@latest python@latest
 
 # Application code (frequent changes) - late in Dockerfile
@@ -174,7 +185,8 @@ COPY --from=builder / /
 COPY --from=builder $MISE_DATA_DIR/installs/node $MISE_DATA_DIR/installs/node
 ```
 
-**Critical**: The destination path must match the source path for mise to locate tools correctly.
+**Critical**: The destination path must match the source path for mise to locate
+tools correctly.
 
 ### Binary vs Runtime Copying
 
@@ -194,12 +206,13 @@ COPY --from=builder $MISE_DATA_DIR/installs/node $MISE_DATA_DIR/installs/node
 ```dockerfile
 # Set mise environment for consistent paths across stages
 ENV MISE_DATA_DIR=/usr/local/share/mise
-ENV MISE_CONFIG_DIR=/etc/mise  
+ENV MISE_CONFIG_DIR=/etc/mise
 ENV MISE_CACHE_DIR=/tmp/mise-cache
 ENV PATH="/usr/local/share/mise/shims:${PATH}"
 ```
 
-**Design decision**: Global paths enable consistent tool access without activation.
+**Design decision**: Global paths enable consistent tool access without
+activation.
 
 ### User-Specific vs System-Wide
 
@@ -224,13 +237,15 @@ RUN chgrp -R mise $MISE_DATA_DIR $MISE_CONFIG_DIR $MISE_CACHE_DIR \
     && chmod -R g+ws $MISE_DATA_DIR $MISE_CONFIG_DIR $MISE_CACHE_DIR
 ```
 
-**Why**: Enables both root and agent users to install packages without permission conflicts.
+**Why**: Enables both root and agent users to install packages without
+permission conflicts.
 
 ## Build Arguments and Version Management
 
 ### ARG Inheritance Pattern
 
-Our Dockerfile uses a global ARG declaration with inheritance pattern to manage language versions and tool versions across multiple build stages:
+Our Dockerfile uses a global ARG declaration with inheritance pattern to manage
+language versions and tool versions across multiple build stages:
 
 ```dockerfile
 # Global ARGs with default values (defined once at the top)
@@ -257,6 +272,7 @@ RUN rv ruby install --install-dir $MISE_DATA_DIR/installs/ruby/ ruby-${RUBY_VERS
 ### Why This Pattern
 
 **❌ Alternative: Duplicate Defaults**
+
 ```dockerfile
 # Duplicated defaults in each stage (anti-pattern)
 ARG NODE_VERSION=24.8.0  # Global
@@ -269,6 +285,7 @@ ARG RUBY_VERSION=3.4.5   # Duplicated default
 ```
 
 **✅ Our Approach: Single Source of Truth**
+
 ```dockerfile
 # Default values defined once at the top
 ARG NODE_VERSION=24.8.0  # Global default only
@@ -285,7 +302,8 @@ ARG RUBY_VERSION          # Inherit from global (no duplication)
 1. **DRY Principle**: Default versions defined once at the top of the Dockerfile
 2. **Consistency**: All stages use the same version unless explicitly overridden
 3. **Maintainability**: Update a version in one place, affects all stages
-4. **Propagation**: `--build-arg` overrides apply to all stages that declare the ARG
+4. **Propagation**: `--build-arg` overrides apply to all stages that declare the
+   ARG
 5. **Self-Documentation**: Each stage clearly declares which ARGs it depends on
 
 ### Usage Examples
@@ -311,7 +329,8 @@ docker build \
 
 ### ARG Scope Rules
 
-**Critical**: Docker ARG values don't automatically carry over between `FROM` statements. Each stage must re-declare the ARGs it needs:
+**Critical**: Docker ARG values don't automatically carry over between `FROM`
+statements. Each stage must re-declare the ARGs it needs:
 
 ```dockerfile
 # ❌ WRONG: ARG not available in new stage
@@ -343,7 +362,8 @@ mise ls-remote go | tail -5
 
 ### Integration with CI/CD
 
-Our GitHub Actions workflow can override versions for testing or specific builds:
+Our GitHub Actions workflow can override versions for testing or specific
+builds:
 
 ```yaml
 - name: Build with specific versions
@@ -355,8 +375,9 @@ Our GitHub Actions workflow can override versions for testing or specific builds
 ```
 
 This pattern enables:
+
 - **Matrix builds**: Test multiple language version combinations
-- **Pinned releases**: Lock specific versions for stable releases  
+- **Pinned releases**: Lock specific versions for stable releases
 - **Development builds**: Use bleeding-edge versions for testing
 
 ## Best Practices
@@ -397,7 +418,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
     ca-certificates \
-    # Development tools  
+    # Development tools
     vim \
     nano \
     jq \
@@ -428,6 +449,7 @@ RUN rv ruby install ruby-${RUBY_VERSION}
 ```
 
 **Benefits of ARG-based versioning:**
+
 - **Flexibility**: Override versions at build time without editing Dockerfile
 - **Consistency**: Same version used across all stages
 - **CI/CD Integration**: Easy to test different version combinations
@@ -452,7 +474,7 @@ RUN rv ruby install ruby-${RUBY_VERSION}
 # ❌ BAD: Each RUN creates a layer
 RUN apt-get update
 RUN apt-get install -y git
-RUN apt-get install -y curl  
+RUN apt-get install -y curl
 RUN rm -rf /var/lib/apt/lists/*
 
 # ✅ GOOD: Single optimized layer
@@ -491,7 +513,7 @@ COPY --from=builder $MISE_DATA_DIR/installs/node $MISE_DATA_DIR/installs/node
 ### 4. Poor Layer Ordering
 
 ```dockerfile
-# ❌ BAD: Frequently changing steps early in Dockerfile  
+# ❌ BAD: Frequently changing steps early in Dockerfile
 COPY package.json /app/
 RUN apt-get update && apt-get install -y system-packages
 
@@ -540,12 +562,14 @@ WORKDIR /workspace
 When adding a new language to the build:
 
 1. **Create a dedicated build stage** if compilation is needed:
+
    ```dockerfile
    FROM builder AS newlang-stage
    RUN mise install newlang@latest
    ```
 
 2. **Copy to appropriate final stages**:
+
    ```dockerfile
    FROM standard AS enhanced
    COPY --from=newlang-stage $MISE_DATA_DIR/installs/newlang $MISE_DATA_DIR/installs/newlang
@@ -559,6 +583,7 @@ When adding a new language to the build:
 ### For System Package Additions
 
 1. **Add to existing RUN statements** when possible:
+
    ```dockerfile
    RUN apt-get update && apt-get install -y --no-install-recommends \
        existing-package \
@@ -570,7 +595,7 @@ When adding a new language to the build:
    ```dockerfile
    # Development tools
    vim nano less jq \
-   # Network tools  
+   # Network tools
    curl wget netcat-traditional
    ```
 
@@ -593,6 +618,7 @@ When adding a new language to the build:
 **Symptom**: Slow builds or frequent cache invalidation
 
 **Solutions**:
+
 - Review layer ordering - put stable operations first
 - Check .dockerignore - exclude unnecessary files
 - Use build-time cache mounts for package managers:
@@ -606,6 +632,7 @@ When adding a new language to the build:
 **Symptom**: Image size larger than expected
 
 **Investigation**:
+
 ```bash
 # Analyze layer sizes
 docker history ghcr.io/technicalpickles/agentic-container:latest
@@ -615,6 +642,7 @@ docker run --rm -it image find / -size +100M -ls
 ```
 
 **Solutions**:
+
 - Add missing cache cleanup
 - Remove unnecessary files in same layer
 - Use multi-stage builds to exclude build dependencies
@@ -624,6 +652,7 @@ docker run --rm -it image find / -size +100M -ls
 **Symptom**: Tools not found or permission errors
 
 **Solutions**:
+
 - Verify PATH includes mise shims
 - Check file permissions on mise directories
 - Ensure user is in mise group
@@ -634,28 +663,32 @@ docker run --rm -it image find / -size +100M -ls
 **Common causes and solutions**:
 
 1. **Package not found**: Update package lists first
+
    ```dockerfile
    RUN apt-get update && apt-get install -y package
    ```
 
 2. **Permission denied**: Check user context
+
    ```dockerfile
    USER root    # For system changes
    USER $USERNAME  # For user-specific operations
    ```
 
 3. **Tool not available**: Verify mise activation
+
    ```dockerfile
    RUN eval "$(mise activate bash)" && command
    ```
 
 4. **ARG variable is empty**: Re-declare ARG in each stage that uses it
+
    ```dockerfile
    # ❌ This fails - ARG not available in new stage
    ARG NODE_VERSION=24.8.0
    FROM ubuntu:24.04 AS builder
    RUN mise install node@${NODE_VERSION}  # NODE_VERSION is empty
-   
+
    # ✅ This works - ARG re-declared
    ARG NODE_VERSION=24.8.0
    FROM ubuntu:24.04 AS builder
@@ -676,7 +709,8 @@ docker run --rm -it image find / -size +100M -ls
 
 1. **Follow existing patterns**: Use the established RUN statement structure
 2. **Update related documentation**: Keep this guide and examples in sync
-3. **Consider backwards compatibility**: Avoid breaking existing extension patterns
+3. **Consider backwards compatibility**: Avoid breaking existing extension
+   patterns
 4. **Test multi-architecture**: Verify changes work on both amd64 and arm64
 
 ### Pull Request Guidelines
@@ -700,5 +734,6 @@ docker run --rm -it image find / -size +100M -ls
 **Maintainer**: Review this guide when contributing to the Dockerfile
 
 **Recent Changes**:
+
 - Added comprehensive ARG inheritance pattern documentation
 - Documented Docker ARG scope rules and troubleshooting

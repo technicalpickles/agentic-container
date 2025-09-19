@@ -4,18 +4,19 @@
 # Global ignored rules - apply to all Dockerfiles
 # Allow some rules that are intentional in our setup
 ignored:
-  - SC2016  # Allow single quotes in shell expressions (intentional in some cases)
-  - SC2086  # Allow word splitting (controlled in our context)
-  - SC2174  # Allow mkdir -m with -p (our usage is correct)
+  - SC2016 # Allow single quotes in shell expressions (intentional in some cases)
+  - SC2086 # Allow word splitting (controlled in our context)
+  - SC2174 # Allow mkdir -m with -p (our usage is correct)
+  - DL3008 # Pin versions in apt get install - impractical for base images
 
-# Override severity levels for specific rules  
+# Override severity levels for specific rules
 override:
   # Make these informational rather than warnings for examples
   info:
-    - DL3007  # Using latest tag - informational for examples
-    - DL3059  # Multiple consecutive RUN instructions
-    - DL3015  # Missing --no-install-recommends
-  
+    - DL3007 # Using latest tag - informational for examples
+    - DL3059 # Multiple consecutive RUN instructions
+    - DL3015 # Missing --no-install-recommends
+
 # Trust external registries we use
 trustedRegistries:
   - docker.io

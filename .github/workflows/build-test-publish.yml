@@ -2,14 +2,14 @@ name: Build, Test, and Publish
 
 on:
   push:
-    branches: [ main ]
-    paths-ignore: [ 'docs/**', 'README.md', '*.md' ]
+    branches: [main]
+    paths-ignore: ["docs/**", "README.md", "*.md"]
   pull_request:
-    branches: [ main ]
-    paths-ignore: [ 'docs/**', 'README.md', '*.md' ]
+    branches: [main]
+    paths-ignore: ["docs/**", "README.md", "*.md"]
   schedule:
     # Rebuild weekly to get latest base image updates
-    - cron: '0 2 * * 0'
+    - cron: "0 2 * * 0"
 
 env:
   REGISTRY: ghcr.io
@@ -28,73 +28,73 @@ jobs:
       image-tag: ${{ steps.meta.outputs.tags }}
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      with:
-        buildkitd-flags: --allow-insecure-entitlement security.insecure
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          buildkitd-flags: --allow-insecure-entitlement security.insecure
 
-    - name: Log in to Container Registry
-      if: github.event_name != 'pull_request'
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Log in to Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=semver,pattern={{version}}
-          type=semver,pattern={{major}}.{{minor}}
-          type=raw,value=latest,enable={{is_default_branch}}
-          type=raw,value=main,enable={{is_default_branch}}
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=main,enable={{is_default_branch}}
 
-    - name: Build and push Docker image
-      id: build
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        target: standard
-        platforms: linux/amd64,linux/arm64
-        push: ${{ github.event_name != 'pull_request' }}
-        load: ${{ github.event_name == 'pull_request' }}
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        # Enhanced caching with scope isolation
-        cache-from: |
-          type=gha,scope=standard-${{ github.ref_name }}
-          type=gha,scope=standard-main
-        cache-to: type=gha,mode=max,scope=standard-${{ github.ref_name }}
-        # Build args can be customized here if needed:
-        # build-args: |
-        #   NODE_VERSION=20.17.0
-        #   PYTHON_VERSION=3.12.6
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          target: standard
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' }}
+          load: ${{ github.event_name == 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Enhanced caching with scope isolation
+          cache-from: |
+            type=gha,scope=standard-${{ github.ref_name }}
+            type=gha,scope=standard-main
+          cache-to: type=gha,mode=max,scope=standard-${{ github.ref_name }}
+          # Build args can be customized here if needed:
+          # build-args: |
+          #   NODE_VERSION=20.17.0
+          #   PYTHON_VERSION=3.12.6
 
-    - name: Export image for testing (PR only)
-      if: github.event_name == 'pull_request'
-      run: |
-        # For PRs, we need to make the image available for cookbook testing
-        # Tag it with a consistent name for the test jobs
-        docker tag ${{ steps.meta.outputs.tags }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-base
-        
-        # Save image to a tarball for sharing with parallel jobs
-        docker save ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-base > /tmp/base-image.tar
+      - name: Export image for testing (PR only)
+        if: github.event_name == 'pull_request'
+        run: |
+          # For PRs, we need to make the image available for cookbook testing
+          # Tag it with a consistent name for the test jobs
+          docker tag ${{ steps.meta.outputs.tags }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-base
 
-    - name: Upload base image artifact (PR only)
-      if: github.event_name == 'pull_request'
-      uses: actions/upload-artifact@v4
-      with:
-        name: base-image
-        path: /tmp/base-image.tar
-        retention-days: 1
+          # Save image to a tarball for sharing with parallel jobs
+          docker save ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-base > /tmp/base-image.tar
+
+      - name: Upload base image artifact (PR only)
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: base-image
+          path: /tmp/base-image.tar
+          retention-days: 1
 
   parallel-validation:
     name: Parallel Validation
@@ -110,7 +110,7 @@ jobs:
             name: Test Cookbooks
             cookbook: python-cli
           - job: test-cookbooks
-            name: Test Cookbooks  
+            name: Test Cookbooks
             cookbook: nodejs-backend
           - job: test-cookbooks
             name: Test Cookbooks
@@ -130,89 +130,89 @@ jobs:
       packages: write
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    # Dev build specific steps
-    - name: Log in to Container Registry (dev build only)
-      if: matrix.job == 'build-dev' && github.ref == 'refs/heads/main'
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+      # Dev build specific steps
+      - name: Log in to Container Registry (dev build only)
+        if: matrix.job == 'build-dev' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Extract dev metadata
-      if: matrix.job == 'build-dev' && github.ref == 'refs/heads/main'
-      id: meta-dev
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-        tags: |
-          type=raw,value=dev
+      - name: Extract dev metadata
+        if: matrix.job == 'build-dev' && github.ref == 'refs/heads/main'
+        id: meta-dev
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=dev
 
-    - name: Build dev image
-      if: matrix.job == 'build-dev' && github.ref == 'refs/heads/main'
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        target: dev
-        platforms: linux/amd64,linux/arm64
-        push: true
-        tags: ${{ steps.meta-dev.outputs.tags }}
-        labels: ${{ steps.meta-dev.outputs.labels }}
-        # Enhanced caching that reuses standard build layers
-        cache-from: |
-          type=gha,scope=dev-${{ github.ref_name }}
-          type=gha,scope=dev-main
-          type=gha,scope=standard-${{ github.ref_name }}
-        cache-to: type=gha,mode=max,scope=dev-${{ github.ref_name }}
+      - name: Build dev image
+        if: matrix.job == 'build-dev' && github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          target: dev
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta-dev.outputs.tags }}
+          labels: ${{ steps.meta-dev.outputs.labels }}
+          # Enhanced caching that reuses standard build layers
+          cache-from: |
+            type=gha,scope=dev-${{ github.ref_name }}
+            type=gha,scope=dev-main
+            type=gha,scope=standard-${{ github.ref_name }}
+          cache-to: type=gha,mode=max,scope=dev-${{ github.ref_name }}
 
-    # Cookbook testing specific steps  
-    - name: Download base image artifact (PR cookbook testing)
-      if: matrix.job == 'test-cookbooks' && github.event_name == 'pull_request'
-      uses: actions/download-artifact@v4
-      with:
-        name: base-image
-        path: /tmp/
+      # Cookbook testing specific steps
+      - name: Download base image artifact (PR cookbook testing)
+        if: matrix.job == 'test-cookbooks' && github.event_name == 'pull_request'
+        uses: actions/download-artifact@v4
+        with:
+          name: base-image
+          path: /tmp/
 
-    - name: Load base image for testing (PR only)
-      if: matrix.job == 'test-cookbooks' && github.event_name == 'pull_request'
-      run: |
-        docker load < /tmp/base-image.tar
-        docker images
+      - name: Load base image for testing (PR only)
+        if: matrix.job == 'test-cookbooks' && github.event_name == 'pull_request'
+        run: |
+          docker load < /tmp/base-image.tar
+          docker images
 
-    - name: Pull base image for testing (main branch)
-      if: matrix.job == 'test-cookbooks' && github.event_name != 'pull_request'
-      run: |
-        # For main branch builds, pull the just-built image
-        docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main
-        docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-base
+      - name: Pull base image for testing (main branch)
+        if: matrix.job == 'test-cookbooks' && github.event_name != 'pull_request'
+        run: |
+          # For main branch builds, pull the just-built image
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-base
 
-    - name: Build cookbook extension image
-      if: matrix.job == 'test-cookbooks'
-      run: |
-        echo "🏗️  Building ${{ matrix.cookbook }} cookbook..."
-        docker build \
-          -f docs/cookbooks/${{ matrix.cookbook }}/Dockerfile \
-          -t test-extension-${{ matrix.cookbook }}:latest \
-          .
+      - name: Build cookbook extension image
+        if: matrix.job == 'test-cookbooks'
+        run: |
+          echo "🏗️  Building ${{ matrix.cookbook }} cookbook..."
+          docker build \
+            -f docs/cookbooks/${{ matrix.cookbook }}/Dockerfile \
+            -t test-extension-${{ matrix.cookbook }}:latest \
+            .
 
-    - name: Run goss tests for cookbook
-      if: matrix.job == 'test-cookbooks'
-      run: |
-        echo "🧪 Running goss tests for ${{ matrix.cookbook }} cookbook..."
-        chmod +x scripts/test-goss.sh
-        ./scripts/test-goss.sh ${{ matrix.cookbook }} test-extension-${{ matrix.cookbook }}:latest
+      - name: Run goss tests for cookbook
+        if: matrix.job == 'test-cookbooks'
+        run: |
+          echo "🧪 Running goss tests for ${{ matrix.cookbook }} cookbook..."
+          chmod +x scripts/test-goss.sh
+          ./scripts/test-goss.sh ${{ matrix.cookbook }} test-extension-${{ matrix.cookbook }}:latest
 
-    - name: Clean up test images
-      if: matrix.job == 'test-cookbooks' && always()
-      run: |
-        docker rmi test-extension-${{ matrix.cookbook }}:latest || true
-        docker rmi ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-base || true
+      - name: Clean up test images
+        if: matrix.job == 'test-cookbooks' && always()
+        run: |
+          docker rmi test-extension-${{ matrix.cookbook }}:latest || true
+          docker rmi ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-base || true
 
   # Summary job to provide single status check for cookbook tests
   test-cookbooks-summary:
@@ -221,19 +221,19 @@ jobs:
     needs: parallel-validation
     if: always()
     steps:
-    - name: Check cookbook test results
-      run: |
-        # Check if any cookbook tests failed
-        needs_json='${{ toJson(needs) }}'
-        echo "Parallel validation results: $needs_json"
-        
-        if echo "$needs_json" | jq -e '.["parallel-validation"].result != "success"' > /dev/null; then
-          echo "❌ One or more cookbook tests failed"
-          echo "This will block publishing to ensure only tested images are released"
-          exit 1
-        else
-          echo "✅ All cookbook tests passed!"
-        fi
+      - name: Check cookbook test results
+        run: |
+          # Check if any cookbook tests failed
+          needs_json='${{ toJson(needs) }}'
+          echo "Parallel validation results: $needs_json"
+
+          if echo "$needs_json" | jq -e '.["parallel-validation"].result != "success"' > /dev/null; then
+            echo "❌ One or more cookbook tests failed"
+            echo "This will block publishing to ensure only tested images are released"
+            exit 1
+          else
+            echo "✅ All cookbook tests passed!"
+          fi
 
   publish:
     name: Publish Images
@@ -245,36 +245,36 @@ jobs:
       packages: write
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Log in to Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Confirm images are ready for publishing
-      run: |
-        echo "✅ All validation passed - ready to publish images"
-        echo "Standard image: ${{ needs.build-standard.outputs.image-tag }}"
-        echo "Build digest: ${{ needs.build-standard.outputs.image-digest }}"
-        
-        # Images were already pushed during the build step for main branch
-        echo "Images have been successfully published to registry"
+      - name: Confirm images are ready for publishing
+        run: |
+          echo "✅ All validation passed - ready to publish images"
+          echo "Standard image: ${{ needs.build-standard.outputs.image-tag }}"
+          echo "Build digest: ${{ needs.build-standard.outputs.image-digest }}"
 
-    - name: Create release summary
-      run: |
-        {
-          echo "## 🚀 Published Images"
-          echo ""
-          echo "| Image | Status | Tests |"  
-          echo "|-------|--------|-------|"
-          echo "| Standard | ✅ Published | ✅ All cookbooks passed |"
-          echo "| Dev | ✅ Published | ✅ Included |"
-          echo ""
-          echo "**Digest:** \`${{ needs.build-standard.outputs.image-digest }}\`"
-          echo ""
-          echo "All cookbook extensions have been validated against these images."
-        } >> "$GITHUB_STEP_SUMMARY"
+          # Images were already pushed during the build step for main branch
+          echo "Images have been successfully published to registry"
+
+      - name: Create release summary
+        run: |
+          {
+            echo "## 🚀 Published Images"
+            echo ""
+            echo "| Image | Status | Tests |"  
+            echo "|-------|--------|-------|"
+            echo "| Standard | ✅ Published | ✅ All cookbooks passed |"
+            echo "| Dev | ✅ Published | ✅ Included |"
+            echo ""
+            echo "**Digest:** \`${{ needs.build-standard.outputs.image-digest }}\`"
+            echo ""
+            echo "All cookbook extensions have been validated against these images."
+          } >> "$GITHUB_STEP_SUMMARY"

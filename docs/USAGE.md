@@ -1,6 +1,7 @@
 # Usage Guide
 
-This guide covers common usage patterns and advanced configuration for the agentic-container ecosystem.
+This guide covers common usage patterns and advanced configuration for the
+agentic-container ecosystem.
 
 ## Table of Contents
 
@@ -23,7 +24,7 @@ docker run -it --rm \
   -v /var/run/docker.sock:/var/run/docker.sock \
   ghcr.io/technicalpickles/agentic-container:latest
 
-# Language-specific environment  
+# Language-specific environment
 docker run -it --rm \
   -v $(pwd):/workspace \
   ghcr.io/technicalpickles/agentic-container:latest
@@ -48,8 +49,8 @@ services:
     environment:
       - TERM=xterm-256color
     ports:
-      - "3000:3000"  # Expose development servers
-      - "8000:8000"
+      - '3000:3000' # Expose development servers
+      - '8000:8000'
 ```
 
 Then start your development environment:
@@ -128,14 +129,14 @@ CMD ["jupyter", "lab", "--allow-root"]
 
 Key environment variables you can customize:
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `MISE_DATA_DIR` | Mise installation directory | `/usr/local/share/mise` |
-| `MISE_CONFIG_DIR` | Mise configuration directory | `/etc/mise` |
-| `MISE_CACHE_DIR` | Mise cache directory | `/tmp/mise-cache` |
-| `USERNAME` | Non-root user name | `agent` |
-| `USER_UID` | User ID | `1001` |
-| `USER_GID` | Group ID | `1001` |
+| Variable          | Description                  | Default                 |
+| ----------------- | ---------------------------- | ----------------------- |
+| `MISE_DATA_DIR`   | Mise installation directory  | `/usr/local/share/mise` |
+| `MISE_CONFIG_DIR` | Mise configuration directory | `/etc/mise`             |
+| `MISE_CACHE_DIR`  | Mise cache directory         | `/tmp/mise-cache`       |
+| `USERNAME`        | Non-root user name           | `agent`                 |
+| `USER_UID`        | User ID                      | `1001`                  |
+| `USER_GID`        | Group ID                     | `1001`                  |
 
 ### Custom Configuration Files
 
@@ -150,7 +151,7 @@ services:
       # Git configuration
       - ~/.gitconfig:/home/agent/.gitconfig:ro
       # SSH keys
-      - ~/.ssh:/home/agent/.ssh:ro  
+      - ~/.ssh:/home/agent/.ssh:ro
       # Shell configuration
       - ./config/.bashrc:/home/agent/.bashrc:ro
       # Tool configurations
@@ -165,7 +166,7 @@ Use mise to manage multiple versions:
 ```bash
 # In your project directory
 echo "python 3.11.0" > .tool-versions
-echo "node 20.0.0" >> .tool-versions  
+echo "node 20.0.0" >> .tool-versions
 echo "ruby 3.2.0" >> .tool-versions
 
 # mise will automatically use these versions in this directory
@@ -200,7 +201,7 @@ on:
   push:
     paths: ['Dockerfile', '.github/workflows/build.yml']
   schedule:
-    - cron: '0 2 * * 0'  # Weekly rebuild
+    - cron: '0 2 * * 0' # Weekly rebuild
 
 env:
   REGISTRY: ghcr.io
@@ -212,40 +213,40 @@ jobs:
     permissions:
       contents: read
       packages: write
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      
-    - name: Log in to Container Registry
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-        
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-        tags: |
-          type=ref,event=branch
-          type=semver,pattern={{version}}
-          type=raw,value=latest,enable={{is_default_branch}}
-          
-    - name: Build and push
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        platforms: linux/amd64,linux/arm64
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 ```
 
 ### GitLab CI
@@ -261,7 +262,8 @@ build:
   services:
     - docker:dind
   before_script:
-    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER
+      --password-stdin $CI_REGISTRY
   script:
     - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
     - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
@@ -351,7 +353,7 @@ services:
       # Cache directories to persist between runs
       - python-packages:/home/agent/.cache/pip
       - node-modules:/workspace/node_modules
-    
+
 volumes:
   python-packages:
   node-modules:
@@ -393,7 +395,7 @@ docker run --rm ghcr.io/technicalpickles/agentic-container:latest ls -la /usr/lo
 # View container logs
 docker logs container-name
 
-# Follow logs in real-time  
+# Follow logs in real-time
 docker logs -f container-name
 
 # Check system logs
@@ -403,4 +405,5 @@ docker run --rm -v /var/log:/host/var/log ghcr.io/technicalpickles/agentic-conta
 
 ---
 
-For more specific use cases or advanced configuration, check the [API Reference](API.md) or open an issue on GitHub.
+For more specific use cases or advanced configuration, check the
+[API Reference](API.md) or open an issue on GitHub.

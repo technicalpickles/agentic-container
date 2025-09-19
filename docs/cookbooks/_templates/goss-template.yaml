@@ -8,7 +8,7 @@ command:
     exit-status: 0
     stdout:
       - "git version"
-  
+
   "mise --version":
     exit-status: 0
     stdout:
@@ -16,7 +16,7 @@ command:
 
   # Add your specific tool/language tests here
   # Examples:
-  
+
   # For Python-based cookbooks:
   # "python3 --version":
   #   exit-status: 0
@@ -64,13 +64,12 @@ file:
     filetype: directory
     mode: "0755"
 
-# Test user setup (should be consistent across cookbooks)  
+# Test user setup (should be consistent across cookbooks)
 user:
   agent:
     exists: true
     groups:
       - agent
-
 # Add additional file tests if your cookbook creates specific files
 # Examples:
 # file:
