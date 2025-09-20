@@ -17,9 +17,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Lint all Dockerfiles with Hadolint
-        run: |
-          echo "🔍 Linting all Dockerfiles..."
-          find . -name "Dockerfile" -o -name "Dockerfile*" | xargs hadolint
+        uses: jbergstroem/hadolint-gh-action@v1.13.0
+        with:
+          dockerfile: '**/Dockerfile*'
+          config_file: '.hadolint.yaml'
+          annotate: true
 
   validate-configs:
     name: Validate Configuration Files
