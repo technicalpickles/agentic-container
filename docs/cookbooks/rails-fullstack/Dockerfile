@@ -1,6 +1,6 @@
 # Ruby Development Extension
 # Demonstrates: mise install for Ruby, gem package manager
-FROM ghcr.io/technicalpickles/agentic-container:latest
+FROM ghcr.io/technicalpickles/agentic-container:main
 
 # Build argument for Ruby version (can be overridden during build)
 ARG RUBY_VERSION=3.4.5
@@ -14,4 +14,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
     && mise use -g ruby@${RUBY_VERSION} \
     && gem install rails
 USER agent
+
+# No HEALTHCHECK - this container is designed for task execution, not service monitoring
 WORKDIR /workspace

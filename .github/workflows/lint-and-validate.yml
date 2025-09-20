@@ -52,42 +52,22 @@ jobs:
         with:
           version: v0.66.0
 
-      - name: Run Trivy vulnerability scanner
+      - name: Run Trivy security scan (Human-readable output)
+        run: |
+          echo "🔍 Running Trivy security scan..."
+          trivy config --format table --severity HIGH,CRITICAL,MEDIUM .
+
+      - name: Run Trivy security scan (SARIF for GitHub Security)
         run: |
           trivy config --format sarif --output trivy-results.sarif .
+
+      - name: Run Trivy security scan (Fail on HIGH/CRITICAL)
+        run: |
+          echo "🔍 Running Trivy security scan with exit codes..."
+          trivy config --exit-code 1 --severity HIGH,CRITICAL .
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: "trivy-results.sarif"
-
-      - name: Run Dockerfile security scan
-        run: |
-          echo "🔍 Running basic Dockerfile security checks..."
-
-          # Check for security anti-patterns
-          security_issues=0
-
-          if grep -r "sudo" Dockerfile docs/cookbooks/*/Dockerfile 2>/dev/null; then
-            echo "⚠️  Warning: Found sudo usage in Dockerfiles"
-            security_issues=$((security_issues + 1))
-          fi
-
-          if grep -r "chmod 777" Dockerfile docs/cookbooks/*/Dockerfile 2>/dev/null; then
-            echo "❌ Error: Found chmod 777 in Dockerfiles (security risk)"
-            security_issues=$((security_issues + 1))
-          fi
-
-          if grep -r "ADD http" Dockerfile docs/cookbooks/*/Dockerfile 2>/dev/null; then
-            echo "⚠️  Warning: Found ADD with HTTP URLs (consider using COPY with wget/curl)"
-            security_issues=$((security_issues + 1))
-          fi
-
-          echo "Security scan completed with $security_issues potential issues"
-
-          # Don't fail the build on warnings, only on critical issues
-          if [ $security_issues -gt 5 ]; then
-            echo "❌ Too many security issues found"
-            exit 1
-          fi
