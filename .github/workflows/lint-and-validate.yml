@@ -16,20 +16,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Lint main Dockerfile with Hadolint
-        uses: hadolint/hadolint-action@v3.1.0
-        with:
-          dockerfile: Dockerfile
-
-      - name: Lint cookbook Dockerfiles
+      - name: Lint all Dockerfiles with Hadolint
         run: |
-          echo "🔍 Linting cookbook Dockerfiles..."
-          find docs/cookbooks -name "Dockerfile" -exec echo "Linting {}" \; -exec hadolint {} \;
-
-      - name: Lint template Dockerfiles
-        run: |
-          echo "🔍 Linting template Dockerfiles..."
-          find templates -name "Dockerfile*" -exec echo "Linting {}" \; -exec hadolint {} \;
+          echo "🔍 Linting all Dockerfiles..."
+          find . -name "Dockerfile" -o -name "Dockerfile*" | xargs hadolint
 
   validate-configs:
     name: Validate Configuration Files
