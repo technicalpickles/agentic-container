@@ -1,6 +1,6 @@
 # Go Development Extension
 # Demonstrates: mise install for new languages, go install for packages
-FROM ghcr.io/technicalpickles/agentic-container:latest
+FROM ghcr.io/technicalpickles/agentic-container:main
 
 # Build argument for Go version (can be overridden during build)
 ARG GO_VERSION=1.23.5
@@ -13,4 +13,5 @@ RUN mise use -g go@${GO_VERSION}
 RUN go install github.com/air-verse/air@latest
 USER agent
 
+# No HEALTHCHECK - this container is designed for task execution, not service monitoring
 WORKDIR /workspace

@@ -1,13 +1,13 @@
 # Full-Stack Web Development Container
 # Extends agentic-container with web development tools and databases
 
-FROM ghcr.io/your-repo/agentic-container:dev
+FROM ghcr.io/your-repo/agentic-container:v1.0.0
 
 # Switch to root for system package installation
 USER root
 
 # Install additional system packages for web development
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     # Database clients
     postgresql-client \
     mysql-client \
