@@ -1,7 +1,7 @@
 # Python Machine Learning Development Container
 # Extends agentic-container with Python ML libraries and Jupyter
 
-FROM ghcr.io/your-repo/agentic-container:latest
+FROM ghcr.io/your-repo/agentic-container:v1.0.0
 
 # Install Python via mise
 RUN mise install python@3.13.7 && mise use -g python@3.13.7
@@ -10,7 +10,7 @@ RUN mise install python@3.13.7 && mise use -g python@3.13.7
 USER root
 
 # Install system dependencies for ML libraries
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     # For numpy, scipy, matplotlib
     python3-dev \
     libopenblas-dev \

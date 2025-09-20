@@ -249,6 +249,9 @@ WORKDIR /workspace
 # For background agents: use dumb-init as entrypoint for proper signal handling
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 
+# No HEALTHCHECK - this container is designed for agent task execution, not service monitoring
+# Agents execute commands and return results; traditional health checks are not applicable
+
 # Default command - can be overridden
 CMD ["/bin/bash", "--login"]
 
