@@ -63,7 +63,8 @@ jobs:
         with:
           context: .
           target: standard
-          platforms: linux/amd64,linux/arm64
+          # Use single platform for PRs (enables load), multi-platform for main branch
+          platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
           push: ${{ github.event_name != 'pull_request' }}
           load: ${{ github.event_name == 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
