@@ -245,7 +245,11 @@ main() {
         echo "===================="
         echo ""
         echo "Would execute:"
-        echo "docker buildx build --platform $PLATFORMS -t $TARGET_IMAGE -f $dockerfile_path ."
+        if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+            echo "docker buildx build --platform $PLATFORMS -t $TARGET_IMAGE -f $dockerfile_path --secret id=github_token,src=<(gh auth token) ."
+        else
+            echo "docker buildx build --platform $PLATFORMS -t $TARGET_IMAGE -f $dockerfile_path ."
+        fi
         if [[ "$LATEST" == true ]]; then
             echo "docker tag $TARGET_IMAGE $TARGET_IMAGE_BASE:latest"
         fi
@@ -261,11 +265,24 @@ main() {
     # Build the image
     export DOCKER_BUILDKIT=1
     echo "🏗️  Building image..."
-    docker buildx build \
-        --platform "$PLATFORMS" \
-        -t "$TARGET_IMAGE" \
-        -f "$dockerfile_path" \
-        .
+    
+    # Check if GitHub CLI is available for token access
+    if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+        echo "🔐 Using GitHub token via secret mounting to avoid API rate limits"
+        docker buildx build \
+            --platform "$PLATFORMS" \
+            -t "$TARGET_IMAGE" \
+            -f "$dockerfile_path" \
+            --secret id=github_token,src=<(gh auth token) \
+            .
+    else
+        echo "⚠️  No GitHub token available, may hit API rate limits"
+        docker buildx build \
+            --platform "$PLATFORMS" \
+            -t "$TARGET_IMAGE" \
+            -f "$dockerfile_path" \
+            .
+    fi
     
     # Tag as latest if requested
     if [[ "$LATEST" == true ]]; then

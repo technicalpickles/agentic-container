@@ -7,24 +7,32 @@
 ## Phase 1 Review and Analysis
 
 ### Current State Analysis
+
 From the existing Dockerfile structure:
-- **`base`**: Ubuntu 24.04 + system packages + mise + Docker CLI (~800MB estimated)
-- **`tools`**: base + starship + dev enhancements (~850MB estimated) 
+
+- **`base`**: Ubuntu 24.04 + system packages + mise + Docker CLI (~800MB
+  estimated)
+- **`tools`**: base + starship + dev enhancements (~850MB estimated)
 - **Language variants**: tools + single language runtime (~1GB+ estimated)
 - **`dev`**: tools + all languages (~2.2GB estimated)
 
 ### Phase 1 Optimization Goals
-1. **Package Installation Optimization**: Use `--no-install-recommends`, aggressive cleanup
+
+1. **Package Installation Optimization**: Use `--no-install-recommends`,
+   aggressive cleanup
 2. **Multi-Stage Build Optimization**: Separate build dependencies from runtime
 3. **Layer Consolidation**: Minimize intermediate layers
-4. **Mise Configuration Optimization**: Pre-configure directories, optimize cache placement
+4. **Mise Configuration Optimization**: Pre-configure directories, optimize
+   cache placement
 
 ## Implementation Steps
 
 ### Step 1: Create Optimized Minimal Stage
 
 #### 1.1 Analyze Current Package Installation
+
 Current base stage installs packages without optimization:
+
 ```dockerfile
 RUN apt-get update && apt-get install -y \
     build-essential \
@@ -35,6 +43,7 @@ RUN apt-get update && apt-get install -y \
 ```
 
 **Optimization Strategy**:
+
 - Use `--no-install-recommends` to avoid unnecessary packages
 - Combine installation and cleanup in single RUN command
 - Remove package caches, docs, and temporary files
@@ -43,10 +52,11 @@ RUN apt-get update && apt-get install -y \
 #### 1.2 Package Categorization
 
 **Essential Runtime Packages** (keep in minimal):
+
 ```bash
 # Core system tools
 git curl ca-certificates gnupg lsb-release
-# Essential CLI tools  
+# Essential CLI tools
 vim nano less jq unzip zip
 # Process management
 dumb-init sudo procps
@@ -55,7 +65,8 @@ locales
 ```
 
 **Development Build Tools** (move to multi-stage builder):
-```bash 
+
+```bash
 # Can be installed in builder stage and removed
 build-essential cmake
 # Optional development tools
@@ -65,6 +76,7 @@ iputils-ping netcat-traditional telnet
 ```
 
 **Docker CLI** (optimized installation):
+
 - Keep Docker CLI but optimize GPG key handling
 - Use streamlined installation process
 
@@ -103,13 +115,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && find /var/log -type f -exec truncate -s 0 {} \; \
     && find /usr/share/doc -type f -delete \
     && find /usr/share/man -type f -delete
-    
+
 # Copy mise from builder
 COPY --from=builder /usr/local/bin/mise /usr/local/bin/mise
 
 # Optimized mise setup
 ENV MISE_DATA_DIR=/usr/local/share/mise
-ENV MISE_CONFIG_DIR=/etc/mise  
+ENV MISE_CONFIG_DIR=/etc/mise
 ENV MISE_CACHE_DIR=/tmp/mise-cache
 
 RUN mkdir -p $MISE_DATA_DIR $MISE_CONFIG_DIR $MISE_CACHE_DIR \
@@ -141,6 +153,7 @@ RUN chmod +x /usr/local/bin/extend-image
 ### Step 2: Update Build Stages to use Minimal
 
 #### 2.1 Update Standard Stage
+
 ```dockerfile
 FROM minimal AS standard
 # Add starship and enhanced development experience
@@ -179,14 +192,16 @@ CMD ["/bin/bash", "--login"]
 ```
 
 #### 2.2 Update Language Variants
+
 Change all language variants to build from `standard` instead of `tools`:
+
 ```dockerfile
 FROM standard AS ruby
 COPY --from=ruby-stage $MISE_DATA_DIR/installs/ruby $MISE_DATA_DIR/installs/ruby
 RUN mise use -g ruby@3.4.5
 
 FROM standard AS node
-COPY --from=node-stage $MISE_DATA_DIR/installs/node $MISE_DATA_DIR/installs/node  
+COPY --from=node-stage $MISE_DATA_DIR/installs/node $MISE_DATA_DIR/installs/node
 RUN mise use -g node@24.8.0
 
 # etc.
@@ -195,10 +210,11 @@ RUN mise use -g node@24.8.0
 ### Step 3: Update GitHub Actions
 
 #### 3.1 Add Minimal to Build Matrix
+
 ```yaml
 strategy:
   matrix:
-    target: [minimal, standard, dev, ruby, node, python, go]  # removed base, tools
+    target: [minimal, standard, dev, ruby, node, python, go] # removed base, tools
     include:
       - target: minimal
         platforms: linux/amd64,linux/arm64
@@ -222,14 +238,15 @@ strategy:
 ### Step 4: Update Extension Script
 
 #### 4.1 Update Help Text
+
 ```bash
 BASE IMAGES:
     minimal               Core system tools, mise, Docker CLI only (~500MB)
-    standard              Minimal + starship prompt and dev enhancements (~750MB)  
+    standard              Minimal + starship prompt and dev enhancements (~750MB)
     ruby                  Standard + Ruby runtime
     node                  Standard + Node.js runtime
     python                Standard + Python runtime
-    go                    Standard + Go runtime  
+    go                    Standard + Go runtime
     dev                   All languages and tools (kitchen sink)
 ```
 
@@ -238,6 +255,7 @@ BASE IMAGES:
 ### Step 1: Build Size Validation
 
 #### 1.1 Build and Measure Images
+
 ```bash
 # Build all variants locally
 docker build --target minimal -t agentic-container:minimal .
@@ -250,11 +268,12 @@ docker images agentic-container --format "table {{.Repository}}\t{{.Tag}}\t{{.Si
 # Expected results:
 # REPOSITORY           TAG        SIZE
 # agentic-container    minimal    ~500MB  (target: <550MB)
-# agentic-container    standard   ~750MB  (target: <800MB)  
+# agentic-container    standard   ~750MB  (target: <800MB)
 # agentic-container    dev        ~2.0GB  (target: <2.2GB)
 ```
 
 #### 1.2 Layer Analysis
+
 ```bash
 # Analyze layers to identify optimization opportunities
 docker history agentic-container:minimal --no-trunc
@@ -264,6 +283,7 @@ dive agentic-container:minimal
 ### Step 2: Functionality Validation
 
 #### 2.1 Core Tools Testing
+
 ```bash
 # Test minimal image
 docker run --rm agentic-container:minimal bash -c '
@@ -274,21 +294,22 @@ docker run --rm agentic-container:minimal bash -c '
     docker --version
     mise --version
     jq --version
-    
+
     echo "=== Testing Mise Setup ==="
     mise list
     eval "$(mise activate bash)"
-    
+
     echo "=== Testing User Setup ==="
     whoami
     sudo echo "sudo works"
-    
+
     echo "=== Testing Extension Script ==="
     extend-image --help
 '
 ```
 
 #### 2.2 Extension Testing
+
 ```bash
 # Test extending minimal image
 echo 'FROM agentic-container:minimal
@@ -300,8 +321,9 @@ docker run --rm test-minimal-extend python3 --version
 ```
 
 #### 2.3 Development Workflow Testing
+
 ```bash
-# Test standard image development workflow  
+# Test standard image development workflow
 docker run --rm -v $(pwd):/workspace agentic-container:standard bash -c '
     set -e
     cd /workspace
@@ -314,6 +336,7 @@ docker run --rm -v $(pwd):/workspace agentic-container:standard bash -c '
 ### Step 3: Performance Validation
 
 #### 2.1 Image Pull Time Testing
+
 ```bash
 # Clean docker images and test pull times
 docker system prune -f
@@ -322,6 +345,7 @@ time docker pull agentic-container:standard
 ```
 
 #### 2.2 Container Start Time Testing
+
 ```bash
 # Measure container startup times
 time docker run --rm agentic-container:minimal echo "started"
@@ -331,6 +355,7 @@ time docker run --rm agentic-container:standard echo "started"
 ### Step 4: Regression Testing
 
 #### 4.1 Existing Extension Examples
+
 ```bash
 # Test all existing extension examples still work
 cd docs/examples
@@ -342,6 +367,7 @@ done
 ```
 
 #### 4.2 Template Compatibility
+
 ```bash
 # Test that templates still work with new minimal base
 cd templates
@@ -356,20 +382,23 @@ done
 ## Success Criteria
 
 ### Primary Criteria (Must Pass)
+
 - [ ] `minimal` image < 550MB (target: ~500MB)
-- [ ] `standard` image < 800MB (target: ~750MB)  
+- [ ] `standard` image < 800MB (target: ~750MB)
 - [ ] All core functionality preserved (git, docker, mise, basic tools)
 - [ ] Extension mechanism works with new minimal base
 - [ ] No regression in container startup time
 - [ ] All existing examples and templates compatible
 
 ### Secondary Criteria (Should Pass)
+
 - [ ] Image pull time reduced by 30%+ for minimal
 - [ ] `dev` image size reduced to < 2.0GB
 - [ ] Build time maintained or improved
 - [ ] CI/CD pipeline builds successfully
 
 ### Documentation Criteria
+
 - [ ] README updated with new image structure
 - [ ] Extension examples updated for minimal base
 - [ ] Migration guide provided for existing users
@@ -378,19 +407,22 @@ done
 ## Rollback Plan
 
 If validation fails:
+
 1. Revert Dockerfile changes
-2. Remove minimal from GitHub Actions matrix  
+2. Remove minimal from GitHub Actions matrix
 3. Keep existing `base` and `tools` stages as fallback
 4. Document lessons learned for future optimization
 
 ## Next Steps After Phase 1
 
 Upon successful completion:
-1. Begin Phase 2: Language-specific optimization 
+
+1. Begin Phase 2: Language-specific optimization
 2. Create specialized use-case images
 3. Implement advanced file system optimizations
 4. Monitor real-world usage patterns and feedback
 
 ---
 
-**Implementation Ready**: All steps documented, validation criteria defined, rollback plan established.
+**Implementation Ready**: All steps documented, validation criteria defined,
+rollback plan established.

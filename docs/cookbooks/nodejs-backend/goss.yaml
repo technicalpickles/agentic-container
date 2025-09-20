@@ -38,7 +38,7 @@ command:
       - "@types/node@"
       - "ts-node@"
       - "nodemon@"
-  "node -e 'console.log(\"Node.js is working\")'":
+  'node -e ''console.log("Node.js is working")''':
     exit-status: 0
     stdout:
       - "Node.js is working"

@@ -1,6 +1,7 @@
 # Cookbook Testing Templates
 
-This directory contains template files to help you add goss testing to new cookbook examples.
+This directory contains template files to help you add goss testing to new
+cookbook examples.
 
 ## Quick Start
 
@@ -34,7 +35,8 @@ cd /project/root
 
 ## Template Files
 
-### `goss-template.yaml`  
+### `goss-template.yaml`
+
 - **Starting template** with common tests and examples
 - **Language-specific examples** commented out for easy copying
 - **Consistent baseline** tests (workspace, user, git, mise)
@@ -54,7 +56,8 @@ All cookbooks use the **unified test script** at `scripts/test-dockerfile.sh`:
 ```
 
 **Benefits of unified approach:**
-- ✅ **Single source of truth** - One script to maintain  
+
+- ✅ **Single source of truth** - One script to maintain
 - ✅ **Complete workflow** - Builds, tests, and cleans up automatically
 - ✅ **Consistent behavior** - Same testing logic for all cookbooks
 - ✅ **No image management** - Always tests what you build
@@ -79,15 +82,18 @@ All cookbooks use the **unified test script** at `scripts/test-dockerfile.sh`:
 ## Examples
 
 See existing cookbook implementations:
+
 - `docs/cookbooks/python-cli/` - Python package testing
 - `docs/cookbooks/nodejs-backend/` - Node.js + TypeScript + system packages
 
 ## Architecture
 
 The testing approach uses **container self-installation**:
+
 1. Container installs goss using mise (architecture-agnostic)
 2. Container runs tests directly (no volume mounting issues)
 3. Works identically on ARM64/x86_64 and in CI
 4. No host dependencies beyond Docker
 
-This solves the traditional dgoss architecture compatibility problems while maintaining the benefits of goss testing.
+This solves the traditional dgoss architecture compatibility problems while
+maintaining the benefits of goss testing.

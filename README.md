@@ -1,22 +1,29 @@
 # Agentic Container
 
-A fast, reliable container environment optimized for AI agent execution in cloud platforms. Provides a solid foundation with agent tooling and mise version manager, designed to be extended with exactly the languages and tools your agents need.
+A fast, reliable container environment optimized for AI agent execution in cloud
+platforms. Provides a solid foundation with agent tooling and mise version
+manager, designed to be extended with exactly the languages and tools your
+agents need.
 
 ## 🤖 Built for AI Agents
 
-Optimized for cloud providers offering agentic experiences like Cursor Background Agents, Replit AI, and similar platforms:
+Optimized for cloud providers offering agentic experiences like Cursor
+Background Agents, Replit AI, and similar platforms:
 
 - **Fast startup time**: Pre-installed agent toolchain for quick execution
 - **Headless execution**: No interactive prompts, reliable automation
-- **Code analysis ready**: ast-grep and ripgrep pre-installed, Python/Node.js standard
+- **Code analysis ready**: ast-grep and ripgrep pre-installed, Python/Node.js
+  standard
 - **MCP server ready**: uv/uvx and npx universal package runners available
 - **Extension-friendly**: Easy to customize for specific agent workflows
 
 ## 🚀 Quick Start with AI Coding Agents
 
-All AI coding agents are pre-installed and ready to use! Just run the container and start with your preferred agent:
+All AI coding agents are pre-installed and ready to use! Just run the container
+and start with your preferred agent:
 
 ### Claude Code ([docs](https://docs.anthropic.com/en/docs/claude-code/setup))
+
 ```bash
 # Start Claude Code directly - authenticate when prompted
 docker run -it --rm -v $(pwd):/workspace ghcr.io/technicalpickles/agentic-container:latest claude
@@ -26,6 +33,7 @@ docker run -it --rm -v $(pwd):/workspace ghcr.io/technicalpickles/agentic-contai
 ```
 
 ### OpenAI Codex CLI ([docs](https://developers.openai.com/codex/cli/))
+
 ```bash
 # Start Codex CLI - authenticate when prompted
 docker run -it --rm -v $(pwd):/workspace ghcr.io/technicalpickles/agentic-container:latest codex
@@ -35,6 +43,7 @@ docker run -it --rm -v $(pwd):/workspace ghcr.io/technicalpickles/agentic-contai
 ```
 
 ### GitHub Copilot CLI ([docs](https://docs.github.com/en/copilot/how-tos/use-copilot-for-common-tasks/use-copilot-in-the-cli))
+
 ```bash
 # Authenticate with GitHub first, then use Copilot
 docker run -it --rm -v $(pwd):/workspace ghcr.io/technicalpickles/agentic-container:latest bash -c "gh auth login && gh copilot suggest 'install dependencies'"
@@ -44,6 +53,7 @@ docker run -it --rm -v $(pwd):/workspace ghcr.io/technicalpickles/agentic-contai
 ```
 
 ### Goose ([docs](https://block.github.io/goose/docs/getting-started/installation))
+
 ```bash
 # Start Goose session - configure provider when prompted
 docker run -it --rm -v $(pwd):/workspace ghcr.io/technicalpickles/agentic-container:latest goose session
@@ -53,6 +63,7 @@ docker run -it --rm -v $(pwd):/workspace ghcr.io/technicalpickles/agentic-contai
 ```
 
 ### OpenCode.ai ([docs](https://opencode.ai/))
+
 ```bash
 # Start OpenCode with terminal UI
 docker run -it --rm -v $(pwd):/workspace ghcr.io/technicalpickles/agentic-container:latest opencode
@@ -62,68 +73,81 @@ docker run -it --rm -v $(pwd):/workspace ghcr.io/technicalpickles/agentic-contai
 ```
 
 ### Experimenting with the container
+
 ```bash
 # Use the dev environment for quick experimentation
 docker run -it --rm -v $(pwd):/workspace ghcr.io/technicalpickles/agentic-container:dev bash
 # Then run: claude, codex, gh copilot, goose, or opencode
 ```
+
 ## 📦 Available Images
 
-| Image Tag | Description | Size | Maintenance Level | Use Case |
-|-----------|-------------|------|------------------|----------|
-| `latest` | Ubuntu + mise + Python + Node.js + ast-grep + uv/uvx | ~950MB | **Actively maintained** | Production-ready base for agent deployment |
-| `dev` | Latest + all languages | ~2.2GB | **Example only** | Agent prototyping and experimentation |
-
+| Image Tag | Description                                          | Size   | Maintenance Level       | Use Case                                   |
+| --------- | ---------------------------------------------------- | ------ | ----------------------- | ------------------------------------------ |
+| `latest`  | Ubuntu + mise + Python + Node.js + ast-grep + uv/uvx | ~950MB | **Actively maintained** | Production-ready base for agent deployment |
+| `dev`     | Latest + all languages                               | ~2.2GB | **Example only**        | Agent prototyping and experimentation      |
 
 ### 🤔 When to Use Which Image?
 
-| Scenario | Recommended Image | Why? |
-|----------|------------------|------|
-| **Production agent deployment** | `latest` + extensions | Smaller, controlled dependencies, maintained |
-| **Cloud agent platforms** | `latest` + extensions | Predictable, minimal, fast startup |
-| **Background agent processing** | `latest` + extensions | Consistent environment, documented requirements |
-| **Agent prototyping** | `dev` | All languages ready, fastest to start experimenting |
-| **Development environments** | `latest` + project tools | Optimized for the languages your projects use |
-| **Unknown agent requirements** | Start with `dev`, then create extension | Explore needs, then optimize |
-
-
+| Scenario                        | Recommended Image                       | Why?                                                |
+| ------------------------------- | --------------------------------------- | --------------------------------------------------- |
+| **Production agent deployment** | `latest` + extensions                   | Smaller, controlled dependencies, maintained        |
+| **Cloud agent platforms**       | `latest` + extensions                   | Predictable, minimal, fast startup                  |
+| **Background agent processing** | `latest` + extensions                   | Consistent environment, documented requirements     |
+| **Agent prototyping**           | `dev`                                   | All languages ready, fastest to start experimenting |
+| **Development environments**    | `latest` + project tools                | Optimized for the languages your projects use       |
+| **Unknown agent requirements**  | Start with `dev`, then create extension | Explore needs, then optimize                        |
 
 ## 🔧 What's Included
 
 ### Core Tools (`latest` image)
-- **Python** + **Node.js** (latest stable versions) - Standard runtime environments for agents
+
+- **Python** + **Node.js** (latest stable versions) - Standard runtime
+  environments for agents
 - **AI Coding Agents** - All pre-installed and ready to use:
   - **Claude Code** (`claude` command) - Anthropic's AI coding assistant
   - **OpenAI Codex CLI** (`codex` command) - OpenAI's coding agent
-  - **GitHub Copilot CLI** (`gh copilot` command) - GitHub's AI pair programmer  
+  - **GitHub Copilot CLI** (`gh copilot` command) - GitHub's AI pair programmer
   - **Goose** (`goose` command) - Block's AI coding assistant
   - **OpenCode.ai** (`opencode` command) - Terminal-based AI coding agent
 - **ast-grep** - Structural code search and analysis tool (installed via mise)
-- **uv/uvx** - Fast Python package installer and universal script runner for MCP servers (installed via mise)
+- **uv/uvx** - Fast Python package installer and universal script runner for MCP
+  servers (installed via mise)
 - **mise** - Universal version manager for additional languages and tools
 - **Docker CLI** + Docker Compose - Container orchestration capabilities
-- **Git** + **GitHub CLI** - Version control and GitHub integration with agent workflows
-- **Essential CLI tools** - vim, nano, jq, curl, tree, htop, ripgrep for agent scripting
+- **Git** + **GitHub CLI** - Version control and GitHub integration with agent
+  workflows
+- **Essential CLI tools** - vim, nano, jq, curl, tree, htop, ripgrep for agent
+  scripting
 - **Non-root user** - Security-conscious execution environment
 - **Optimized shell** - Configured bash environment for headless operations
 
 ### Additional Languages (`dev` image only)
-The `dev` image includes pre-installed language runtimes for quick agent experimentation:
+
+The `dev` image includes pre-installed language runtimes for quick agent
+experimentation:
+
 - **Ruby** + **Node.js** + **Python** + **Go** (all latest stable versions)
 - **Lefthook** - Git hooks manager
 
-> **Note**: For production agent deployment, extend `latest` with only the languages your agents need rather than using the large `dev` image. Pin specific versions using `mise use` or `.mise.toml` files.
+> **Note**: For production agent deployment, extend `latest` with only the
+> languages your agents need rather than using the large `dev` image. Pin
+> specific versions using `mise use` or `.mise.toml` files.
 
 ## 🏗️ Extending for Different Technology Stacks
 
-The recommended approach is to extend the `latest` image with exactly the languages and tools your **application stack needs**. All AI agents are pre-installed and ready to work with any stack you configure. Focus on the runtime environment for your specific application type.
+The recommended approach is to extend the `latest` image with exactly the
+languages and tools your **application stack needs**. All AI agents are
+pre-installed and ready to work with any stack you configure. Focus on the
+runtime environment for your specific application type.
 
 For examples, see [docs/cookbooks](docs/cookbooks/README.md)
 
-
 ## 🔄 Cursor Background Agent Integration
 
-Your agentic-container provides development environments that work seamlessly with Cursor Background Agents, Claude Code, Codex CLI, and other AI coding tools.
+Your agentic-container provides development environments that work seamlessly
+with Cursor Background Agents, Claude Code, Codex CLI, and other AI coding
+tools.
 
 ### Environment Configuration
 
@@ -137,7 +161,7 @@ Create `.cursor/environment.json` for containerized agent development:
   "install": "mise install && pip install fastapi sqlalchemy pytest",
   "terminals": [
     {
-      "name": "FastAPI Development", 
+      "name": "FastAPI Development",
       "command": "python -c 'import fastapi; print(\"FastAPI development environment ready\")'"
     },
     {
@@ -154,7 +178,8 @@ Create `.cursor/environment.json` for containerized agent development:
 
 ### Best Practices for Background Agents
 
-- **Use `standard` + extensions** for Background Agent environments (not `dev` - it's too large)
+- **Use `standard` + extensions** for Background Agent environments (not `dev` -
+  it's too large)
 - **Mount code as volume** to enable agent file modifications
 - **Include `.dockerignore`** to optimize build context for faster agent startup
 - **Set non-interactive environment** for reliable automation
@@ -182,17 +207,19 @@ WORKDIR /workspace
 Automate your custom image builds with GitHub Actions:
 
 1. Copy the template workflow:
+
    ```bash
    cp templates/github-workflow-template.yml .github/workflows/build-container.yml
    ```
 
 2. Customize for your needs:
+
    ```yaml
    - name: Build and push Docker image
      uses: docker/build-push-action@v5
      with:
        context: .
-       file: ./path/to/your/Dockerfile  # Optional
+       file: ./path/to/your/Dockerfile # Optional
        platforms: linux/amd64,linux/arm64
        push: ${{ github.event_name != 'pull_request' }}
        tags: ${{ steps.meta.outputs.tags }}
@@ -206,10 +233,11 @@ Automate your custom image builds with GitHub Actions:
 
 ### VS Code Dev Containers (for agent development)
 
-For custom agent development environments, create a `Dockerfile` and reference it:
+For custom agent development environments, create a `Dockerfile` and reference
+it:
 
 ```dockerfile
-# .devcontainer/Dockerfile  
+# .devcontainer/Dockerfile
 FROM ghcr.io/technicalpickles/agentic-container:latest
 
 RUN mise use -g python@3.13.7 node@22.12.0 && \
@@ -241,7 +269,7 @@ For quick Claude agent experimentation, you can use the `dev` image directly:
 
 ```json
 {
-  "name": "Quick Claude Agent Prototyping Environment", 
+  "name": "Quick Claude Agent Prototyping Environment",
   "image": "ghcr.io/technicalpickles/agentic-container:dev",
   "postCreateCommand": "pip install anthropic pydantic python-dotenv",
   "mounts": [
@@ -258,7 +286,7 @@ services:
   dev:
     build:
       context: .
-      dockerfile: Dockerfile.dev  # Your custom extension
+      dockerfile: Dockerfile.dev # Your custom extension
     volumes:
       - .:/workspace
       - /var/run/docker.sock:/var/run/docker.sock
@@ -271,7 +299,7 @@ services:
     image: ghcr.io/technicalpickles/agentic-container:dev
     volumes:
       - .:/workspace
-      - /var/run/docker.sock:/var/run/docker.sock  
+      - /var/run/docker.sock:/var/run/docker.sock
     working_dir: /workspace
     tty: true
     stdin_open: true
@@ -333,7 +361,8 @@ RUN mise use -g go@1.23.5 ruby@3.3.6 && \
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
+for details.
 
 ## 🆘 Support
 

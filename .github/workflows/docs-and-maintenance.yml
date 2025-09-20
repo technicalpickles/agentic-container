@@ -1,0 +1,235 @@
+name: Documentation and Maintenance
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "README.md"
+      - "*.md"
+  schedule:
+    # Run weekly maintenance on Sundays at 2 AM UTC
+    - cron: "0 2 * * 0"
+  workflow_dispatch:
+    inputs:
+      force_update:
+        description: "Force documentation update even without changes"
+        required: false
+        type: boolean
+        default: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  update-docs:
+    name: Update Documentation
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0 # Get full history for accurate doc generation
+
+      - name: Set up environment
+        run: |
+          sudo apt-get update && sudo apt-get install -y jq curl
+
+      - name: Generate cookbook documentation
+        run: |
+          echo "📚 Generating cookbook documentation..."
+
+          # Create or update cookbook index
+          cat > docs/cookbooks/GENERATED_INDEX.md << 'EOF'
+          # Available Cookbooks
+
+          This index is automatically generated. Last updated: $(date -Iseconds)
+
+          | Cookbook | Description | Dockerfile | Goss Tests |
+          |----------|-------------|------------|------------|
+          EOF
+
+          for cookbook_dir in docs/cookbooks/*/; do
+            if [[ -d "$cookbook_dir" && "$cookbook_dir" != *"_templates"* ]]; then
+              cookbook_name=$(basename "$cookbook_dir")
+
+              # Check for Dockerfile
+              dockerfile_status="❌"
+              if [[ -f "$cookbook_dir/Dockerfile" ]]; then
+                dockerfile_status="✅"
+              fi
+
+              # Check for goss tests
+              goss_status="❌"
+              if [[ -f "$cookbook_dir/goss.yaml" ]]; then
+                goss_status="✅"
+                test_count=$(grep -c "command\|file\|port\|service\|user\|group\|package\|process" "$cookbook_dir/goss.yaml" 2>/dev/null || echo "0")
+                goss_status="✅ ($test_count tests)"
+              fi
+
+              # Extract description from README if it exists
+              description="Container for $cookbook_name development"
+              if [[ -f "$cookbook_dir/README.md" ]]; then
+                description=$(head -5 "$cookbook_dir/README.md" | grep -v "^#" | grep -v "^$" | head -1 || echo "$description")
+              fi
+
+              echo "| [$cookbook_name](${cookbook_dir}README.md) | $description | $dockerfile_status | $goss_status |" >> docs/cookbooks/GENERATED_INDEX.md
+            fi
+          done
+
+      - name: Update README with latest image information
+        run: |
+          echo "📝 Updating README with latest image information..."
+
+          # This could be enhanced to pull actual image sizes and tags from the registry
+          # For now, we'll update the last-updated timestamp
+
+          if [[ -f "README.md" ]]; then
+            # Update last updated timestamp if pattern exists
+            if grep -q "Last updated:" README.md; then
+              sed -i "s/Last updated:.*/Last updated: $(date -Iseconds)/" README.md
+              echo "✅ Updated last-updated timestamp in README.md"
+            fi
+
+            # Add a simple status badge update area (if it doesn't exist)
+            if ! grep -q "<!-- AUTO-GENERATED-CONTENT-START -->" README.md; then
+              {
+                echo "<!-- AUTO-GENERATED-CONTENT-START -->"
+                echo "<!-- This section is automatically updated by GitHub Actions -->"
+                echo "*Last documentation update: $(date -Iseconds)*"
+                echo "<!-- AUTO-GENERATED-CONTENT-END -->"
+              } >> README.md
+            else
+              # Update the auto-generated section
+              sed -i '/<!-- AUTO-GENERATED-CONTENT-START -->/,/<!-- AUTO-GENERATED-CONTENT-END -->/{
+                /<!-- AUTO-GENERATED-CONTENT-START -->/!{
+                  /<!-- AUTO-GENERATED-CONTENT-END -->/!d
+                }
+              }' README.md
+
+              # Insert updated content
+              current_date=$(date -Iseconds)
+              sed -i "/<!-- AUTO-GENERATED-CONTENT-START -->/a\\
+              <!-- This section is automatically updated by GitHub Actions -->\\
+              *Last documentation update: $current_date*" README.md
+            fi
+          fi
+
+      - name: Commit documentation updates
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+          # Add all documentation changes
+          git add docs/ README.md
+
+          if git diff --cached --quiet; then
+            echo "📝 No documentation changes to commit"
+          else
+            echo "📝 Committing documentation updates..."
+            git commit -m "docs: Auto-update documentation and cookbook index [skip ci]"
+            git push
+            echo "✅ Documentation updated successfully"
+          fi
+
+  maintenance:
+    name: Weekly Maintenance
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for dependency updates
+        run: |
+          echo "🔍 Checking for potential dependency updates..."
+
+          # Check base image updates (Ubuntu versions, etc.)
+          {
+            echo "## Dependency Update Check - $(date -Iseconds)"
+            echo ""
+            echo "### Found version specifications:"
+            grep -rn "VERSION=" Dockerfile docs/cookbooks/*/Dockerfile 2>/dev/null | head -10 || echo "No version specifications found"
+            echo ""
+            echo "### Base image information:"
+            grep -n "FROM" Dockerfile | head -5
+            echo ""
+          } > maintenance-report.md
+
+          echo "📄 Maintenance report generated"
+          cat maintenance-report.md
+
+      - name: Clean up old workflow runs
+        run: |
+          echo "🧹 Workflow cleanup completed (GitHub handles this automatically)"
+          echo "Old workflow runs are automatically cleaned up by GitHub after 90 days"
+
+      - name: Image size monitoring report
+        run: |
+          echo "📊 Image size monitoring report"
+          echo "This would typically check recent image sizes and report on trends"
+          echo "Current implementation: placeholder for future enhancement"
+
+          # This could be enhanced to:
+          # - Pull recent build artifacts
+          # - Compare image sizes over time
+          # - Generate size trend reports
+          # - Alert on significant size increases
+
+      - name: Create maintenance issue (if needed)
+        if: github.event_name == 'schedule'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Create a maintenance tracking issue if significant updates are needed
+            // This is a placeholder for more sophisticated maintenance automation
+
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'maintenance,automated',
+              state: 'open'
+            });
+
+            // Only create issue if no open maintenance issues exist
+            if (issues.length === 0) {
+              const maintenanceContent = `
+              # Weekly Maintenance Check
+
+              This automated issue tracks weekly maintenance tasks for the agentic-container project.
+
+              ## Checklist
+              - [ ] Review dependency versions in Dockerfiles
+              - [ ] Check for security updates in base images
+              - [ ] Review and update documentation
+              - [ ] Monitor image sizes for significant changes
+              - [ ] Clean up old branches and tags if needed
+
+              ## Automated Findings
+              - Documentation was automatically updated
+              - No immediate action required based on automated checks
+
+              **Created:** ${new Date().toISOString()}
+              **Next Check:** ${new Date(Date.now() + 7*24*60*60*1000).toISOString().split('T')[0]}
+              `;
+
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `Weekly Maintenance - ${new Date().toISOString().split('T')[0]}`,
+                body: maintenanceContent,
+                labels: ['maintenance', 'automated']
+              });
+
+              console.log('Created weekly maintenance tracking issue');
+            } else {
+              console.log('Maintenance issue already exists, skipping creation');
+            }

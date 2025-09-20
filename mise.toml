@@ -1,3 +1,5 @@
 [tools]
 hadolint = "latest"
 goss = "latest"
+yamllint = "latest"
+trivy = "latest"

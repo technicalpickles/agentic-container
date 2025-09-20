@@ -1,0 +1,89 @@
+name: Lint and Validate
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["docs/**", "README.md", "*.md"]
+  pull_request:
+    branches: [main]
+    paths-ignore: ["docs/**", "README.md", "*.md"]
+
+jobs:
+  hadolint:
+    name: Lint Dockerfiles
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Lint all Dockerfiles with Hadolint
+        uses: jbergstroem/hadolint-gh-action@v1.13.0
+        with:
+          dockerfile: '**/Dockerfile*'
+          config_file: '.hadolint.yaml'
+          annotate: true
+
+  yamllint:
+    name: Lint YAML files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run yamllint
+        uses: ibiqlik/action-yamllint@v3.0.2
+        with:
+          file_or_dir: "."
+          config_file: ".yamllint"
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Trivy
+        uses: aquasecurity/setup-trivy@v0.2.3
+        with:
+          version: v0.66.0
+
+      - name: Run Trivy vulnerability scanner
+        run: |
+          trivy config --format sarif --output trivy-results.sarif .
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
+
+      - name: Run Dockerfile security scan
+        run: |
+          echo "🔍 Running basic Dockerfile security checks..."
+
+          # Check for security anti-patterns
+          security_issues=0
+
+          if grep -r "sudo" Dockerfile docs/cookbooks/*/Dockerfile 2>/dev/null; then
+            echo "⚠️  Warning: Found sudo usage in Dockerfiles"
+            security_issues=$((security_issues + 1))
+          fi
+
+          if grep -r "chmod 777" Dockerfile docs/cookbooks/*/Dockerfile 2>/dev/null; then
+            echo "❌ Error: Found chmod 777 in Dockerfiles (security risk)"
+            security_issues=$((security_issues + 1))
+          fi
+
+          if grep -r "ADD http" Dockerfile docs/cookbooks/*/Dockerfile 2>/dev/null; then
+            echo "⚠️  Warning: Found ADD with HTTP URLs (consider using COPY with wget/curl)"
+            security_issues=$((security_issues + 1))
+          fi
+
+          echo "Security scan completed with $security_issues potential issues"
+
+          # Don't fail the build on warnings, only on critical issues
+          if [ $security_issues -gt 5 ]; then
+            echo "❌ Too many security issues found"
+            exit 1
+          fi

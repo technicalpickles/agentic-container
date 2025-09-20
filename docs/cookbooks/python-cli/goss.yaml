@@ -19,7 +19,7 @@ command:
     exit-status: 0
     stdout:
       - /\d+\.\d+/
-  "python3 -c 'import rich; print(\"rich imported successfully\")'":
+  'python3 -c ''import rich; print("rich imported successfully")''':
     exit-status: 0
     stdout:
       - "rich imported successfully"
@@ -27,7 +27,7 @@ command:
     exit-status: 0
     stdout:
       - /\d+\.\d+/
-  "python3 -c 'import click; click.echo(\"CLI works\")'":
+  'python3 -c ''import click; click.echo("CLI works")''':
     exit-status: 0
     stdout:
       - "CLI works"

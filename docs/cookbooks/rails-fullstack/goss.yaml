@@ -23,7 +23,7 @@ command:
     exit-status: 0
     stdout:
       - "/usr/local/share/mise/installs/ruby"
-  "ruby -e 'puts \"Ruby is working\"'":
+  'ruby -e ''puts "Ruby is working"''':
     exit-status: 0
     stdout:
       - "Ruby is working"
@@ -47,6 +47,11 @@ command:
     exit-status: 0
     stdout:
       - /\d{4}\.\d+\.\d+/
+  # Test build tools are installed
+  "dpkg -l | grep build-essential":
+    exit-status: 0
+    stdout:
+      - "build-essential"
 
 # Test working directory
 file:
@@ -61,10 +66,3 @@ user:
     exists: true
     groups:
       - agent
-
-# Test build tools are installed
-command:
-  "dpkg -l | grep build-essential":
-    exit-status: 0
-    stdout:
-      - "build-essential"

@@ -1,10 +1,12 @@
 # User Management in agentic-container
 
-This document explains the user management patterns used in the agentic-container and the reasoning behind design decisions.
+This document explains the user management patterns used in the
+agentic-container and the reasoning behind design decisions.
 
 ## Overview
 
-The agentic-container uses a **dual-user pattern** with explicit USER switching to balance security, functionality, and simplicity:
+The agentic-container uses a **dual-user pattern** with explicit USER switching
+to balance security, functionality, and simplicity:
 
 - **`root` user**: For operations requiring system-level permissions
 - **`agent` user (UID 1001)**: Default non-root user for development and runtime
@@ -13,14 +15,18 @@ The agentic-container uses a **dual-user pattern** with explicit USER switching 
 
 ### Background
 
-During development, we investigated two approaches for managing permissions in extension Dockerfiles:
+During development, we investigated two approaches for managing permissions in
+extension Dockerfiles:
 
-1. **Group-based permissions**: Create a shared group allowing both root and agent users to write to tool directories
-2. **Explicit USER switching**: Use `USER root` for privileged operations, `USER agent` for everything else
+1. **Group-based permissions**: Create a shared group allowing both root and
+   agent users to write to tool directories
+2. **Explicit USER switching**: Use `USER root` for privileged operations,
+   `USER agent` for everything else
 
 ### Investigation Results
 
-We implemented and tested a group-based approach using a `mise` group (GID 2000) with the following setup:
+We implemented and tested a group-based approach using a `mise` group (GID 2000)
+with the following setup:
 
 ```dockerfile
 # Group-based approach (tested but not adopted)
@@ -32,6 +38,7 @@ RUN groupadd --gid 2000 mise \
 ```
 
 **Findings:**
+
 - ✅ Basic operations worked (listing tools, using pre-installed tools)
 - ✅ Most file operations succeeded with group permissions
 - ❌ Complex lock file operations failed during `mise install` of new tools
@@ -43,6 +50,7 @@ RUN groupadd --gid 2000 mise \
 We chose **explicit USER switching** for the following reasons:
 
 #### Advantages
+
 1. **Predictable**: Clear when operations run with which privileges
 2. **Debuggable**: Permission issues are easy to identify and fix
 3. **Reliable**: No edge cases with tool-specific permission requirements
@@ -50,7 +58,9 @@ We chose **explicit USER switching** for the following reasons:
 5. **Standard**: Follows established Docker patterns
 
 #### Trade-offs
-1. **Slightly more verbose**: Requires explicit `USER root` and `USER vscode` statements
+
+1. **Slightly more verbose**: Requires explicit `USER root` and `USER vscode`
+   statements
 2. **Layer overhead**: Each USER switch creates a small metadata overhead
 
 ## Usage Patterns
@@ -58,7 +68,8 @@ We chose **explicit USER switching** for the following reasons:
 ### Pattern 1: Tool Installation (Requires Root)
 
 Use `USER root` for:
-- Installing new language runtimes via mise (`mise install`)  
+
+- Installing new language runtimes via mise (`mise install`)
 - Installing global packages (`npm install -g`, `gem install`, etc.)
 - Installing system packages (`apt-get install`)
 - Writing to system directories
@@ -70,7 +81,7 @@ FROM ghcr.io/technicalpickles/agentic-container:latest
 USER root
 RUN mise install ruby@3.4.1
 
-# Install global packages  
+# Install global packages
 RUN gem install rails bundler
 
 # Install system packages
@@ -85,8 +96,9 @@ WORKDIR /workspace
 ### Pattern 2: User-level Operations (vscode user)
 
 No USER switching needed for:
+
 - Installing Python packages (`pip install`)
-- Running application commands  
+- Running application commands
 - Creating files in workspace
 - Using pre-installed tools
 
@@ -145,23 +157,26 @@ RUN groupadd --gid $USER_GID $USERNAME \
 ### Key Features
 
 1. **Passwordless sudo**: agent user can use `sudo` without password
-2. **Docker group**: agent user can access Docker daemon  
+2. **Docker group**: agent user can access Docker daemon
 3. **Home directory**: agent user has `/home/agent` home directory
-4. **Shell configuration**: Pre-configured with mise activation and development tools
+4. **Shell configuration**: Pre-configured with mise activation and development
+   tools
 
 ### Directory Ownership
 
 - **System directories**: `/usr/local`, `/etc` owned by root
-- **User directories**: `/home/agent`, `/workspace` owned by agent  
-- **Tool directories**: `/usr/local/share/mise` owned by root (with group permissions as backup)
+- **User directories**: `/home/agent`, `/workspace` owned by agent
+- **Tool directories**: `/usr/local/share/mise` owned by root (with group
+  permissions as backup)
 
 ## Best Practices
 
 ### Extension Dockerfile Guidelines
 
 1. **Default to agent user**: Only use `USER root` when necessary
-2. **Group root operations**: Combine multiple root operations in single RUN statement
-3. **Always return to agent**: End Dockerfile with `USER agent` 
+2. **Group root operations**: Combine multiple root operations in single RUN
+   statement
+3. **Always return to agent**: End Dockerfile with `USER agent`
 4. **Document why root is needed**: Comment when root permissions are required
 
 ### Example: Well-structured Extension
@@ -184,7 +199,7 @@ RUN mise install go@1.23.5 \
 USER agent
 WORKDIR /workspace
 
-# ✅ Good: Runtime operations as non-root user  
+# ✅ Good: Runtime operations as non-root user
 CMD ["python", "app.py"]
 ```
 
@@ -218,21 +233,26 @@ USER agent
 
 ## Future Considerations
 
-- **Group permissions remain available**: The base image retains group permission setup for tools that might benefit from it
-- **Tool-specific patterns**: Some tools may work better with user ownership vs group permissions
-- **Runtime flexibility**: Applications can use sudo for runtime privilege escalation if needed
+- **Group permissions remain available**: The base image retains group
+  permission setup for tools that might benefit from it
+- **Tool-specific patterns**: Some tools may work better with user ownership vs
+  group permissions
+- **Runtime flexibility**: Applications can use sudo for runtime privilege
+  escalation if needed
 
 ## Troubleshooting
 
 ### Common Permission Issues
 
 **Problem**: `Permission denied` when installing packages
+
 ```
 RUN gem install rails
 # ERROR: Permission denied
 ```
 
 **Solution**: Use `USER root` for global package installation
+
 ```dockerfile
 USER root
 RUN gem install rails
@@ -240,12 +260,14 @@ USER agent
 ```
 
 **Problem**: Files created as root when they should be owned by agent
+
 ```dockerfile
 USER root
 RUN some-command > /workspace/output.txt  # Wrong: file owned by root
 ```
 
 **Solution**: Create files as agent user, or change ownership
+
 ```dockerfile
 USER agent
 RUN some-command > /workspace/output.txt  # Correct: file owned by agent
@@ -253,10 +275,13 @@ RUN some-command > /workspace/output.txt  # Correct: file owned by agent
 
 ## Related Documentation
 
-- [Extension Cookbook](EXTENSION_COOKBOOK.md) - Practical examples of extending the container
+- [Extension Cookbook](EXTENSION_COOKBOOK.md) - Practical examples of extending
+  the container
 - [Usage Guide](USAGE.md) - How to use the container effectively
 - [API Documentation](API.md) - Technical container specifications
 
 ---
 
-*This document reflects decisions made during container development and testing. The explicit USER switching pattern was chosen after careful evaluation of alternatives, prioritizing reliability and simplicity over minimal verbosity.*
+_This document reflects decisions made during container development and testing.
+The explicit USER switching pattern was chosen after careful evaluation of
+alternatives, prioritizing reliability and simplicity over minimal verbosity._
