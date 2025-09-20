@@ -30,39 +30,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install yamllint
-        run: |
-          sudo apt-get update && sudo apt-get install -y yamllint
-
-      - name: Validate YAML files
-        run: |
-          echo "🔍 Validating YAML configuration files..."
-          yamllint .
-
-          # Check for required files
-          if [ -f "mise.toml" ]; then
-            echo "✅ mise.toml exists"
-          fi
-
-      - name: Check for required files
-        run: |
-          echo "🔍 Checking for required files..."
-
-          required_files=(
-            "Dockerfile"
-            "README.md"
-            "docs/cookbooks/_templates/goss-template.yaml"
-            "scripts/test-goss.sh"
-          )
-
-          for file in "${required_files[@]}"; do
-            if [ -f "$file" ]; then
-              echo "✅ $file exists"
-            else
-              echo "❌ Required file missing: $file"
-              exit 1
-            fi
-          done
+      - name: Run yamllint
+        uses: ibiqlik/action-yamllint@v3.0.2
+        with:
+          file_or_dir: "."
+          config_file: ".yamllint"
 
   security-scan:
     name: Security Scan
