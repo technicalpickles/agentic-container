@@ -74,6 +74,9 @@ jobs:
             type=gha,scope=standard-${{ github.ref_name }}
             type=gha,scope=standard-main
           cache-to: type=gha,mode=max,scope=standard-${{ github.ref_name }}
+          # Use secret mounting for GITHUB_TOKEN to avoid rate limits securely
+          secrets: |
+            github_token=${{ secrets.GITHUB_TOKEN }}
           # Build args can be customized here if needed:
           # build-args: |
           #   NODE_VERSION=20.17.0
@@ -165,6 +168,9 @@ jobs:
           push: true
           tags: ${{ steps.meta-dev.outputs.tags }}
           labels: ${{ steps.meta-dev.outputs.labels }}
+          # Use secret mounting for GITHUB_TOKEN to avoid rate limits securely
+          secrets: |
+            github_token=${{ secrets.GITHUB_TOKEN }}
           # Enhanced caching that reuses standard build layers
           cache-from: |
             type=gha,scope=dev-${{ github.ref_name }}
@@ -206,8 +212,7 @@ jobs:
         if: matrix.job == 'test-cookbooks'
         run: |
           echo "🧪 Running goss tests for ${{ matrix.cookbook }} cookbook..."
-          chmod +x scripts/test-goss.sh
-          ./scripts/test-goss.sh ${{ matrix.cookbook }} test-extension-${{ matrix.cookbook }}:latest
+          ./scripts/test-dockerfile.sh ${{ matrix.cookbook }} test-extension-${{ matrix.cookbook }}:latest
 
       - name: Clean up test images
         if: matrix.job == 'test-cookbooks' && always()

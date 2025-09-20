@@ -199,7 +199,16 @@ build_image() {
     
     echo "🏗️  Building image: $tag"
     export DOCKER_BUILDKIT=1
-    docker build -t "$tag" -f "$dockerfile" .
+    
+    # Check if GitHub CLI is available for token access
+    if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+        echo "🔐 Using GitHub token via secret mounting to avoid API rate limits"
+        docker build -t "$tag" -f "$dockerfile" --secret id=github_token,src=<(gh auth token) .
+    else
+        echo "⚠️  No GitHub token available, may hit API rate limits"
+        docker build -t "$tag" -f "$dockerfile" .
+    fi
+    
     echo "✅ Built image: $tag"
 }
 

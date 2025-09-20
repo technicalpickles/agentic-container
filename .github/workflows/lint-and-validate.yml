@@ -23,8 +23,8 @@ jobs:
           config_file: '.hadolint.yaml'
           annotate: true
 
-  validate-configs:
-    name: Validate Configuration Files
+  yamllint:
+    name: Lint YAML files
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

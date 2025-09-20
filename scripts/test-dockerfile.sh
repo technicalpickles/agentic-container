@@ -106,22 +106,47 @@ ensure_base_image() {
     local base_dockerfile="$PROJECT_ROOT/Dockerfile"
     local base_image="agentic-container:latest"
     
-    # Get GitHub token to avoid API rate limits
-    local github_token=""
-    if command -v gh >/dev/null 2>&1; then
-        github_token=$(gh auth token 2>/dev/null || echo "")
+    # Skip base image building in CI environment
+    if [[ -n "${CI:-}" ]] || [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+        log_info "Running in CI environment, skipping base image build"
+        return 0
+    fi
+    
+    # Check for GitHub token access (local development or CI)
+    local has_gh_token=false
+    local github_token_source=""
+    
+    if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+        # GitHub Actions environment
+        has_gh_token=true
+        github_token_source="GITHUB_TOKEN environment variable"
+    elif command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+        # Local development with gh CLI
+        has_gh_token=true
+        github_token_source="gh auth token"
     fi
     
     # Check if base image exists
     if ! docker image inspect "$base_image" >/dev/null 2>&1; then
         log_info "Base image '$base_image' not found, building..."
-        if [[ -n "$github_token" ]]; then
-            log_info "Using GitHub token to avoid API rate limits"
-            if docker build -f "$base_dockerfile" -t "$base_image" --build-arg GITHUB_TOKEN="$github_token" "$PROJECT_ROOT"; then
-                log_success "Base image built successfully"
+        if [[ "$has_gh_token" == true ]]; then
+            log_info "Using GitHub token via secret mounting to avoid API rate limits ($github_token_source)"
+            if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+                # Use GITHUB_TOKEN environment variable
+                if docker build -f "$base_dockerfile" -t "$base_image" --secret id=github_token,src=<(echo "$GITHUB_TOKEN") "$PROJECT_ROOT"; then
+                    log_success "Base image built successfully"
+                else
+                    log_error "Failed to build base image"
+                    exit 1
+                fi
             else
-                log_error "Failed to build base image"
-                exit 1
+                # Use gh auth token
+                if docker build -f "$base_dockerfile" -t "$base_image" --secret id=github_token,src=<(gh auth token) "$PROJECT_ROOT"; then
+                    log_success "Base image built successfully"
+                else
+                    log_error "Failed to build base image"
+                    exit 1
+                fi
             fi
         else
             log_warning "No GitHub token available, may hit API rate limits"
@@ -141,13 +166,24 @@ ensure_base_image() {
     
     if [[ "$dockerfile_time" -gt "$image_time" ]]; then
         log_info "Base Dockerfile is newer than image, rebuilding..."
-        if [[ -n "$github_token" ]]; then
-            log_info "Using GitHub token to avoid API rate limits"
-            if docker build -f "$base_dockerfile" -t "$base_image" --build-arg GITHUB_TOKEN="$github_token" "$PROJECT_ROOT"; then
-                log_success "Base image rebuilt successfully"
+        if [[ "$has_gh_token" == true ]]; then
+            log_info "Using GitHub token via secret mounting to avoid API rate limits ($github_token_source)"
+            if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+                # Use GITHUB_TOKEN environment variable
+                if docker build -f "$base_dockerfile" -t "$base_image" --secret id=github_token,src=<(echo "$GITHUB_TOKEN") "$PROJECT_ROOT"; then
+                    log_success "Base image rebuilt successfully"
+                else
+                    log_error "Failed to rebuild base image"
+                    exit 1
+                fi
             else
-                log_error "Failed to rebuild base image"
-                exit 1
+                # Use gh auth token
+                if docker build -f "$base_dockerfile" -t "$base_image" --secret id=github_token,src=<(gh auth token) "$PROJECT_ROOT"; then
+                    log_success "Base image rebuilt successfully"
+                else
+                    log_error "Failed to rebuild base image"
+                    exit 1
+                fi
             fi
         else
             log_warning "No GitHub token available, may hit API rate limits"
@@ -170,8 +206,21 @@ parse_args() {
         exit 0
     fi
     
-    DOCKERFILE="$1"
-    CLEANUP="${2:-}"
+    # Handle different usage patterns
+    if [[ $# -eq 2 ]] && [[ ! -f "$1" ]] && [[ "$2" =~ ^test-extension-.*:latest$ ]]; then
+        # CI usage: ./test-dockerfile.sh cookbook-name test-extension-cookbook-name:latest
+        local cookbook_name="$1"
+        local image_name="$2"
+        DOCKERFILE="docs/cookbooks/$cookbook_name/Dockerfile"
+        TEST_IMAGE="$image_name"
+        CI_MODE=true
+        log_info "CI mode detected: testing cookbook '$cookbook_name' with image '$image_name'"
+    else
+        # Local usage: ./test-dockerfile.sh dockerfile-path [--cleanup]
+        DOCKERFILE="$1"
+        CLEANUP="${2:-}"
+        CI_MODE=false
+    fi
     
     if [[ ! -f "$DOCKERFILE" ]]; then
         log_error "Dockerfile not found: $DOCKERFILE"
@@ -180,7 +229,7 @@ parse_args() {
         exit 1
     fi
     
-    if [[ -n "$CLEANUP" ]] && [[ "$CLEANUP" != "--cleanup" ]]; then
+    if [[ "$CI_MODE" == false ]] && [[ -n "$CLEANUP" ]] && [[ "$CLEANUP" != "--cleanup" ]]; then
         log_error "Invalid argument: $CLEANUP. Use --cleanup or omit."
         echo  
         show_help
@@ -247,24 +296,39 @@ test_comprehensive_validation() {
 # Test a dockerfile
 test_dockerfile() {
     local dockerfile="$1"
-    local image_name="test-dockerfile-$(date +%s)"
+    local image_name=""
     
-    log_info "Testing dockerfile: $(basename "$dockerfile")"
-    
-    # Create a temporary dockerfile with local image references for testing
-    local temp_dockerfile="$SCRIPT_DIR/temp-$(basename "$dockerfile")"
-    sed 's|ghcr.io/technicalpickles/agentic-container:|agentic-container:|g' "$dockerfile" > "$temp_dockerfile"
-    
-    # Build the image
-    log_info "Building test image: $image_name"
-    if docker build -f "$temp_dockerfile" -t "$image_name" "$PROJECT_ROOT"; then
-        log_success "Build successful: $image_name"
-        rm "$temp_dockerfile"
+    if [[ "$CI_MODE" == true ]]; then
+        # In CI mode, use the pre-built image
+        image_name="$TEST_IMAGE"
+        log_info "Testing pre-built image: $image_name"
+        
+        # Verify the image exists
+        if ! docker image inspect "$image_name" >/dev/null 2>&1; then
+            log_error "Pre-built image not found: $image_name"
+            FAILED_TESTS+=("Image not found")
+            return 1
+        fi
     else
-        log_error "Build failed for: $(basename "$dockerfile")"
-        rm "$temp_dockerfile" 2>/dev/null || true
-        FAILED_TESTS+=("Build failed")
-        return 1
+        # In local mode, build the image
+        image_name="test-dockerfile-$(date +%s)"
+        log_info "Testing dockerfile: $(basename "$dockerfile")"
+        
+        # Create a temporary dockerfile with local image references for testing
+        local temp_dockerfile="$SCRIPT_DIR/temp-$(basename "$dockerfile")"
+        sed 's|ghcr.io/technicalpickles/agentic-container:|agentic-container:|g' "$dockerfile" > "$temp_dockerfile"
+        
+        # Build the image
+        log_info "Building test image: $image_name"
+        if docker build -f "$temp_dockerfile" -t "$image_name" "$PROJECT_ROOT"; then
+            log_success "Build successful: $image_name"
+            rm "$temp_dockerfile"
+        else
+            log_error "Build failed for: $(basename "$dockerfile")"
+            rm "$temp_dockerfile" 2>/dev/null || true
+            FAILED_TESTS+=("Build failed")
+            return 1
+        fi
     fi
     
     # Basic startup test
@@ -289,15 +353,19 @@ test_dockerfile() {
     # Test 3: Comprehensive validation (goss tests required)
     test_comprehensive_validation "$dockerfile" "$image_name"
     
-    # Cleanup test image
-    if [[ "$CLEANUP" == "--cleanup" ]]; then
-        if docker rmi "$image_name" >/dev/null 2>&1; then
-            log_success "Cleaned up test image"
+    # Cleanup test image (only in local mode)
+    if [[ "$CI_MODE" == false ]]; then
+        if [[ "$CLEANUP" == "--cleanup" ]]; then
+            if docker rmi "$image_name" >/dev/null 2>&1; then
+                log_success "Cleaned up test image"
+            else
+                log_warning "Failed to cleanup test image: $image_name"
+            fi
         else
-            log_warning "Failed to cleanup test image: $image_name"
+            log_info "Test image retained: $image_name (use --cleanup to remove)"
         fi
     else
-        log_info "Test image retained: $image_name (use --cleanup to remove)"
+        log_info "CI mode: test image cleanup handled by CI workflow"
     fi
     
     return 0
