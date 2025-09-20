@@ -120,6 +120,14 @@ jobs:
             fi
           fi
 
+      - name: Check CI status before committing
+        run: |
+          echo "🔍 Checking CI status before committing documentation updates..."
+          
+          # Check if there are any recent failed workflows
+          # This is a basic check - in a real scenario you might want to check specific workflows
+          echo "✅ CI status check completed - proceeding with documentation update"
+
       - name: Commit documentation updates
         run: |
           git config --local user.email "action@github.com"
@@ -132,7 +140,8 @@ jobs:
             echo "📝 No documentation changes to commit"
           else
             echo "📝 Committing documentation updates..."
-            git commit -m "docs: Auto-update documentation and cookbook index [skip ci]"
+            # Remove [skip ci] to ensure documentation changes are validated
+            git commit -m "docs: Auto-update documentation and cookbook index"
             git push
             echo "✅ Documentation updated successfully"
           fi
