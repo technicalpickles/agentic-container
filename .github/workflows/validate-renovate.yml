@@ -1,0 +1,37 @@
+name: Validate Renovate Configuration
+
+on:
+  push:
+    paths: ['.github/renovate.json5', 'scripts/validate-renovate.sh']
+    branches: [main, renovate/**]
+  pull_request:
+    paths: ['.github/renovate.json5', 'scripts/validate-renovate.sh'] 
+    branches: [main]
+  # Weekly validation to catch configuration drift
+  schedule:
+    - cron: '0 6 * * 1'  # 6 AM every Monday
+  workflow_dispatch:  # Allow manual triggering
+
+env:
+  # Disable Renovate telemetry for CI runs
+  RENOVATE_CONFIG_MIGRATION: false
+
+jobs:
+  validate-config:
+    name: Validate Renovate Configuration
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    permissions:
+      contents: read
+      # No additional permissions needed for validation
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Full history needed to detect changes
+          fetch-depth: 0
+        
+      - name: Run validation (Docker-only)
+        run: ./scripts/validate-renovate.sh

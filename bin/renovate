@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+
+# renovate wrapper
+#
+# Usage: bin/renovate [renovate-args...]
+# Wraps Docker execution of renovate with proper environment and volume mounting
+
+set -euo pipefail
+
+# Check if Docker is available
+if ! command -v docker >/dev/null 2>&1; then
+    echo "Error: Docker is required but not available" >&2
+    echo "Install Docker: https://docs.docker.com/get-docker/" >&2
+    exit 1
+fi
+
+# Prepare Docker environment variables
+DOCKER_ENV_ARGS=()
+
+# Set default config file if not specified
+if [[ -z "${RENOVATE_CONFIG_FILE:-}" ]]; then
+    export RENOVATE_CONFIG_FILE=".github/renovate.json5"
+fi
+
+# Set default tokens for local testing using gh auth (consistent with other scripts)
+# Users can override by setting RENOVATE_TOKEN or GITHUB_TOKEN environment variables
+
+# If GITHUB_TOKEN is unset, try to get it from gh auth
+if [[ -z "${GITHUB_TOKEN:-}" ]] && command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+    export GITHUB_TOKEN=$(gh auth token)
+    echo "🔐 Using GitHub token from gh auth for GITHUB_TOKEN (no disk storage)" >&2
+fi
+
+# Set RENOVATE_TOKEN if not already set
+if [[ -z "${RENOVATE_TOKEN:-}" ]]; then
+    # Try GITHUB_TOKEN first (common in CI environments or now set from gh auth)
+    if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+        export RENOVATE_TOKEN="$GITHUB_TOKEN"
+    else
+        echo "Warning: No RENOVATE_TOKEN, GITHUB_TOKEN, or gh auth found. Some features may not work." >&2
+        echo "Set RENOVATE_TOKEN environment variable or run 'gh auth login' for full functionality." >&2
+    fi
+fi
+
+# Pass through important environment variables
+ENV_VARS=(
+    "GITHUB_TOKEN"
+    "RENOVATE_TOKEN" 
+    "LOG_LEVEL"
+    "RENOVATE_CONFIG_FILE"
+    "RENOVATE_DRY_RUN"
+)
+
+for var in "${ENV_VARS[@]}"; do
+    if [[ -n "${!var:-}" ]]; then
+        DOCKER_ENV_ARGS+=("-e" "$var=${!var}")
+    fi
+done
+
+# Run renovate in Docker with current directory mounted
+if [[ ${#DOCKER_ENV_ARGS[@]} -gt 0 ]]; then
+    exec docker run --rm \
+        -v "$PWD:/usr/src/app" \
+        -w /usr/src/app \
+        "${DOCKER_ENV_ARGS[@]}" \
+        ghcr.io/renovatebot/renovate:latest \
+        "$@"
+else
+    exec docker run --rm \
+        -v "$PWD:/usr/src/app" \
+        -w /usr/src/app \
+        ghcr.io/renovatebot/renovate:latest \
+        "$@"
+fi

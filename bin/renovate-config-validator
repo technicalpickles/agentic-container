@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+# renovate-config-validator wrapper
+#
+# Usage: bin/renovate-config-validator [config-file]
+# Wraps Docker execution of renovate-config-validator
+
+set -euo pipefail
+
+# Check if Docker is available
+if ! command -v docker >/dev/null 2>&1; then
+    echo "Error: Docker is required but not available" >&2
+    echo "Install Docker: https://docs.docker.com/get-docker/" >&2
+    exit 1
+fi
+
+# Determine config file
+CONFIG_FILE="${1:-.github/renovate.json5}"
+
+# Convert relative path to absolute for Docker volume mounting
+if [[ ! "$CONFIG_FILE" = /* ]]; then
+    CONFIG_FILE="$(pwd)/$CONFIG_FILE"
+fi
+
+# Check if config file exists
+if [[ ! -f "$CONFIG_FILE" ]]; then
+    echo "Error: Configuration file not found: $CONFIG_FILE" >&2
+    exit 1
+fi
+
+# Run renovate-config-validator in Docker
+exec docker run --rm -v "$(dirname "$CONFIG_FILE"):/config" \
+    ghcr.io/renovatebot/renovate:latest \
+    renovate-config-validator "/config/$(basename "$CONFIG_FILE")"

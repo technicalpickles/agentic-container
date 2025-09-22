@@ -9,9 +9,14 @@
     "format:yaml": "prettier --write '**/*.{yaml,yml}'",
     "format:markdown": "prettier --write '**/*.md'",
     "format:yaml:check": "prettier --check '**/*.{yaml,yml}'",
-    "format:markdown:check": "prettier --check '**/*.md'"
+    "format:markdown:check": "prettier --check '**/*.md'",
+    "validate-renovate": "./scripts/validate-renovate.sh",
+    "validate-renovate:quick": "./scripts/validate-renovate.sh --quick",
+    "renovate": "./bin/renovate",
+    "renovate-config-validator": "./bin/renovate-config-validator"
   },
   "devDependencies": {
+    "json5": "^2.2.3",
     "prettier": "^3.2.5"
   },
   "engines": {
