@@ -6,7 +6,6 @@
 # Usage:
 #   ./scripts/validate-renovate.sh                 # Full validation
 #   ./scripts/validate-renovate.sh --quick         # Quick validation (syntax + official validator)
-#   ./scripts/validate-renovate.sh --custom-managers # Test custom managers only
 #   ./scripts/validate-renovate.sh --verbose       # Show detailed debug output
 #   ./scripts/validate-renovate.sh --help          # Show help message
 
@@ -14,17 +13,12 @@ set -euo pipefail
 
 # Parse arguments
 QUICK_MODE=false
-CUSTOM_MANAGERS_ONLY=false
 VERBOSE=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
         --quick)
             QUICK_MODE=true
-            shift
-            ;;
-        --custom-managers)
-            CUSTOM_MANAGERS_ONLY=true
             shift
             ;;
         --verbose)
@@ -36,7 +30,6 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "OPTIONS:"
             echo "  --quick              Quick validation (syntax + official validator only)"
-            echo "  --custom-managers    Test custom managers only (skips other validations)"
             echo "  --verbose           Show detailed output from custom manager detection"
             echo "  --help, -h          Show this help message"
             exit 0
@@ -126,58 +119,42 @@ validate_version_detection() {
     fi
 }
 
-# Skip basic validations if only testing custom managers
-if [[ "$CUSTOM_MANAGERS_ONLY" == "false" ]]; then
-    # Check Docker availability
-    if ! command -v docker >/dev/null 2>&1; then
-        print_status "FAIL" "Docker is required but not available"
-        exit 1
-    fi
+# Check Docker availability
+if ! command -v docker >/dev/null 2>&1; then
+    print_status "FAIL" "Docker is required but not available"
+    exit 1
+fi
 
-    # Check jq for full mode
-    if [[ "$QUICK_MODE" == "false" ]] && ! command -v jq >/dev/null 2>&1; then
-        print_status "FAIL" "jq is required for full validation"
-        exit 1
-    fi
+# Check jq for full mode
+if [[ "$QUICK_MODE" == "false" ]] && ! command -v jq >/dev/null 2>&1; then
+    print_status "FAIL" "jq is required for full validation"
+    exit 1
+fi
 
-    # Check config file exists
-    if [[ ! -f ".github/renovate.json5" ]]; then
-        print_status "FAIL" "Configuration file missing at .github/renovate.json5"
-        exit 1
-    fi
+# Check config file exists
+if [[ ! -f ".github/renovate.json5" ]]; then
+    print_status "FAIL" "Configuration file missing at .github/renovate.json5"
+    exit 1
+fi
 
-    # JSON5 syntax validation
-    if ! npx json5 --validate .github/renovate.json5 >/dev/null 2>&1; then
-        print_status "FAIL" "Invalid JSON5 syntax"
-        exit 1
-    fi
-    print_status "PASS" "JSON5 syntax valid"
+# JSON5 syntax validation
+if ! npx json5 --validate .github/renovate.json5 >/dev/null 2>&1; then
+    print_status "FAIL" "Invalid JSON5 syntax"
+    exit 1
+fi
+print_status "PASS" "JSON5 syntax valid"
 
-    # Official Renovate validation (using bin wrapper)
-    if ./bin/renovate-config-validator >/dev/null 2>&1; then
-        print_status "PASS" "Renovate configuration valid"
-    else
-        print_status "FAIL" "Renovate configuration validation failed"
-        exit 1
-    fi
-
-    # Quick mode stops here
-    if [[ "$QUICK_MODE" == "true" ]]; then
-        exit 0
-    fi
+# Official Renovate validation (using bin wrapper)
+if ./bin/renovate-config-validator >/dev/null 2>&1; then
+    print_status "PASS" "Renovate configuration valid"
 else
-    # For custom managers only mode, just check Docker and config file
-    if ! command -v docker >/dev/null 2>&1; then
-        print_status "FAIL" "Docker is required for custom manager testing"
-        exit 1
-    fi
-    
-    if [[ ! -f ".github/renovate.json5" ]]; then
-        print_status "FAIL" "Configuration file missing at .github/renovate.json5"
-        exit 1
-    fi
-    
-    print_status "INFO" "Testing custom managers only mode"
+    print_status "FAIL" "Renovate configuration validation failed"
+    exit 1
+fi
+
+# Quick mode stops here
+if [[ "$QUICK_MODE" == "true" ]]; then
+    exit 0
 fi
 
 # Additional checks for full mode
