@@ -4,11 +4,12 @@
   "timezone": "America/New_York",
   "packageRules": [
     {
-      "description": "Group GitHub Actions minor/patch updates",
+      "description": "Group and auto-merge non-breaking GitHub Actions updates",
       "matchManagers": ["github-actions"],
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "groupName": "GitHub Actions",
-      "semanticCommitType": "ci"
+      "semanticCommitType": "ci",
+      "automerge": true
     },
     {
       "description": "Group GitHub Actions major updates (separate for review)",
@@ -42,19 +43,13 @@
       "matchDepNames": ["hadolint", "goss", "yamllint", "trivy"]
     },
     {
-      "description": "Auto-merge non-breaking GitHub Actions updates",
-      "matchManagers": ["github-actions"],
-      "matchUpdateTypes": ["patch", "pin", "digest"],
-      "automerge": true
-    },
-    {
       "description": "Auto-merge patch updates for development dependencies",
       "matchDepTypes": ["devDependencies"],
       "matchUpdateTypes": ["patch"],
       "automerge": true
     },
     {
-      "description": "Auto-merge patch updates (Renovate best practice)",
+      "description": "Auto-merge patch updates",
       "matchUpdateTypes": ["patch"],
       "automerge": true,
       "automergeType": "pr"
