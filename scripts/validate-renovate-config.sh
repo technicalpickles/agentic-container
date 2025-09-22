@@ -3,7 +3,7 @@
 # validate-renovate-config.sh
 #
 # Purpose: Validate Renovate configuration locally before GitHub App installation
-# Created: 2024-09-20
+# Created: 2025-09-20
 # Used for: Testing regex patterns, configuration syntax, and expected matches
 #
 # Usage:
