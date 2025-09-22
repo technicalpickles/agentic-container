@@ -25,35 +25,21 @@
       "matchPackageNames": ["/ubuntu/"]
     },
     {
-      "description": "Group mise-managed tools and language runtimes",
-      "groupName": "Mise-managed dependencies",
+      "description": "Group all development tools and dependencies",
+      "groupName": "Development dependencies",
       "semanticCommitType": "build",
       "matchPackageNames": [
         "/NODE_VERSION/",
         "/PYTHON_VERSION/",
         "/RUBY_VERSION/",
-        "/GO_VERSION/"
-      ],
-      "matchDepNames": ["hadolint", "goss", "yamllint", "trivy"]
-    },
-    {
-      "description": "Group container development tools",
-      "groupName": "Container development tools", 
-      "semanticCommitType": "build",
-      "matchPackageNames": [
+        "/GO_VERSION/",
         "/AST_GREP_VERSION/",
         "/LEFTHOOK_VERSION/",
-        "/UV_VERSION/"
-      ]
-    },
-    {
-      "description": "Group AI/ML tools",
-      "groupName": "AI/ML tools",
-      "semanticCommitType": "build", 
-      "matchPackageNames": [
+        "/UV_VERSION/",
         "/CLAUDE_CODE_VERSION/",
         "/CODEX_VERSION/"
-      ]
+      ],
+      "matchDepNames": ["hadolint", "goss", "yamllint", "trivy"]
     },
     {
       "description": "Auto-merge non-breaking GitHub Actions updates",
