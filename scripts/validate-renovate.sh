@@ -197,44 +197,48 @@ fi
 # Validate custom managers are detecting dependencies
 print_status "INFO" "Testing custom manager dependency detection..."
 
+# Create log directory if it doesn't exist
+mkdir -p log
+
 # Run Renovate dry-run to check custom manager detection
-temp_log=$(mktemp)
+validation_log="log/renovate-validation-$(date +%Y%m%d-%H%M%S).log"
 print_status "INFO" "Running Renovate dry-run to test custom managers..."
 
 if [[ "$VERBOSE" == "true" ]]; then
     print_status "INFO" "Running: LOG_LEVEL=debug bin/renovate --platform=local --dry-run=log"
+    print_status "INFO" "Log file: $validation_log"
 fi
 
-if LOG_LEVEL=debug bin/renovate --platform=local --dry-run=log > "$temp_log" 2>&1; then
+if LOG_LEVEL=debug bin/renovate --platform=local --dry-run=log > "$validation_log" 2>&1; then
     # Check if custom managers (regex) are working
-    if grep -q '"regex":.*"fileCount"' "$temp_log"; then
-        regex_file_count=$(grep -o '"regex":.*"fileCount":[0-9]*' "$temp_log" | grep -o '[0-9]*$' | head -1)
-        regex_dep_count=$(grep -o '"regex":.*"depCount":[0-9]*' "$temp_log" | grep -o '[0-9]*$' | head -1)
+    if grep -q '"regex":.*"fileCount"' "$validation_log"; then
+        regex_file_count=$(grep -o '"regex":.*"fileCount":[0-9]*' "$validation_log" | grep -o '[0-9]*$' | head -1)
+        regex_dep_count=$(grep -o '"regex":.*"depCount":[0-9]*' "$validation_log" | grep -o '[0-9]*$' | head -1)
         print_status "PASS" "Custom managers working: $regex_file_count files, $regex_dep_count dependencies"
         
         # Show total dependency stats for comparison
-        total_deps=$(grep -o '"total":.*"depCount":[0-9]*' "$temp_log" | grep -o '[0-9]*$' | head -1)
+        total_deps=$(grep -o '"total":.*"depCount":[0-9]*' "$validation_log" | grep -o '[0-9]*$' | head -1)
         print_status "INFO" "Total dependencies detected: $total_deps (including built-in managers)"
         
         # Validate specific version detection
-        validate_version_detection "$temp_log"
+        validate_version_detection "$validation_log"
     else
         print_status "FAIL" "Custom managers not working - no regex manager stats found"
         if [[ "$VERBOSE" == "true" ]]; then
             print_status "INFO" "Debug: Checking for any manager stats..."
-            grep -A5 -B5 '"managers":' "$temp_log" || print_status "INFO" "No manager stats found in output"
+            grep -A5 -B5 '"managers":' "$validation_log" || print_status "INFO" "No manager stats found in output"
+            print_status "INFO" "Full log available at: $validation_log"
         fi
-        rm -f "$temp_log"
         exit 1
     fi
 else
     print_status "FAIL" "Failed to run Renovate dry-run for custom manager validation"
     if [[ "$VERBOSE" == "true" ]]; then
         print_status "INFO" "Error output:"
-        tail -20 "$temp_log"
+        tail -20 "$validation_log"
     fi
-    rm -f "$temp_log"
+    print_status "INFO" "Full log available at: $validation_log"
     exit 1
 fi
 
-rm -f "$temp_log"
+print_status "INFO" "Validation log saved to: $validation_log"
