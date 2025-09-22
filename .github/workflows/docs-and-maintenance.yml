@@ -31,7 +31,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0 # Get full history for accurate doc generation
@@ -155,7 +155,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Check for dependency updates
         run: |
@@ -195,7 +195,7 @@ jobs:
 
       - name: Create maintenance issue (if needed)
         if: github.event_name == 'schedule'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             // Create a maintenance tracking issue if significant updates are needed

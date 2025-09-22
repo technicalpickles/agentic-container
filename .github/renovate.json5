@@ -1,286 +1,262 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", ":semanticCommits", ":dependencyDashboard"],
-  "timezone": "America/New_York",
-  "schedule": ["before 6am every weekday", "every weekend"],
-  "packageRules": [
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: ["config:recommended", ":semanticCommits", ":dependencyDashboard"],
+  timezone: "America/New_York",
+  packageRules: [
     {
-      "description": "Group GitHub Actions updates",
-      "matchManagers": ["github-actions"],
-      "groupName": "GitHub Actions",
-      "semanticCommitType": "ci"
+      description: "Group and auto-merge non-breaking GitHub Actions updates",
+      matchManagers: ["github-actions"],
+      matchUpdateTypes: ["minor", "patch", "pin", "digest"],
+      groupName: "GitHub Actions",
+      semanticCommitType: "ci",
+      automerge: true,
     },
     {
-      "description": "Group Docker base image updates",
-      "matchDatasources": ["docker"],
-      "groupName": "Docker base images",
-      "semanticCommitType": "build",
-      "matchPackageNames": ["/ubuntu/", "/node/", "/python/"]
+      description: "Group GitHub Actions major updates",
+      matchManagers: ["github-actions"],
+      matchUpdateTypes: ["major"],
+      groupName: "GitHub Actions (major)",
+      semanticCommitType: "ci",
     },
     {
-      "description": "Group language runtime versions",
-      "groupName": "Language runtimes",
-      "semanticCommitType": "build",
-      "matchPackageNames": [
+      description: "Group Docker base image updates",
+      matchDatasources: ["docker"],
+      groupName: "Docker base images",
+      semanticCommitType: "build",
+      matchPackageNames: ["/ubuntu/"],
+    },
+    {
+      description: "Group all development tools and dependencies",
+      groupName: "Development dependencies",
+      semanticCommitType: "build",
+      matchPackageNames: [
         "/NODE_VERSION/",
         "/PYTHON_VERSION/",
         "/RUBY_VERSION/",
-        "/GO_VERSION/"
-      ]
-    },
-    {
-      "description": "Group development tools",
-      "groupName": "Development tools",
-      "semanticCommitType": "build",
-      "matchPackageNames": [
+        "/GO_VERSION/",
         "/AST_GREP_VERSION/",
         "/LEFTHOOK_VERSION/",
-        "/UV_VERSION/"
-      ]
+        "/UV_VERSION/",
+        "/CLAUDE_CODE_VERSION/",
+        "/CODEX_VERSION/",
+      ],
+      matchDepNames: ["hadolint", "goss", "yamllint", "trivy"],
     },
     {
-      "description": "Auto-merge non-breaking GitHub Actions updates",
-      "matchManagers": ["github-actions"],
-      "matchUpdateTypes": ["patch", "pin", "digest"],
-      "automerge": true
+      description: "Auto-merge patch updates for development dependencies",
+      matchDepTypes: ["devDependencies"],
+      matchUpdateTypes: ["patch"],
+      automerge: true,
     },
     {
-      "description": "Auto-merge patch updates for development dependencies",
-      "matchDepTypes": ["devDependencies"],
-      "matchUpdateTypes": ["patch"],
-      "automerge": true
-    }
+      description: "Auto-merge patch updates",
+      matchUpdateTypes: ["patch"],
+      automerge: true,
+      automergeType: "pr",
+    },
   ],
-  "customManagers": [
+  customManagers: [
     {
-      "customType": "regex",
-      "description": "Update Node.js version in Dockerfiles",
-      "fileMatch": [
-        "(^|/)Dockerfile$",
-        "Dockerfile\\.[^/]*$"
+      customType: "regex",
+      description: "Update Node.js version in Dockerfiles",
+      managerFilePatterns: ["/(^|/)Dockerfile$/", "/Dockerfile\\.[^/]*$/"],
+      matchStrings: [
+        "ARG\\s+(?<depName>NODE_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)",
       ],
-      "matchStrings": [
-        "ARG\\s+(?<depName>NODE_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
-      ],
-      "datasourceTemplate": "github-releases",
-      "packageNameTemplate": "nodejs/node",
-      "extractVersionTemplate": "^v?(?<version>.*)$"
+      datasourceTemplate: "github-releases",
+      packageNameTemplate: "nodejs/node",
+      extractVersionTemplate: "^v?(?<version>.*)$",
     },
     {
-      "customType": "regex",
-      "description": "Update Python version in Dockerfiles",
-      "fileMatch": [
-        "(^|/)Dockerfile$",
-        "Dockerfile\\.[^/]*$"
+      customType: "regex",
+      description: "Update Python version in Dockerfiles",
+      managerFilePatterns: ["/(^|/)Dockerfile$/", "/Dockerfile\\.[^/]*$/"],
+      matchStrings: [
+        "ARG\\s+(?<depName>PYTHON_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)",
       ],
-      "matchStrings": [
-        "ARG\\s+(?<depName>PYTHON_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
-      ],
-      "datasourceTemplate": "docker",
-      "packageNameTemplate": "python",
-      "extractVersionTemplate": "^(?<version>\\d+\\.\\d+\\.\\d+)$"
+      datasourceTemplate: "docker",
+      packageNameTemplate: "python",
+      extractVersionTemplate: "^(?<version>\\d+\\.\\d+\\.\\d+)$",
     },
     {
-      "customType": "regex",
-      "description": "Update Ruby version in Dockerfiles",
-      "fileMatch": [
-        "(^|/)Dockerfile$",
-        "Dockerfile\\.[^/]*$"
+      customType: "regex",
+      description: "Update Ruby version in Dockerfiles",
+      managerFilePatterns: ["/(^|/)Dockerfile$/", "/Dockerfile\\.[^/]*$/"],
+      matchStrings: [
+        "ARG\\s+(?<depName>RUBY_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)",
       ],
-      "matchStrings": [
-        "ARG\\s+(?<depName>RUBY_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
-      ],
-      "datasourceTemplate": "github-releases",
-      "packageNameTemplate": "ruby/ruby",
-      "extractVersionTemplate": "^v?(?<version>.*)$"
+      datasourceTemplate: "github-releases",
+      packageNameTemplate: "ruby/ruby",
+      extractVersionTemplate: "^v?(?<version>.*)$",
     },
     {
-      "customType": "regex",
-      "description": "Update Go version in Dockerfiles",
-      "fileMatch": [
-        "(^|/)Dockerfile$",
-        "Dockerfile\\.[^/]*$"
+      customType: "regex",
+      description: "Update Go version in Dockerfiles",
+      managerFilePatterns: ["/(^|/)Dockerfile$/", "/Dockerfile\\.[^/]*$/"],
+      matchStrings: [
+        "ARG\\s+(?<depName>GO_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)",
       ],
-      "matchStrings": [
-        "ARG\\s+(?<depName>GO_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
-      ],
-      "datasourceTemplate": "docker",
-      "packageNameTemplate": "golang",
-      "extractVersionTemplate": "^(?<version>\\d+\\.\\d+\\.\\d+)$"
+      datasourceTemplate: "docker",
+      packageNameTemplate: "golang",
+      extractVersionTemplate: "^(?<version>\\d+\\.\\d+\\.\\d+)$",
     },
     {
-      "customType": "regex",
-      "description": "Update ast-grep version in Dockerfiles",
-      "fileMatch": [
-        "(^|/)Dockerfile$",
-        "Dockerfile\\.[^/]*$"
+      customType: "regex",
+      description: "Update ast-grep version in Dockerfiles",
+      managerFilePatterns: ["/(^|/)Dockerfile$/", "/Dockerfile\\.[^/]*$/"],
+      matchStrings: [
+        "ARG\\s+(?<depName>AST_GREP_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)",
       ],
-      "matchStrings": [
-        "ARG\\s+(?<depName>AST_GREP_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
-      ],
-      "datasourceTemplate": "github-releases",
-      "packageNameTemplate": "ast-grep/ast-grep",
-      "extractVersionTemplate": "^v?(?<version>.*)$"
+      datasourceTemplate: "github-releases",
+      packageNameTemplate: "ast-grep/ast-grep",
+      extractVersionTemplate: "^v?(?<version>.*)$",
     },
     {
-      "customType": "regex",
-      "description": "Update lefthook version in Dockerfiles",
-      "fileMatch": [
-        "(^|/)Dockerfile$",
-        "Dockerfile\\.[^/]*$"
+      customType: "regex",
+      description: "Update lefthook version in Dockerfiles",
+      managerFilePatterns: ["/(^|/)Dockerfile$/", "/Dockerfile\\.[^/]*$/"],
+      matchStrings: [
+        "ARG\\s+(?<depName>LEFTHOOK_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)",
       ],
-      "matchStrings": [
-        "ARG\\s+(?<depName>LEFTHOOK_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
-      ],
-      "datasourceTemplate": "github-releases",
-      "packageNameTemplate": "evilmartians/lefthook",
-      "extractVersionTemplate": "^v?(?<version>.*)$"
+      datasourceTemplate: "github-releases",
+      packageNameTemplate: "evilmartians/lefthook",
+      extractVersionTemplate: "^v?(?<version>.*)$",
     },
     {
-      "customType": "regex",
-      "description": "Update uv version in Dockerfiles",
-      "fileMatch": [
-        "(^|/)Dockerfile$",
-        "Dockerfile\\.[^/]*$"
+      customType: "regex",
+      description: "Update uv version in Dockerfiles",
+      managerFilePatterns: ["/(^|/)Dockerfile$/", "/Dockerfile\\.[^/]*$/"],
+      matchStrings: [
+        "ARG\\s+(?<depName>UV_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)",
       ],
-      "matchStrings": [
-        "ARG\\s+(?<depName>UV_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
-      ],
-      "datasourceTemplate": "github-releases",
-      "packageNameTemplate": "astral-sh/uv",
-      "extractVersionTemplate": "^v?(?<version>.*)$"
+      datasourceTemplate: "github-releases",
+      packageNameTemplate: "astral-sh/uv",
+      extractVersionTemplate: "^v?(?<version>.*)$",
     },
     {
-      "customType": "regex",
-      "description": "Update GitHub release download URLs",
-      "fileMatch": [
-        "/(^|/)Dockerfile$/",
-        "/Dockerfile\\.[^/]*$/",
-        "/(^|/)scripts/.*\\.sh$/"
+      customType: "regex",
+      description: "Update GitHub release download URLs",
+      managerFilePatterns: [
+        "//(^|/)Dockerfile$//",
+        "//Dockerfile\\.[^/]*$//",
+        "//(^|/)scripts/.*\\.sh$//",
       ],
-      "matchStrings": [
-        "https://github\\.com/spinel-coop/rv/releases/download/v(?<currentValue>\\d+\\.\\d+\\.\\d+)/rv-installer\\.sh"
+      matchStrings: [
+        "https://github\\.com/spinel-coop/rv/releases/download/v(?<currentValue>\\d+\\.\\d+\\.\\d+)/rv-installer\\.sh",
       ],
-      "datasourceTemplate": "github-releases",
-      "depNameTemplate": "spinel-coop/rv",
-      "extractVersionTemplate": "^v?(?<version>.*)$"
+      datasourceTemplate: "github-releases",
+      depNameTemplate: "spinel-coop/rv",
+      extractVersionTemplate: "^v?(?<version>.*)$",
     },
     {
-      "customType": "regex",
-      "description": "Update dive version in scripts",
-      "fileMatch": ["/(^|/)scripts/.*\\.sh$/"],
-      "matchStrings": [
-        "DIVE_VERSION=\"\\$\\{DIVE_VERSION:-(?<currentValue>\\d+\\.\\d+\\.\\d+)\\}\""
+      customType: "regex",
+      description: "Update dive version in scripts",
+      managerFilePatterns: ["//(^|/)scripts/.*\\.sh$//"],
+      matchStrings: [
+        'DIVE_VERSION="\\$\\{DIVE_VERSION:-(?<currentValue>\\d+\\.\\d+\\.\\d+)\\}"',
       ],
-      "datasourceTemplate": "github-releases",
-      "depNameTemplate": "wagoodman/dive",
-      "extractVersionTemplate": "^v?(?<version>.*)$"
+      datasourceTemplate: "github-releases",
+      depNameTemplate: "wagoodman/dive",
+      extractVersionTemplate: "^v?(?<version>.*)$",
     },
     {
-      "customType": "regex",
-      "description": "Update Trivy version in GitHub Actions",
-      "fileMatch": ["/.github/workflows/*.yml/"],
-      "matchStrings": ["version:\\s*v(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
-      "datasourceTemplate": "github-releases",
-      "depNameTemplate": "aquasecurity/trivy",
-      "extractVersionTemplate": "^v?(?<version>.*)$"
+      customType: "regex",
+      description: "Update Trivy version in GitHub Actions",
+      managerFilePatterns: ["//.github/workflows/*.yml//"],
+      matchStrings: ["version:\\s*v(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
+      datasourceTemplate: "github-releases",
+      depNameTemplate: "aquasecurity/trivy",
+      extractVersionTemplate: "^v?(?<version>.*)$",
     },
     {
-      "customType": "regex",
-      "description": "Update hadolint version in mise.toml",
-      "fileMatch": ["/mise\\.toml$/"],
-      "matchStrings": [
-        "hadolint\\s*=\\s*\"(?<currentValue>latest|\\d+\\.\\d+\\.\\d+)\""
+      customType: "regex",
+      description: "Update hadolint version in mise.toml",
+      managerFilePatterns: ["//mise\\.toml$//"],
+      matchStrings: [
+        'hadolint\\s*=\\s*"(?<currentValue>latest|\\d+\\.\\d+\\.\\d+)"',
       ],
-      "datasourceTemplate": "github-releases",
-      "depNameTemplate": "hadolint",
-      "packageNameTemplate": "hadolint/hadolint",
-      "extractVersionTemplate": "^v?(?<version>.*)$"
+      datasourceTemplate: "github-releases",
+      depNameTemplate: "hadolint",
+      packageNameTemplate: "hadolint/hadolint",
+      extractVersionTemplate: "^v?(?<version>.*)$",
     },
     {
-      "customType": "regex",
-      "description": "Update goss version in mise.toml",
-      "fileMatch": ["/mise\\.toml$/"],
-      "matchStrings": [
-        "goss\\s*=\\s*\"(?<currentValue>latest|\\d+\\.\\d+\\.\\d+)\""
+      customType: "regex",
+      description: "Update goss version in mise.toml",
+      managerFilePatterns: ["//mise\\.toml$//"],
+      matchStrings: [
+        'goss\\s*=\\s*"(?<currentValue>latest|\\d+\\.\\d+\\.\\d+)"',
       ],
-      "datasourceTemplate": "github-releases",
-      "depNameTemplate": "goss",
-      "packageNameTemplate": "goss-org/goss",
-      "extractVersionTemplate": "^v?(?<version>.*)$"
+      datasourceTemplate: "github-releases",
+      depNameTemplate: "goss",
+      packageNameTemplate: "goss-org/goss",
+      extractVersionTemplate: "^v?(?<version>.*)$",
     },
     {
-      "customType": "regex",
-      "description": "Update yamllint version in mise.toml",
-      "fileMatch": ["/mise\\.toml$/"],
-      "matchStrings": [
-        "yamllint\\s*=\\s*\"(?<currentValue>latest|\\d+\\.\\d+\\.\\d+)\""
+      customType: "regex",
+      description: "Update yamllint version in mise.toml",
+      managerFilePatterns: ["//mise\\.toml$//"],
+      matchStrings: [
+        'yamllint\\s*=\\s*"(?<currentValue>latest|\\d+\\.\\d+\\.\\d+)"',
       ],
-      "datasourceTemplate": "github-releases",
-      "depNameTemplate": "yamllint",
-      "packageNameTemplate": "adrienverge/yamllint",
-      "extractVersionTemplate": "^v?(?<version>.*)$"
+      datasourceTemplate: "github-releases",
+      depNameTemplate: "yamllint",
+      packageNameTemplate: "adrienverge/yamllint",
+      extractVersionTemplate: "^v?(?<version>.*)$",
     },
     {
-      "customType": "regex",
-      "description": "Update trivy version in mise.toml",
-      "fileMatch": ["/mise\\.toml$/"],
-      "matchStrings": [
-        "trivy\\s*=\\s*\"(?<currentValue>latest|\\d+\\.\\d+\\.\\d+)\""
+      customType: "regex",
+      description: "Update trivy version in mise.toml",
+      managerFilePatterns: ["//mise\\.toml$//"],
+      matchStrings: [
+        'trivy\\s*=\\s*"(?<currentValue>latest|\\d+\\.\\d+\\.\\d+)"',
       ],
-      "datasourceTemplate": "github-releases",
-      "depNameTemplate": "trivy",
-      "packageNameTemplate": "aquasecurity/trivy",
-      "extractVersionTemplate": "^v?(?<version>.*)$"
+      datasourceTemplate: "github-releases",
+      depNameTemplate: "trivy",
+      packageNameTemplate: "aquasecurity/trivy",
+      extractVersionTemplate: "^v?(?<version>.*)$",
     },
     {
-      "customType": "regex",
-      "description": "Update Claude Code version in Dockerfiles",
-      "fileMatch": [
-        "(^|/)Dockerfile$",
-        "Dockerfile\\.[^/]*$"
+      customType: "regex",
+      description: "Update Claude Code version in Dockerfiles",
+      managerFilePatterns: ["/(^|/)Dockerfile$/", "/Dockerfile\\.[^/]*$/"],
+      matchStrings: [
+        "ARG\\s+(?<depName>CLAUDE_CODE_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)",
       ],
-      "matchStrings": [
-        "ARG\\s+(?<depName>CLAUDE_CODE_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
-      ],
-      "datasourceTemplate": "npm",
-      "packageNameTemplate": "@anthropic-ai/claude-code",
-      "extractVersionTemplate": "^v?(?<version>.*)$"
+      datasourceTemplate: "npm",
+      packageNameTemplate: "@anthropic-ai/claude-code",
+      extractVersionTemplate: "^v?(?<version>.*)$",
     },
     {
-      "customType": "regex",
-      "description": "Update Codex version in Dockerfiles",
-      "fileMatch": [
-        "(^|/)Dockerfile$",
-        "Dockerfile\\.[^/]*$"
+      customType: "regex",
+      description: "Update Codex version in Dockerfiles",
+      managerFilePatterns: ["/(^|/)Dockerfile$/", "/Dockerfile\\.[^/]*$/"],
+      matchStrings: [
+        "ARG\\s+(?<depName>CODEX_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)",
       ],
-      "matchStrings": [
-        "ARG\\s+(?<depName>CODEX_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
-      ],
-      "datasourceTemplate": "npm",
-      "packageNameTemplate": "@openai/codex",
-      "extractVersionTemplate": "^v?(?<version>.*)$"
-    }
+      datasourceTemplate: "npm",
+      packageNameTemplate: "@openai/codex",
+      extractVersionTemplate: "^v?(?<version>.*)$",
+    },
   ],
-  
-  // Platform-specific settings (moved to global config)
-  "prBodyTemplate": "{{{header}}}{{{table}}}{{{notes}}}{{{changelogs}}}{{{controls}}}{{{footer}}}",
-  "vulnerabilityAlerts": {"enabled": true},
-  "osvVulnerabilityAlerts": true,
-  "automerge": false,
-  "automergeType": "pr",
-  "automergeStrategy": "merge",
-  "ignoreDeps": [
-    // No dependencies currently ignored
-  ],
-  "commitMessageTopic": "{{depName}}",
-  "commitMessageAction": "to",
-  "commitMessageExtra": "{{#if isPinDigest}}{{{newDigestShort}}}{{else}}{{#if isMajor}}v{{newMajor}}{{else}}{{#if isSingleVersion}}{{prettyNewVersion}}{{else}}{{#if newValue}}{{{newValue}}}{{else}}{{{newDigestShort}}}{{/if}}{{/if}}{{/if}}{{/if}}",
-  "prConcurrentLimit": 3,
-  "prHourlyLimit": 2,
-  "dependencyDashboard": true,
-  "dependencyDashboardTitle": "🤖 Dependency Updates Dashboard",
-  "labels": ["dependencies", "renovate"],
-  "branchPrefix": "renovate/",
-  "lockFileMaintenance": {"enabled": true, "schedule": ["before 6am on monday"]}
+  prBodyTemplate: "{{{header}}}{{{table}}}{{{notes}}}{{{changelogs}}}{{{controls}}}{{{footer}}}",
+  vulnerabilityAlerts: {
+    enabled: true,
+  },
+  osvVulnerabilityAlerts: true,
+  automerge: false,
+  automergeType: "pr",
+  automergeStrategy: "merge",
+  ignoreDeps: [],
+  commitMessageTopic: "{{depName}}",
+  commitMessageAction: "to",
+  commitMessageExtra: "{{#if isPinDigest}}{{{newDigestShort}}}{{else}}{{#if isMajor}}v{{newMajor}}{{else}}{{#if isSingleVersion}}{{prettyNewVersion}}{{else}}{{#if newValue}}{{{newValue}}}{{else}}{{{newDigestShort}}}{{/if}}{{/if}}{{/if}}{{/if}}",
+  dependencyDashboard: true,
+  dependencyDashboardTitle: "🤖 Dependency Updates Dashboard",
+  labels: ["dependencies", "renovate"],
+  branchPrefix: "renovate/",
+  lockFileMaintenance: {
+    enabled: true,
+    schedule: ["before 6am on monday"],
+  },
 }
