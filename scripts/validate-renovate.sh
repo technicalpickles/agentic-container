@@ -15,7 +15,7 @@ set -euo pipefail
 QUICK_MODE=false
 VERBOSE=false
 
-if [[ -n "$CI" ]]; then
+if [[ -n "${CI:-}" ]]; then
     set -x
 fi
 
@@ -91,7 +91,7 @@ validate_version_detection() {
             # Extract the detected version
             detected_version=$(grep -A5 "\"depName\".*\"${version_var}\"" "$log_file" | grep -o "\"currentValue\".*\"[^\"]*\"" | head -1 | grep -o '"[^"]*"$' | tr -d '"' || true)
             if [[ -n "$detected_version" ]]; then
-                ((detected_count++))
+                detected_count=$((detected_count + 1))
                 print_status "PASS" "Detected ${version_var}=${detected_version}"
             else
                 print_status "FAIL" "Found ${version_var} in Renovate output but no version extracted"
@@ -178,12 +178,12 @@ validate_version_coverage() {
         fi
         
         if [[ "$is_configured" == "true" ]]; then
-            ((covered_count++))
+            covered_count=$((covered_count + 1))
             if [[ "$VERBOSE" == "true" ]]; then
                 print_status "PASS" "$version_var has Renovate rule"
             fi
         elif [[ "$is_ignored" == "true" ]]; then
-            ((covered_count++))
+            covered_count=$((covered_count + 1))
             if [[ "$VERBOSE" == "true" ]]; then
                 print_status "INFO" "$version_var is explicitly ignored"
             fi
