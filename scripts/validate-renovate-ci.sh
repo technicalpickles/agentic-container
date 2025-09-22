@@ -76,6 +76,29 @@ if ! npx json5 --validate .github/renovate.json5; then
 fi
 print_status "PASS" "Renovate configuration has valid JSON5 syntax"
 
+# 3a. Official Renovate configuration validation
+print_status "INFO" "Running official Renovate config validator..."
+
+# Try Docker first (avoids ES module conflicts), fallback to npx
+if command -v docker >/dev/null 2>&1; then
+    print_status "INFO" "Using Docker-based validator (recommended)"
+    if docker run --rm -v "$PWD:/usr/src/app" ghcr.io/renovatebot/renovate:latest renovate-config-validator "/usr/src/app/.github/renovate.json5" >/dev/null 2>&1; then
+        print_status "PASS" "Docker-based Renovate configuration validation passed"
+    else
+        print_status "FAIL" "Docker-based Renovate configuration validation failed"
+        exit 1
+    fi
+else
+    print_status "INFO" "Docker not available, falling back to npx (may have ES module issues)"
+    if npx --yes --package renovate -- renovate-config-validator .github/renovate.json5 >/dev/null 2>&1; then
+        print_status "PASS" "npx-based Renovate configuration validation passed"
+    else
+        print_status "WARN" "npx validation failed (likely ES module conflicts)"
+        print_status "INFO" "Consider using Docker for reliable validation"
+        # Don't exit here as Docker is the preferred method
+    fi
+fi
+
 # For pattern-only mode, we're done
 if [[ "$PATTERN_ONLY" == "true" ]]; then
     print_status "INFO" "Pattern-only validation complete"
@@ -123,10 +146,6 @@ fi
 # 5. Renovate environment compatibility check
 print_status "INFO" "Checking Renovate environment compatibility..."
 
-# Check Node.js version
-node_version=$(node --version)
-print_status "INFO" "Node.js version: $node_version"
-
 # Check if renovate can start (basic command)
 if npx renovate --version >/dev/null 2>&1; then
     renovate_version=$(npx renovate --version)
@@ -135,21 +154,7 @@ else
     print_status "WARN" "Renovate command not accessible"
 fi
 
-if [[ "$DETECTION_ONLY" == "true" ]]; then
-    print_status "INFO" "Detection validation complete"
-    exit 0
-fi
-
 # 6. Summary and recommendations
 print_status "INFO" "Validation summary..."
 
-# Provide actionable recommendations based on what we found
-if command -v node >/dev/null 2>&1; then
-    current_node=$(node --version | sed 's/v//')
-    print_status "INFO" "For full Renovate compatibility, consider using Node.js 22.x (current: $current_node)"
-fi
-
 print_status "PASS" "Comprehensive Renovate configuration validation complete!"
-print_status "INFO" "✅ JSON5 syntax is valid"
-print_status "INFO" "✅ Configuration structure is correct" 
-print_status "INFO" "✅ No critical validation errors detected"

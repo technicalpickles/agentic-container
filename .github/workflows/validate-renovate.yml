@@ -44,6 +44,11 @@ jobs:
           sudo apt-get update && sudo apt-get install -y jq
           npm ci
 
+      - name: Run official Renovate config validator (Docker)
+        run: |
+          # Use Docker to avoid ES module conflicts
+          docker run --rm -v "$PWD:/usr/src/app" ghcr.io/renovatebot/renovate:latest renovate-config-validator "/usr/src/app/.github/renovate.json5"
+
       - name: Run pattern validation (fast)
         run: ./scripts/validate-renovate-ci.sh --pattern-only
         
