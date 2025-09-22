@@ -53,38 +53,79 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Update Docker ARG versions in Dockerfiles",
+      "description": "Update Node.js version in Dockerfiles",
       "fileMatch": ["/(^|/)Dockerfile$/", "/Dockerfile\\.[^/]*$/"],
       "matchStrings": [
-        "ARG\\s+(?<depName>NODE_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)",
-        "ARG\\s+(?<depName>PYTHON_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)",
-        "ARG\\s+(?<depName>RUBY_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)",
-        "ARG\\s+(?<depName>GO_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+        "ARG\\s+(?<depName>NODE_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
       ],
       "datasourceTemplate": "github-releases",
-      "packageNameTemplate": {
-        "NODE_VERSION": "nodejs/node",
-        "PYTHON_VERSION": "python/cpython", 
-        "RUBY_VERSION": "ruby/ruby",
-        "GO_VERSION": "golang/go"
-      },
+      "packageNameTemplate": "nodejs/node",
       "extractVersionTemplate": "^v?(?<version>.*)$"
     },
     {
       "customType": "regex",
-      "description": "Update tool versions in Docker ARG declarations",
+      "description": "Update Python version in Dockerfiles",
       "fileMatch": ["/(^|/)Dockerfile$/", "/Dockerfile\\.[^/]*$/"],
       "matchStrings": [
-        "ARG\\s+(?<depName>AST_GREP_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)",
-        "ARG\\s+(?<depName>LEFTHOOK_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)",
+        "ARG\\s+(?<depName>PYTHON_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "datasourceTemplate": "github-releases",
+      "packageNameTemplate": "python/cpython",
+      "extractVersionTemplate": "^v?(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update Ruby version in Dockerfiles",
+      "fileMatch": ["/(^|/)Dockerfile$/", "/Dockerfile\\.[^/]*$/"],
+      "matchStrings": [
+        "ARG\\s+(?<depName>RUBY_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "datasourceTemplate": "github-releases",
+      "packageNameTemplate": "ruby/ruby",
+      "extractVersionTemplate": "^v?(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update Go version in Dockerfiles",
+      "fileMatch": ["/(^|/)Dockerfile$/", "/Dockerfile\\.[^/]*$/"],
+      "matchStrings": [
+        "ARG\\s+(?<depName>GO_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "datasourceTemplate": "github-releases",
+      "packageNameTemplate": "golang/go",
+      "extractVersionTemplate": "^v?(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update ast-grep version in Dockerfiles",
+      "fileMatch": ["/(^|/)Dockerfile$/", "/Dockerfile\\.[^/]*$/"],
+      "matchStrings": [
+        "ARG\\s+(?<depName>AST_GREP_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "datasourceTemplate": "github-releases",
+      "packageNameTemplate": "ast-grep/ast-grep",
+      "extractVersionTemplate": "^v?(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update lefthook version in Dockerfiles",
+      "fileMatch": ["/(^|/)Dockerfile$/", "/Dockerfile\\.[^/]*$/"],
+      "matchStrings": [
+        "ARG\\s+(?<depName>LEFTHOOK_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "datasourceTemplate": "github-releases",
+      "packageNameTemplate": "evilmartians/lefthook",
+      "extractVersionTemplate": "^v?(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update uv version in Dockerfiles",
+      "fileMatch": ["/(^|/)Dockerfile$/", "/Dockerfile\\.[^/]*$/"],
+      "matchStrings": [
         "ARG\\s+(?<depName>UV_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
       ],
       "datasourceTemplate": "github-releases",
-      "packageNameTemplate": {
-        "AST_GREP_VERSION": "ast-grep/ast-grep",
-        "LEFTHOOK_VERSION": "evilmartians/lefthook",
-        "UV_VERSION": "astral-sh/uv"
-      },
+      "packageNameTemplate": "astral-sh/uv",
       "extractVersionTemplate": "^v?(?<version>.*)$"
     },
     {
@@ -122,18 +163,50 @@
     },
     {
       "customType": "regex",
-      "description": "Update mise tool versions in toml files",
+      "description": "Update hadolint version in mise.toml",
       "fileMatch": ["/mise\\.toml$/"],
       "matchStrings": [
-        "(?<depName>\\w+)\\s*=\\s*\"(?<currentValue>latest|\\d+\\.\\d+\\.\\d+)\""
+        "hadolint\\s*=\\s*\"(?<currentValue>latest|\\d+\\.\\d+\\.\\d+)\""
       ],
       "datasourceTemplate": "github-releases",
-      "packageNameTemplate": {
-        "hadolint": "hadolint/hadolint",
-        "goss": "goss-org/goss", 
-        "yamllint": "adrienverge/yamllint",
-        "trivy": "aquasecurity/trivy"
-      },
+      "depNameTemplate": "hadolint",
+      "packageNameTemplate": "hadolint/hadolint",
+      "extractVersionTemplate": "^v?(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update goss version in mise.toml",
+      "fileMatch": ["/mise\\.toml$/"],
+      "matchStrings": [
+        "goss\\s*=\\s*\"(?<currentValue>latest|\\d+\\.\\d+\\.\\d+)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "goss",
+      "packageNameTemplate": "goss-org/goss",
+      "extractVersionTemplate": "^v?(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update yamllint version in mise.toml",
+      "fileMatch": ["/mise\\.toml$/"],
+      "matchStrings": [
+        "yamllint\\s*=\\s*\"(?<currentValue>latest|\\d+\\.\\d+\\.\\d+)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "yamllint",
+      "packageNameTemplate": "adrienverge/yamllint",
+      "extractVersionTemplate": "^v?(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update trivy version in mise.toml",
+      "fileMatch": ["/mise\\.toml$/"],
+      "matchStrings": [
+        "trivy\\s*=\\s*\"(?<currentValue>latest|\\d+\\.\\d+\\.\\d+)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "trivy",
+      "packageNameTemplate": "aquasecurity/trivy",
       "extractVersionTemplate": "^v?(?<version>.*)$"
     }
   ],
@@ -143,7 +216,6 @@
   "repositoryCache": "enabled",
   
   // PR settings
-  "prTitle": "{{semanticPrefix}}{{prettyDepType}} {{depName}} {{#if isPinDigest}}{{{newDigestShort}}}{{else}}{{#if isMajor}}{{prettyNewMajor}}{{else}}{{#if isSingleVersion}}{{prettyNewVersion}}{{else}}{{#if newValue}}{{{newValue}}}{{else}}{{{newDigestShort}}}{{/if}}{{/if}}{{/if}}{{/if}}",
   "prBodyTemplate": "{{{header}}}{{{table}}}{{{notes}}}{{{changelogs}}}{{{controls}}}{{{footer}}}",
   
   // Security and reliability
