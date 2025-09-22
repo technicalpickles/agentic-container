@@ -1,0 +1,195 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":dependencyDashboard"
+  ],
+  "timezone": "America/New_York",
+  "schedule": ["before 6am every weekday", "every weekend"],
+  
+  // Package rules for grouping and automerge behavior
+  "packageRules": [
+    {
+      "description": "Group GitHub Actions updates",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions",
+      "semanticCommitType": "ci"
+    },
+    {
+      "description": "Group Docker base image updates",
+      "matchDatasources": ["docker"],
+      "matchPackagePatterns": ["ubuntu", "node", "python"],
+      "groupName": "Docker base images",
+      "semanticCommitType": "build"
+    },
+    {
+      "description": "Group language runtime versions",
+      "matchPackagePatterns": ["NODE_VERSION", "PYTHON_VERSION", "RUBY_VERSION", "GO_VERSION"],
+      "groupName": "Language runtimes",
+      "semanticCommitType": "build"
+    },
+    {
+      "description": "Group development tools",
+      "matchPackagePatterns": ["AST_GREP_VERSION", "LEFTHOOK_VERSION", "UV_VERSION"],
+      "groupName": "Development tools", 
+      "semanticCommitType": "build"
+    },
+    {
+      "description": "Auto-merge non-breaking GitHub Actions updates",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["patch", "pin", "digest"],
+      "automerge": true
+    },
+    {
+      "description": "Auto-merge patch updates for development dependencies",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["patch"],
+      "automerge": true
+    }
+  ],
+
+  // Custom managers for Docker ARG versions
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update Docker ARG versions in Dockerfiles",
+      "fileMatch": ["/(^|/)Dockerfile$/", "/Dockerfile\\.[^/]*$/"],
+      "matchStrings": [
+        "ARG\\s+(?<depName>NODE_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)",
+        "ARG\\s+(?<depName>PYTHON_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)",
+        "ARG\\s+(?<depName>RUBY_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)",
+        "ARG\\s+(?<depName>GO_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "datasourceTemplate": "github-releases",
+      "packageNameTemplate": {
+        "NODE_VERSION": "nodejs/node",
+        "PYTHON_VERSION": "python/cpython", 
+        "RUBY_VERSION": "ruby/ruby",
+        "GO_VERSION": "golang/go"
+      },
+      "extractVersionTemplate": "^v?(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update tool versions in Docker ARG declarations",
+      "fileMatch": ["/(^|/)Dockerfile$/", "/Dockerfile\\.[^/]*$/"],
+      "matchStrings": [
+        "ARG\\s+(?<depName>AST_GREP_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)",
+        "ARG\\s+(?<depName>LEFTHOOK_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)",
+        "ARG\\s+(?<depName>UV_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "datasourceTemplate": "github-releases",
+      "packageNameTemplate": {
+        "AST_GREP_VERSION": "ast-grep/ast-grep",
+        "LEFTHOOK_VERSION": "evilmartians/lefthook",
+        "UV_VERSION": "astral-sh/uv"
+      },
+      "extractVersionTemplate": "^v?(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update GitHub release download URLs", 
+      "fileMatch": ["/(^|/)Dockerfile$/", "/Dockerfile\\.[^/]*$/", "/(^|/)scripts/.*\\.sh$/"],
+      "matchStrings": [
+        "https://github\\.com/spinel-coop/rv/releases/download/v(?<currentValue>\\d+\\.\\d+\\.\\d+)/rv-installer\\.sh"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "spinel-coop/rv",
+      "extractVersionTemplate": "^v?(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update dive version in scripts",
+      "fileMatch": ["/(^|/)scripts/.*\\.sh$/"],
+      "matchStrings": [
+        "DIVE_VERSION=\"\\$\\{DIVE_VERSION:-(?<currentValue>\\d+\\.\\d+\\.\\d+)\\}\""
+      ],
+      "datasourceTemplate": "github-releases", 
+      "depNameTemplate": "wagoodman/dive",
+      "extractVersionTemplate": "^v?(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update Trivy version in GitHub Actions",
+      "fileMatch": ["/.github/workflows/*.yml/"],
+      "matchStrings": [
+        "version:\\s*v(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "aquasecurity/trivy",
+      "extractVersionTemplate": "^v?(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update mise tool versions in toml files",
+      "fileMatch": ["/mise\\.toml$/"],
+      "matchStrings": [
+        "(?<depName>\\w+)\\s*=\\s*\"(?<currentValue>latest|\\d+\\.\\d+\\.\\d+)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "packageNameTemplate": {
+        "hadolint": "hadolint/hadolint",
+        "goss": "goss-org/goss", 
+        "yamllint": "adrienverge/yamllint",
+        "trivy": "aquasecurity/trivy"
+      },
+      "extractVersionTemplate": "^v?(?<version>.*)$"
+    }
+  ],
+
+  // Platform-specific settings
+  "platform": "github",
+  "repositoryCache": "enabled",
+  
+  // PR settings
+  "prTitle": "{{semanticPrefix}}{{prettyDepType}} {{depName}} {{#if isPinDigest}}{{{newDigestShort}}}{{else}}{{#if isMajor}}{{prettyNewMajor}}{{else}}{{#if isSingleVersion}}{{prettyNewVersion}}{{else}}{{#if newValue}}{{{newValue}}}{{else}}{{{newDigestShort}}}{{/if}}{{/if}}{{/if}}{{/if}}",
+  "prBodyTemplate": "{{{header}}}{{{table}}}{{{notes}}}{{{changelogs}}}{{{controls}}}{{{footer}}}",
+  
+  // Security and reliability
+  "vulnerabilityAlerts": {
+    "enabled": true
+  },
+  "osvVulnerabilityAlerts": true,
+  
+  // Automerge settings (conservative)
+  "automerge": false,
+  "automergeType": "pr",
+  "automergeStrategy": "merge",
+  
+
+  // Ignore patterns 
+  "ignoreDeps": [
+    // Ignore placeholder or demo versions that shouldn't be updated
+    "CLAUDE_CODE_VERSION",
+    "CODEX_VERSION"
+  ],
+
+  // Custom commit message templates
+  "commitMessageTopic": "{{depName}}",
+  "commitMessageAction": "to",
+  "commitMessageExtra": "{{#if isPinDigest}}{{{newDigestShort}}}{{else}}{{#if isMajor}}v{{newMajor}}{{else}}{{#if isSingleVersion}}{{prettyNewVersion}}{{else}}{{#if newValue}}{{{newValue}}}{{else}}{{{newDigestShort}}}{{/if}}{{/if}}{{/if}}{{/if}}",
+  
+  // Rate limiting to avoid overwhelming the repository 
+  "prConcurrentLimit": 3,
+  "prHourlyLimit": 2,
+  
+  // Enable dependency dashboard for overview
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "🤖 Dependency Updates Dashboard",
+  
+  // Custom labels
+  "labels": ["dependencies", "renovate"],
+  
+  // Reviewers (customize as needed)
+  // "reviewers": ["@your-team"],
+  
+  // Branch prefix
+  "branchPrefix": "renovate/",
+  
+  // Lockfile maintenance
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"]
+  }
+}

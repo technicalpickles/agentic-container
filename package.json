@@ -9,10 +9,13 @@
     "format:yaml": "prettier --write '**/*.{yaml,yml}'",
     "format:markdown": "prettier --write '**/*.md'",
     "format:yaml:check": "prettier --check '**/*.{yaml,yml}'",
-    "format:markdown:check": "prettier --check '**/*.md'"
+    "format:markdown:check": "prettier --check '**/*.md'",
+    "validate-renovate": "./scripts/validate-renovate-config.sh",
+    "validate-renovate:dry-run": "./scripts/validate-renovate-config.sh --dry-run"
   },
   "devDependencies": {
-    "prettier": "^3.2.5"
+    "prettier": "^3.2.5",
+    "renovate": "^41.121.2"
   },
   "engines": {
     "node": ">=18.0.0"
