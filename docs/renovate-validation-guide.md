@@ -17,18 +17,18 @@ Our validation strategy includes multiple layers to ensure configuration quality
 ### Quick Validation (Developers)
 
 ```bash
-# Fast validation before committing
-./scripts/validate-renovate-local.sh
+# Fast validation before committing (Docker-only)
+./scripts/validate-renovate.sh --quick
 ```
 
 ### Comprehensive Validation
 
 ```bash
-# Full validation with pattern testing
-./scripts/validate-renovate-config.sh
+# Full validation with pattern testing (Docker-only)
+./scripts/validate-renovate.sh
 
-# Include dry-run testing (requires GitHub token)
-./scripts/validate-renovate-config.sh --dry-run
+# Pattern-only validation for debugging
+./scripts/validate-renovate.sh --pattern-only
 ```
 
 ### Pre-commit Hooks
@@ -42,7 +42,7 @@ pip install pre-commit
 # Install hooks
 pre-commit install
 
-# Run manually
+# Run manually (uses Docker-only validation)
 pre-commit run --files .github/renovate.json5
 ```
 
@@ -51,15 +51,14 @@ pre-commit run --files .github/renovate.json5
 Our GitHub Actions workflow (`.github/workflows/validate-renovate.yml`) runs:
 
 ### On Every Push/PR
-- Official Renovate config validator
-- Pattern validation (fast)
-- Comprehensive validation
+- Quick validation (Docker-only: syntax + official validator)
+- Comprehensive validation (Docker-only: patterns + analysis)
 - Security scanning
 - Version coverage analysis
 
 ### On Configuration Changes
-- Enhanced dry-run validation (conditional)
-- Full dependency detection testing
+- Enhanced pattern validation (conditional)
+- Additional coverage analysis
 
 ### Weekly Schedule
 - Configuration drift detection
@@ -73,11 +72,11 @@ Our GitHub Actions workflow (`.github/workflows/validate-renovate.yml`) runs:
 - **Speed**: Very fast (~1s)
 
 ### 2. Official Validation
-- **Tool**: `renovate-config-validator` via Docker (primary) or npx (fallback)
+- **Tool**: `renovate-config-validator` via Docker (Docker-only)
 - **Purpose**: Renovate's built-in validation
 - **Catches**: Schema errors, deprecated options, invalid configurations  
 - **Speed**: Fast (~5s)
-- **Docker approach**: Avoids Node.js ES module conflicts
+- **Reliability**: No Node.js ES module conflicts
 
 ### 3. Pattern Validation
 - **Tool**: Custom scripts with grep/regex
@@ -102,8 +101,8 @@ Our GitHub Actions workflow (`.github/workflows/validate-renovate.yml`) runs:
 ## Best Practices Implemented
 
 ### ✅ Multi-layered Validation
-- Official validator + custom validation
-- Syntax + semantic + pattern validation
+- Docker-only official validator + custom validation
+- Syntax + semantic + pattern validation  
 - Security + coverage analysis
 
 ### ✅ Performance Optimized
@@ -161,8 +160,8 @@ pre-commit run renovate-config-validator --files .github/renovate.json5
 ## Integration with Development Workflow
 
 ### Before Committing
-1. Run `./scripts/validate-renovate-local.sh`
-2. Pre-commit hooks automatically validate
+1. Run `./scripts/validate-renovate.sh --quick`
+2. Pre-commit hooks automatically validate (Docker-only)
 3. Fix any issues before pushing
 
 ### During PR Review
@@ -180,8 +179,8 @@ pre-commit run renovate-config-validator --files .github/renovate.json5
 To add validation for new pattern types:
 
 1. **Add pattern to renovate.json5**
-2. **Update pattern validation** in `validate-renovate-ci.sh`
-3. **Test locally** with validation scripts
+2. **Update pattern validation** in `validate-renovate.sh`
+3. **Test locally** with `./scripts/validate-renovate.sh`
 4. **Verify in CI** that new patterns are detected
 
 This comprehensive approach ensures configuration quality while maintaining developer productivity and CI efficiency.

@@ -2,10 +2,10 @@ name: Validate Renovate Configuration
 
 on:
   push:
-    paths: ['.github/renovate.json5', 'scripts/validate-renovate-ci.sh']
+    paths: ['.github/renovate.json5', 'scripts/validate-renovate.sh']
     branches: [main, renovate/**]
   pull_request:
-    paths: ['.github/renovate.json5', 'scripts/validate-renovate-ci.sh'] 
+    paths: ['.github/renovate.json5', 'scripts/validate-renovate.sh'] 
     branches: [main]
   # Weekly validation to catch configuration drift
   schedule:
@@ -44,19 +44,11 @@ jobs:
           sudo apt-get update && sudo apt-get install -y jq
           npm ci
 
-      - name: Run official Renovate config validator (Docker)
-        run: |
-          # Use Docker to avoid ES module conflicts
-          docker run --rm -v "$PWD:/usr/src/app" ghcr.io/renovatebot/renovate:latest renovate-config-validator "/usr/src/app/.github/renovate.json5"
-
-      - name: Run pattern validation (fast)
-        run: ./scripts/validate-renovate-ci.sh --pattern-only
+      - name: Run quick validation (Docker-only)
+        run: ./scripts/validate-renovate.sh --quick
         
-      - name: Run comprehensive validation
-        env:
-          # Rate limit GitHub API calls to avoid issues
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./scripts/validate-renovate-ci.sh
+      - name: Run comprehensive validation (Docker-only)
+        run: ./scripts/validate-renovate.sh
 
       # Only run expensive dry-run validation on renovate config changes
       - name: Detect configuration changes
@@ -68,14 +60,11 @@ jobs:
             echo "renovate_config_changed=false" >> $GITHUB_OUTPUT  
           fi
 
-      - name: Run Renovate dry-run validation (on config changes)
+      - name: Run pattern validation (on config changes)
         if: steps.changes.outputs.renovate_config_changed == 'true'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          LOG_LEVEL: warn  # Reduce noise in CI
         run: |
-          echo "🚀 Running enhanced validation due to Renovate config changes..."
-          timeout 300 ./scripts/validate-renovate-ci.sh --detection-only
+          echo "🚀 Running enhanced pattern validation due to Renovate config changes..."
+          ./scripts/validate-renovate.sh --pattern-only
 
 
   check-version-coverage:

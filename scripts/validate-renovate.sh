@@ -1,26 +1,43 @@
 #!/usr/bin/env bash
 
-# validate-renovate-config.sh
+# validate-renovate.sh
 #
-# Purpose: Validate Renovate configuration locally before GitHub App installation
-# Created: 2025-09-20
-# Used for: Testing regex patterns, configuration syntax, and expected matches
+# Purpose: Docker-only Renovate configuration validation for local and CI
+# Created: 2025-09-22
+# Used for: Reliable validation without Node.js ES module conflicts
 #
 # Usage:
-#   ./scripts/validate-renovate-config.sh           # Quick pattern validation
-#   ./scripts/validate-renovate-config.sh --dry-run # Full renovate dry-run (requires gh CLI)
+#   ./scripts/validate-renovate.sh                    # Full validation (default)
+#   ./scripts/validate-renovate.sh --quick           # Quick validation (syntax + official)
+#   ./scripts/validate-renovate.sh --pattern-only    # Pattern validation only
+#   ./scripts/validate-renovate.sh --help           # Show usage
 
 set -euo pipefail
 
-echo "🔍 Validating Renovate Configuration"
-echo "===================================="
-echo
+# Parse command line arguments
+MODE="full"
+case "${1:-}" in
+    "--quick") MODE="quick" ;;
+    "--pattern-only") MODE="pattern" ;;
+    "--help") 
+        echo "Usage: $0 [--quick|--pattern-only|--help]"
+        echo ""
+        echo "  --quick         Quick validation (syntax + official validator)"
+        echo "  --pattern-only  Pattern validation only (for debugging)"
+        echo "  --help          Show this help"
+        echo ""
+        echo "Default: Full validation (syntax + official + patterns + analysis)"
+        exit 0 ;;
+    "") ;; # Full validation (default)
+    *) echo "Usage: $0 [--quick|--pattern-only|--help]"; exit 1 ;;
+esac
 
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
 # Function to print status
@@ -32,23 +49,94 @@ print_status() {
         "WARN") echo -e "${YELLOW}⚠️  WARN:${NC} $message" ;;
         "FAIL") echo -e "${RED}❌ FAIL:${NC} $message" ;;
         "INFO") echo -e "${BLUE}ℹ️  INFO:${NC} $message" ;;
+        "TEST") echo -e "${PURPLE}🧪 TEST:${NC} $message" ;;
     esac
 }
 
-# 1. Check if configuration file exists
-if [[ -f ".github/renovate.json5" ]]; then
-    print_status "PASS" "Configuration file exists at .github/renovate.json5"
-else
-    print_status "FAIL" "Configuration file missing at .github/renovate.json5"
+# Print header based on mode
+case $MODE in
+    "quick") 
+        echo "🚀 Quick Renovate Configuration Validation"
+        echo "=========================================="
+        ;;
+    "pattern")
+        echo "🔍 Renovate Pattern Validation"
+        echo "=============================="
+        ;;
+    *)
+        echo "🔍 Complete Renovate Configuration Validation"
+        echo "============================================="
+        ;;
+esac
+echo
+
+# 1. Check required tools
+print_status "INFO" "Checking required tools..."
+
+# Docker is mandatory now
+if ! command -v docker >/dev/null 2>&1; then
+    print_status "FAIL" "Docker is required but not available"
+    print_status "INFO" "Install Docker: https://docs.docker.com/get-docker/"
+    exit 1
+fi
+print_status "PASS" "Docker is available"
+
+# jq needed for full mode
+if [[ "$MODE" == "full" ]] && ! command -v jq >/dev/null 2>&1; then
+    print_status "FAIL" "jq is required for full validation mode"
+    print_status "INFO" "Install jq: brew install jq (macOS) or apt install jq (Ubuntu)"
     exit 1
 fi
 
+# 2. Configuration file check
+if [[ ! -f ".github/renovate.json5" ]]; then
+    print_status "FAIL" "Renovate configuration file missing at .github/renovate.json5"
+    exit 1
+fi
+print_status "PASS" "Configuration file exists at .github/renovate.json5"
+
+# 3. JSON5 syntax validation (for quick and full modes)
+if [[ "$MODE" != "pattern" ]]; then
+    print_status "INFO" "Validating JSON5 syntax..."
+    if ! npx json5 --validate .github/renovate.json5 >/dev/null 2>&1; then
+        print_status "FAIL" "Renovate configuration has invalid JSON5 syntax"
+        exit 1
+    fi
+    print_status "PASS" "JSON5 syntax is valid"
+fi
+
+# 4. Official Renovate validation (Docker-only)
+if [[ "$MODE" != "pattern" ]]; then
+    print_status "INFO" "Running official Renovate config validator (Docker)..."
+    
+    if docker run --rm -v "$PWD:/usr/src/app" ghcr.io/renovatebot/renovate:latest renovate-config-validator "/usr/src/app/.github/renovate.json5" >/dev/null 2>&1; then
+        print_status "PASS" "Renovate configuration validation passed"
+    else
+        print_status "FAIL" "Renovate configuration validation failed"
+        echo
+        echo "Run with details:"
+        echo "docker run --rm -v \"\$PWD:/usr/src/app\" ghcr.io/renovatebot/renovate:latest renovate-config-validator \"/usr/src/app/.github/renovate.json5\""
+        exit 1
+    fi
+fi
+
+# Quick mode stops here
+if [[ "$MODE" == "quick" ]]; then
+    echo
+    print_status "PASS" "Quick validation complete! ✨"
+    echo
+    echo "💡 For comprehensive validation, run:"
+    echo "   ./scripts/validate-renovate.sh"
+    exit 0
+fi
+
+# 5. Pattern validation (for pattern and full modes)
 echo
 echo "📋 Testing Regex Pattern Matches"
 echo "================================"
 echo
 
-# 2. Test Language Runtime Version Patterns
+# Language Runtime Version Patterns
 echo "🔹 Language Runtime Versions (NODE_VERSION, PYTHON_VERSION, etc.):"
 runtime_matches=$(grep -rE "ARG\s+(NODE_VERSION|PYTHON_VERSION|RUBY_VERSION|GO_VERSION)=" . --include="*Dockerfile*" | wc -l | tr -d ' ')
 print_status "INFO" "Found $runtime_matches language runtime ARG declarations"
@@ -60,10 +148,9 @@ if [[ $runtime_matches -gt 0 ]]; then
 else
     print_status "WARN" "No language runtime ARG declarations found"
 fi
-
 echo
 
-# 3. Test Tool Version Patterns
+# Development Tool Patterns
 echo "🔹 Development Tool Versions (AST_GREP_VERSION, LEFTHOOK_VERSION, etc.):"
 tool_matches=$(grep -rE "ARG\s+(AST_GREP_VERSION|LEFTHOOK_VERSION|UV_VERSION)=" . --include="*Dockerfile*" | wc -l | tr -d ' ')
 print_status "INFO" "Found $tool_matches development tool ARG declarations"
@@ -75,10 +162,9 @@ if [[ $tool_matches -gt 0 ]]; then
 else
     print_status "WARN" "No development tool ARG declarations found"
 fi
-
 echo
 
-# 4. Test Script Version Patterns  
+# Script Version Patterns
 echo "🔹 Script Embedded Versions (DIVE_VERSION):"
 script_matches=$(grep -rE "DIVE_VERSION=.*\d+\.\d+\.\d+" scripts/ 2>/dev/null | wc -l | tr -d ' ')
 print_status "INFO" "Found $script_matches script version declarations"
@@ -90,10 +176,16 @@ if [[ $script_matches -gt 0 ]]; then
 else
     print_status "WARN" "No script version declarations found"
 fi
-
 echo
 
-# 5. Test GitHub Actions workflow files
+# Pattern mode stops here
+if [[ "$MODE" == "pattern" ]]; then
+    echo
+    print_status "PASS" "Pattern validation complete!"
+    exit 0
+fi
+
+# 6. Full analysis (full mode only)
 echo "🔹 GitHub Actions Version Patterns:"
 if [[ -d ".github/workflows" ]]; then
     workflow_files=$(find .github/workflows -name "*.yml" -o -name "*.yaml" | wc -l | tr -d ' ')
@@ -110,10 +202,9 @@ if [[ -d ".github/workflows" ]]; then
 else
     print_status "WARN" "No .github/workflows directory found"
 fi
-
 echo
 
-# 6. Test mise.toml patterns
+# mise.toml patterns
 echo "🔹 Mise Tool Version Patterns:"
 if [[ -f "mise.toml" ]]; then
     print_status "PASS" "Found mise.toml file"
@@ -129,10 +220,9 @@ if [[ -f "mise.toml" ]]; then
 else
     print_status "WARN" "No mise.toml file found"
 fi
-
 echo
 
-# 7. Test standard dependency files
+# Standard dependency files
 echo "🔹 Standard Dependency Files:"
 
 if [[ -f "package.json" ]]; then
@@ -182,60 +272,15 @@ echo "🚦 Rate limits: Max 3 concurrent PRs, 2 per hour"
 echo "🔀 Automerge: Only patch updates for GitHub Actions and dev dependencies"
 
 echo
-echo "🚀 Next Steps"
-echo "============="
-echo "1. Install Mend Renovate App on your GitHub repository"
-echo "2. Look for onboarding PR within 1-2 hours"
-echo "3. Check dependency dashboard issue for overview"
-echo "4. Monitor first batch of update PRs"
-
+print_status "PASS" "Complete validation successful! ✨"
 echo
-print_status "PASS" "Configuration validation complete!"
-
-# Optional: Run renovate dry-run if --dry-run flag is provided
-if [[ "${1:-}" == "--dry-run" ]]; then
-    echo
-    echo "🚀 Running Renovate Dry-Run"
-    echo "=========================="
-    
-    # Check if GitHub CLI is available and authenticated
-    if command -v gh >/dev/null 2>&1; then
-        if gh auth status >/dev/null 2>&1; then
-            print_status "INFO" "Using GitHub CLI token for renovate dry-run"
-            
-            # Get repository name using GitHub CLI
-            repo_name=$(gh repo view --json nameWithOwner -q '.nameWithOwner' 2>/dev/null || echo "")
-            if [[ -n "$repo_name" ]]; then
-                print_status "INFO" "Repository: $repo_name"
-                
-                echo
-                echo "Running: GITHUB_TOKEN=\$(gh auth token) npx renovate --dry-run $repo_name"
-                echo
-                
-                # Export token and run renovate
-                export GITHUB_TOKEN=$(gh auth token)
-                
-                # Verify token is set
-                if [[ -z "$GITHUB_TOKEN" ]]; then
-                    print_status "WARN" "Failed to get GitHub token from 'gh auth token'"
-                    return 1
-                fi
-                
-                npx renovate --dry-run "$repo_name" 2>&1 | head -50
-                
-                echo
-                print_status "INFO" "Dry-run complete (showing first 50 lines of output)"
-                print_status "INFO" "Run without --dry-run flag for faster pattern validation only"
-            else
-                print_status "WARN" "Could not determine GitHub repository name"
-                print_status "INFO" "Make sure you're in a GitHub repository directory"
-                print_status "INFO" "Or run: GITHUB_TOKEN=\$(gh auth token) npx renovate --dry-run owner/repo"
-            fi
-        else
-            print_status "WARN" "GitHub CLI not authenticated. Run 'gh auth login' first"
-        fi
-    else
-        print_status "WARN" "GitHub CLI not found. Install with: brew install gh"
-        print_status "INFO" "Alternative: export GITHUB_TOKEN=your_token && npx renovate --dry-run owner/repo"
-    fi
-fi
+case $MODE in
+    "full")
+        echo "🎉 All validation layers passed:"
+        echo "  ✅ JSON5 syntax validation"
+        echo "  ✅ Official Renovate config validation (Docker)"
+        echo "  ✅ Custom pattern matching verification"  
+        echo "  ✅ Dependency detection analysis"
+        echo "  ✅ Expected behavior documentation"
+        ;;
+esac

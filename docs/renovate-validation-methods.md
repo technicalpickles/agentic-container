@@ -2,56 +2,52 @@
 
 ## Quick Reference
 
-### ✅ Recommended: Docker Method (No ES Module Issues)
+### ✅ Recommended: Consolidated Docker-Only Script
 
 ```bash
-# Basic validation
-docker run --rm -v "$PWD:/usr/src/app" ghcr.io/renovatebot/renovate:latest renovate-config-validator "/usr/src/app/.github/renovate.json5"
+# Quick validation (syntax + official validator)
+./scripts/validate-renovate.sh --quick
 
-# With detailed output
-docker run --rm -v "$PWD:/usr/src/app" ghcr.io/renovatebot/renovate:latest renovate-config-validator "/usr/src/app/.github/renovate.json5"
+# Full validation (syntax + official + patterns + analysis)
+./scripts/validate-renovate.sh
+
+# Pattern validation only (for debugging)
+./scripts/validate-renovate.sh --pattern-only
 ```
 
-### ⚠️ Alternative: NPX Method (May Have ES Module Conflicts)
+### 🐳 Direct Docker Method (Advanced)
 
 ```bash
-# Basic validation (may fail with ES module errors)
-npx --yes --package renovate -- renovate-config-validator .github/renovate.json5
-
-# Strict validation
-npx --yes --package renovate -- renovate-config-validator --strict .github/renovate.json5
+# Direct Docker validation (used internally by our script)
+docker run --rm -v "$PWD:/usr/src/app" ghcr.io/renovatebot/renovate:latest renovate-config-validator "/usr/src/app/.github/renovate.json5"
 ```
 
 ### 🤖 GitHub Actions Integration
 
 ```yaml
-# Reliable Docker-based validation
-- name: Validate Renovate Config
-  run: |
-    docker run --rm -v "$PWD:/usr/src/app" ghcr.io/renovatebot/renovate:latest \
-      renovate-config-validator "/usr/src/app/.github/renovate.json5"
+# Our consolidated approach
+- name: Quick Validation
+  run: ./scripts/validate-renovate.sh --quick
 
-# Alternative: GitHub Action (may have compatibility issues)  
-- name: Validate Renovate Config
-  uses: rinchsan/renovate-config-validator@main
-  with:
-    pattern: '*.json5'
+- name: Full Validation  
+  run: ./scripts/validate-renovate.sh
 ```
 
-## Problem with ES Modules
+## ES Module Issues (Solved)
 
-**Error:** `Error [ERR_REQUIRE_ESM]: require() of ES Module ... not supported`
+**Previous Error:** `Error [ERR_REQUIRE_ESM]: require() of ES Module ... not supported`
 
 **Cause:** Node.js package compatibility conflicts between CommonJS and ES modules in Renovate dependencies
 
-**Solution:** Use Docker-based validation which runs in a controlled environment
+**✅ Solution:** Docker-only approach eliminates all ES module conflicts
 
 ## Our Project Setup
 
-- **Local Quick Validation**: `./scripts/validate-renovate-local.sh` (Docker first, npx fallback)
-- **CI Comprehensive**: `./scripts/validate-renovate-ci.sh` (Docker + pattern validation)
-- **GitHub Actions**: Docker-based validation in workflow
-- **Pre-commit**: Automatic validation on commit
+- **Consolidated Script**: `./scripts/validate-renovate.sh` (Docker-only, all modes)
+- **Quick Mode**: `--quick` for fast validation (syntax + official)
+- **Full Mode**: Default comprehensive validation (patterns + analysis)  
+- **GitHub Actions**: Uses consolidated script for all validation
+- **Pre-commit**: Automatic quick validation on commit
 
 ## Documentation Sources
 
