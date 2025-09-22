@@ -76,9 +76,9 @@
       "matchStrings": [
         "ARG\\s+(?<depName>PYTHON_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
       ],
-      "datasourceTemplate": "github-releases",
-      "packageNameTemplate": "python/cpython",
-      "extractVersionTemplate": "^v?(?<version>.*)$"
+      "datasourceTemplate": "docker",
+      "packageNameTemplate": "python",
+      "extractVersionTemplate": "^(?<version>\\d+\\.\\d+\\.\\d+)$"
     },
     {
       "customType": "regex",
@@ -104,9 +104,9 @@
       "matchStrings": [
         "ARG\\s+(?<depName>GO_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
       ],
-      "datasourceTemplate": "github-releases",
-      "packageNameTemplate": "golang/go",
-      "extractVersionTemplate": "^v?(?<version>.*)$"
+      "datasourceTemplate": "docker",
+      "packageNameTemplate": "golang",
+      "extractVersionTemplate": "^(?<version>\\d+\\.\\d+\\.\\d+)$"
     },
     {
       "customType": "regex",
