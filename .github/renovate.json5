@@ -12,7 +12,7 @@
       "automerge": true
     },
     {
-      "description": "Group GitHub Actions major updates (separate for review)",
+      "description": "Group GitHub Actions major updates",
       "matchManagers": ["github-actions"], 
       "matchUpdateTypes": ["major"],
       "groupName": "GitHub Actions (major)",
