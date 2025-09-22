@@ -209,7 +209,8 @@ Automate your custom image builds with GitHub Actions:
 1. Copy the template workflow:
 
    ```bash
-   cp templates/github-workflow-template.yml .github/workflows/build-container.yml
+   # GitHub Actions workflow templates are available in the cookbooks documentation
+   # See docs/cookbooks/ for extension examples and patterns
    ```
 
 2. Customize for your needs:

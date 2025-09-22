@@ -143,14 +143,15 @@ RUN curl -sSL https://install-script.com | sh
 
 3. **Update documentation** with the new tool
 
-### Template Creation
+### Cookbook Creation
 
-To create new templates:
+To create new extension examples:
 
-1. **Create template file**: `templates/Dockerfile.your-template`
-2. **Document the template** in README.md
-3. **Test the template** thoroughly
-4. **Update extension scripts** if needed
+1. **Create cookbook directory**: `docs/cookbooks/your-example/`
+2. **Add Dockerfile**: Simple, focused extension pattern
+3. **Add goss.yaml**: Copy from `_templates/goss-template.yaml` and customize
+4. **Test thoroughly**: Use `./scripts/test-dockerfile.sh docs/cookbooks/your-example/Dockerfile`
+5. **Document the pattern** in the cookbook README.md
 
 ## Pull Request Process
 
@@ -327,9 +328,8 @@ Test with realistic scenarios:
 docker-compose -f docker-compose.yml up -d
 docker-compose exec dev bash -c "mise list && python --version && node --version"
 
-# Test template usage
-cp templates/Dockerfile.your-template ./test/
-cd test && docker build -f Dockerfile.your-template .
+# Test cookbook usage
+./scripts/test-dockerfile.sh docs/cookbooks/your-example/Dockerfile
 ```
 
 ### Testing Checklist
