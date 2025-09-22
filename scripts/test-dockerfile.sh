@@ -257,15 +257,25 @@ test_comprehensive_validation() {
     if [[ -n "$goss_file" && -f "$goss_file" ]]; then
         log_info "Running comprehensive goss tests for $cookbook_name..."
         local absolute_goss_file="$(cd "$(dirname "$goss_file")" && pwd)/$(basename "$goss_file")"
-        if docker run --rm \
-            --user root \
-            -v "$absolute_goss_file:/tmp/goss.yaml:ro" \
-            "$image_name" \
-            bash -c '
-                set -euo pipefail
-                echo "📋 Running goss tests with pre-installed goss..."
-                goss -g /tmp/goss.yaml validate --format documentation --color
-            '; then
+        # Prepare docker run command with GITHUB_TOKEN if available
+        local docker_cmd="docker run --rm --user root -v \"$absolute_goss_file:/tmp/goss.yaml:ro\""
+        
+        # Add GITHUB_TOKEN if available (for GitHub Actions or local development)
+        if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+            docker_cmd="$docker_cmd -e GITHUB_TOKEN"
+        fi
+        
+        docker_cmd="$docker_cmd \"$image_name\" bash -c '"
+        docker_cmd="$docker_cmd set -euo pipefail; "
+        docker_cmd="$docker_cmd echo \"📦 Ensuring goss is available...\"; "
+        docker_cmd="$docker_cmd if ! command -v goss >/dev/null 2>&1; then "
+        docker_cmd="$docker_cmd mise use -g goss@latest || mise use -g goss@0.4.9; "
+        docker_cmd="$docker_cmd fi; "
+        docker_cmd="$docker_cmd echo \"📋 Running goss tests with pre-installed goss...\"; "
+        docker_cmd="$docker_cmd goss -g /tmp/goss.yaml validate --format documentation --color"
+        docker_cmd="$docker_cmd '"
+        
+        if eval "$docker_cmd"; then
             log_success "All goss tests passed for $cookbook_name!"
         else
             log_error "Goss tests failed for $cookbook_name"
