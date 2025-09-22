@@ -323,32 +323,81 @@ jobs:
           docker rmi test-extension-${{ matrix.cookbook }}:latest || true
           docker rmi ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-base || true
 
-  # Summary job to provide single status check for cookbook tests
-  test-cookbooks-summary:
-    name: Cookbook Tests Summary
+  # Summary job to provide single status check for all CI
+  ci-summary:
+    name: CI Summary
     runs-on: ubuntu-latest
-    needs: parallel-validation
+    needs: [detect-changes, build-standard, parallel-validation]
     if: always()
     steps:
-      - name: Check cookbook test results
+      - name: Generate CI summary
         run: |
-          # Check if any cookbook tests failed
-          needs_json='${{ toJson(needs) }}'
-          echo "Parallel validation results: $needs_json"
-
-          if echo "$needs_json" | jq -e '.["parallel-validation"].result != "success"' > /dev/null; then
-            echo "❌ One or more cookbook tests failed"
-            echo "This will block publishing to ensure only tested images are released"
-            exit 1
-          else
-            echo "✅ All cookbook tests passed!"
+          echo "🔍 CI Summary for this PR"
+          echo "========================"
+          
+          # Check what type of changes we have
+          if [[ "${{ needs.detect-changes.outputs.docs-only }}" == "true" ]]; then
+            echo "📚 **Documentation-only changes detected**"
+            echo "✅ No builds or tests needed - ready for review!"
+            {
+              echo "## 📚 Documentation Only PR"
+              echo ""
+              echo "This pull request contains only documentation changes."
+              echo "No builds, tests, or deployments are needed."
+              echo ""
+              echo "✅ **Status:** Ready for review and merge"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
           fi
+          
+          # For code changes, check all job results
+          echo "🏗️ **Code changes detected - full CI pipeline executed**"
+          echo ""
+          
+          # Check build status
+          if [[ "${{ needs.build-standard.result }}" == "success" ]]; then
+            echo "✅ Base image build: SUCCESS"
+          elif [[ "${{ needs.build-standard.result }}" == "skipped" ]]; then
+            echo "⏭️ Base image build: SKIPPED (no code changes)"
+          else
+            echo "❌ Base image build: FAILED"
+            exit 1
+          fi
+          
+          # Check parallel validation status
+          if [[ "${{ needs.parallel-validation.result }}" == "success" ]]; then
+            echo "✅ Validation tests: SUCCESS"
+          elif [[ "${{ needs.parallel-validation.result }}" == "skipped" ]]; then
+            echo "⏭️ Validation tests: SKIPPED"
+          else
+            echo "❌ Validation tests: FAILED"
+            exit 1
+          fi
+          
+          echo ""
+          echo "🎉 All checks passed!"
+          
+          # Create detailed summary
+          {
+            echo "## 🚀 CI Pipeline Results"
+            echo ""
+            echo "| Component | Status | Details |"
+            echo "|-----------|--------|---------|"
+            echo "| Base Image Build | ${{ needs.build-standard.result == 'success' && '✅ Success' || needs.build-standard.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} | Standard container image |"
+            echo "| Validation Tests | ${{ needs.parallel-validation.result == 'success' && '✅ Success' || needs.parallel-validation.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} | Cookbook and dev image tests |"
+            echo ""
+            if [[ "${{ needs.detect-changes.outputs.changed-cookbooks }}" != "" ]]; then
+              echo "**Changed Cookbooks:** ${{ needs.detect-changes.outputs.changed-cookbooks }}"
+              echo ""
+            fi
+            echo "**Change Type:** ${{ needs.detect-changes.outputs.base-dockerfile == 'true' && 'Base Dockerfile + ' || '' }}${{ needs.detect-changes.outputs.cookbook-dockerfiles == 'true' && 'Cookbook Changes' || 'Other Code Changes' }}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   publish:
     name: Publish Images
     runs-on: ubuntu-latest
-    needs: [build-standard, parallel-validation, test-cookbooks-summary]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.build-standard.result == 'success' && needs.parallel-validation.result == 'success' && needs.test-cookbooks-summary.result == 'success'
+    needs: [build-standard, parallel-validation, ci-summary]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && needs.build-standard.result == 'success' && needs.parallel-validation.result == 'success' && needs.ci-summary.result == 'success'
     permissions:
       contents: read
       packages: write
