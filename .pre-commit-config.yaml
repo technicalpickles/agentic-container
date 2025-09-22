@@ -1,0 +1,15 @@
+repos:
+  - repo: https://github.com/renovatebot/pre-commit-hooks
+    rev: 38.147.0
+    hooks:
+      - id: renovate-config-validator
+        files: '^\.github/renovate\.json5?$'
+        
+  - repo: local
+    hooks:
+      - id: renovate-pattern-validator
+        name: Renovate Pattern Validator
+        entry: ./scripts/validate-renovate-ci.sh --pattern-only
+        language: system
+        files: '^\.github/renovate\.json5?$'
+        pass_filenames: false
