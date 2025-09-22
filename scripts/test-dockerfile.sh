@@ -263,11 +263,6 @@ test_comprehensive_validation() {
             "$image_name" \
             bash -c '
                 set -euo pipefail
-                echo "📦 Ensuring goss is available..."
-                # Check if goss is already available globally, if not make it available
-                if ! command -v goss >/dev/null 2>&1; then
-                    mise use -g goss@latest || mise use -g goss@0.4.9
-                fi
                 echo "📋 Running goss tests with pre-installed goss..."
                 goss -g /tmp/goss.yaml validate --format documentation --color
             '; then
