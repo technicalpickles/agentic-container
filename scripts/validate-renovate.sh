@@ -62,56 +62,47 @@ print_status() {
 validate_version_detection() {
     local log_file="$1"
     
-    print_status "INFO" "Validating specific version detection..."
+    print_status "INFO" "Validating version detection..."
     
-    # Check for expected version patterns in codebase files first
-    local expected_versions=(
-        "AST_GREP_VERSION=0.39.5"
-        "LEFTHOOK_VERSION=1.13.0" 
-        "UV_VERSION=0.8.17"
-        "NODE_VERSION=24.8.0"
-        "PYTHON_VERSION=3.13.7"
-        "CLAUDE_CODE_VERSION=1.0.0"
-        "CODEX_VERSION=2.0.0"
-    )
+    # Get all _VERSION variables from codebase
+    local codebase_versions=()
+    while IFS= read -r version_var; do
+        codebase_versions+=("$version_var")
+    done < <(grep -r "ARG.*_VERSION=" . --include="*Dockerfile*" --exclude-dir=node_modules --exclude-dir=log | grep -o "[A-Z_]*_VERSION" | sort -u)
     
-    # First verify these versions exist in the codebase
-    print_status "INFO" "Checking for version declarations in codebase..."
-    for version_pair in "${expected_versions[@]}"; do
-        dep_name="${version_pair%=*}"
-        expected_version="${version_pair#*=}"
-        if grep -r "ARG.*${dep_name}=${expected_version}" . --include="*Dockerfile*" >/dev/null 2>&1; then
-            if [[ "$VERBOSE" == "true" ]]; then
-                print_status "INFO" "Found ${dep_name}=${expected_version} in codebase"
-            fi
-        else
-            print_status "FAIL" "Expected version ${dep_name}=${expected_version} not found in codebase"
-            print_status "INFO" "Update expected_versions in validate-renovate.sh or fix version in Dockerfile"
-        fi
-    done
-    
-    # Now check if Renovate detected these versions
+    # Check what Renovate detected for each version variable
     detected_count=0
-    for version_pair in "${expected_versions[@]}"; do
-        dep_name="${version_pair%=*}"
-        expected_version="${version_pair#*=}"
-        if grep -q "\"currentValue\".*\"${expected_version}\"" "$log_file"; then
-            ((detected_count++))
-            print_status "PASS" "Detected ${dep_name}=${expected_version}"
+    total_expected=${#codebase_versions[@]}
+    
+    print_status "INFO" "Checking version detection for ${total_expected} _VERSION variables..."
+    
+    for version_var in "${codebase_versions[@]}"; do
+        # Look for this version variable in Renovate output
+        if grep -q "\"depName\".*\"${version_var}\"" "$log_file"; then
+            # Extract the detected version
+            detected_version=$(grep -A5 "\"depName\".*\"${version_var}\"" "$log_file" | grep -o "\"currentValue\".*\"[^\"]*\"" | head -1 | grep -o '"[^"]*"$' | tr -d '"')
+            if [[ -n "$detected_version" ]]; then
+                ((detected_count++))
+                print_status "PASS" "Detected ${version_var}=${detected_version}"
+            else
+                print_status "FAIL" "Found ${version_var} in Renovate output but no version extracted"
+                if [[ "$VERBOSE" == "true" ]]; then
+                    print_status "INFO" "Debug: Checking what was detected for $version_var..."
+                    grep -A5 -B3 "\"depName\".*\"${version_var}\"" "$log_file" | head -10
+                fi
+            fi
         else
-            print_status "FAIL" "Missing detection for ${dep_name}=${expected_version}"
+            print_status "FAIL" "Missing detection for ${version_var}"
             if [[ "$VERBOSE" == "true" ]]; then
-                print_status "INFO" "Debug: Checking what was detected for $dep_name..."
-                grep -A3 -B3 "\"depName\".*\"${dep_name}\"" "$log_file" | head -10 || print_status "INFO" "No matches found for $dep_name"
+                print_status "INFO" "Debug: No matches found for $version_var in Renovate output"
             fi
         fi
     done
     
-    # Validate minimum detection threshold
+    # Validate detection threshold
     min_required=3
-    total_expected=${#expected_versions[@]}
     if [[ $detected_count -ge $min_required ]]; then
-        print_status "PASS" "Custom managers detecting expected versions ($detected_count/$total_expected)"
+        print_status "PASS" "Custom managers detecting versions ($detected_count/$total_expected)"
     else
         print_status "FAIL" "Too few versions detected by custom managers ($detected_count/$total_expected, minimum: $min_required)"
         if [[ "$VERBOSE" == "false" ]]; then
