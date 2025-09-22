@@ -301,5 +301,108 @@ fi
 
 print_status "INFO" "Validation log saved to: $validation_log"
 
+# Analyze upstream versions from Renovate's own data
+validate_upstream_versions() {
+    local log_file="$1"
+    
+    print_status "INFO" "Analyzing upstream versions from Renovate data..."
+    
+    local deps_analyzed=0
+    local updates_available=0
+    local up_to_date=0
+    
+    # Extract and analyze each _VERSION dependency directly
+    while IFS= read -r dep_line; do
+        if [[ -n "$dep_line" ]]; then
+            local dep_name=$(echo "$dep_line" | cut -d: -f1)
+            local current_value=$(echo "$dep_line" | cut -d: -f2)
+            local datasource=$(echo "$dep_line" | cut -d: -f3)
+            local has_updates=$(echo "$dep_line" | cut -d: -f4)
+            local new_version=$(echo "$dep_line" | cut -d: -f5)
+            local update_type=$(echo "$dep_line" | cut -d: -f6)
+            local current_age=$(echo "$dep_line" | cut -d: -f7)
+            
+            deps_analyzed=$((deps_analyzed + 1))
+            
+            if [[ "$VERBOSE" == "true" ]]; then
+                print_status "INFO" "Processing $dep_name: $current_value (datasource: $datasource)"
+            fi
+            
+            if [[ "$has_updates" == "yes" && -n "$new_version" ]]; then
+                updates_available=$((updates_available + 1))
+                
+                local age_info=""
+                if [[ -n "$current_age" && "$current_age" != "unknown" ]]; then
+                    age_info=" (${current_age}d old)"
+                fi
+                
+                case "$update_type" in
+                    "major") print_status "INFO" "$dep_name: $current_value → $new_version ⚠️  MAJOR$age_info" ;;
+                    "minor") print_status "INFO" "$dep_name: $current_value → $new_version 📈 minor$age_info" ;;
+                    "patch") print_status "INFO" "$dep_name: $current_value → $new_version 🔧 patch$age_info" ;;
+                    *) print_status "INFO" "$dep_name: $current_value → $new_version ↗️  ${update_type:-update}$age_info" ;;
+                esac
+            else
+                up_to_date=$((up_to_date + 1))
+                local age_info=""
+                if [[ -n "$current_age" && "$current_age" != "unknown" ]]; then
+                    if [[ "$current_age" -lt 7 ]]; then
+                        age_info=" ✨ fresh (${current_age}d)"
+                    elif [[ "$current_age" -lt 30 ]]; then
+                        age_info=" (${current_age}d old)"
+                    else
+                        age_info=" (${current_age}d old)"
+                    fi
+                fi
+                print_status "PASS" "$dep_name: $current_value ✅ latest$age_info"
+            fi
+            
+            if [[ "$VERBOSE" == "true" && -n "$datasource" ]]; then
+                print_status "INFO" "  └─ Source: $datasource"
+            fi
+        fi
+    done < <(
+        # Extract dependency information in a structured format
+        grep -A 25 '"depName": ".*_VERSION"' "$log_file" | \
+        awk '
+        BEGIN { dep_name=""; current_value=""; datasource=""; has_updates="no"; new_version=""; update_type=""; current_age="unknown" }
+        /"depName": ".*_VERSION"/ { 
+            if (dep_name != "") {
+                print dep_name ":" current_value ":" datasource ":" has_updates ":" new_version ":" update_type ":" current_age
+            }
+            gsub(/.*"depName": "/, "", $0); gsub(/".*/, "", $0); dep_name=$0
+            current_value=""; datasource=""; has_updates="no"; new_version=""; update_type=""; current_age="unknown"
+        }
+        /"currentValue":/ { gsub(/.*"currentValue": "/, "", $0); gsub(/".*/, "", $0); current_value=$0 }
+        /"datasource":/ { gsub(/.*"datasource": "/, "", $0); gsub(/".*/, "", $0); datasource=$0 }
+        /"currentVersionAgeInDays":/ { gsub(/.*"currentVersionAgeInDays": /, "", $0); gsub(/[,}].*/, "", $0); current_age=$0 }
+        /"newVersion":/ { gsub(/.*"newVersion": "/, "", $0); gsub(/".*/, "", $0); new_version=$0; has_updates="yes" }
+        /"updateType":/ { gsub(/.*"updateType": "/, "", $0); gsub(/".*/, "", $0); update_type=$0 }
+        END { 
+            if (dep_name != "") {
+                print dep_name ":" current_value ":" datasource ":" has_updates ":" new_version ":" update_type ":" current_age
+            }
+        }' 2>/dev/null || true
+    )
+    
+    # Summary
+    if [[ $deps_analyzed -gt 0 ]]; then
+        print_status "INFO" "Upstream analysis complete: $deps_analyzed dependencies analyzed"
+        print_status "INFO" "Status: $up_to_date up-to-date, $updates_available updates available"
+        
+        if [[ $updates_available -gt 0 ]]; then
+            print_status "INFO" "💡 Run Renovate without --dry-run to create update PRs"
+        fi
+    else
+        print_status "INFO" "No version dependencies found for upstream analysis"
+    fi
+}
+
+
 # Validate version coverage - ensure all _VERSION variables have Renovate rules
 validate_version_coverage
+
+# Check upstream versions if not in quick mode
+if [[ "$QUICK_MODE" == "false" ]]; then
+    validate_upstream_versions "$validation_log"
+fi
