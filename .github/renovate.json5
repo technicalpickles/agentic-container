@@ -22,24 +22,18 @@
       "matchDatasources": ["docker"],
       "groupName": "Docker base images",
       "semanticCommitType": "build",
-      "matchPackageNames": ["/ubuntu/", "/node/", "/python/"]
+      "matchPackageNames": ["/ubuntu/"]
     },
     {
-      "description": "Group language runtime versions",
-      "groupName": "Language runtimes",
+      "description": "Group mise-managed tools and language runtimes",
+      "groupName": "Mise-managed dependencies",
       "semanticCommitType": "build",
       "matchPackageNames": [
         "/NODE_VERSION/",
         "/PYTHON_VERSION/",
         "/RUBY_VERSION/",
         "/GO_VERSION/"
-      ]
-    },
-    {
-      "description": "Group mise-managed development tools",
-      "groupName": "Mise development tools",
-      "semanticCommitType": "build",
-      "matchManagers": ["regex"],
+      ],
       "matchDepNames": ["hadolint", "goss", "yamllint", "trivy"]
     },
     {
