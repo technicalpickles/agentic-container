@@ -15,6 +15,10 @@ set -euo pipefail
 QUICK_MODE=false
 VERBOSE=false
 
+if [[ -n "$CI" ]]; then
+    set -x
+fi
+
 while [[ $# -gt 0 ]]; do
     case $1 in
         --quick)
