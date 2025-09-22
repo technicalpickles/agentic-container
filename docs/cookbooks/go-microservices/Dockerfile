@@ -3,7 +3,7 @@
 FROM ghcr.io/technicalpickles/agentic-container:main
 
 # Build argument for Go version (can be overridden during build)
-ARG GO_VERSION=1.23.5
+ARG GO_VERSION=1.25.1
 
 # Install Go via mise
 USER root
