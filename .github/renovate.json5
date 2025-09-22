@@ -4,9 +4,17 @@
   "timezone": "America/New_York",
   "packageRules": [
     {
-      "description": "Group GitHub Actions updates",
+      "description": "Group GitHub Actions minor/patch updates",
       "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "groupName": "GitHub Actions",
+      "semanticCommitType": "ci"
+    },
+    {
+      "description": "Group GitHub Actions major updates (separate for review)",
+      "matchManagers": ["github-actions"], 
+      "matchUpdateTypes": ["major"],
+      "groupName": "GitHub Actions (major)",
       "semanticCommitType": "ci"
     },
     {
@@ -28,13 +36,29 @@
       ]
     },
     {
-      "description": "Group development tools",
-      "groupName": "Development tools",
+      "description": "Group mise-managed development tools",
+      "groupName": "Mise development tools",
+      "semanticCommitType": "build",
+      "matchManagers": ["regex"],
+      "matchDepNames": ["hadolint", "goss", "yamllint", "trivy"]
+    },
+    {
+      "description": "Group container development tools",
+      "groupName": "Container development tools", 
       "semanticCommitType": "build",
       "matchPackageNames": [
         "/AST_GREP_VERSION/",
         "/LEFTHOOK_VERSION/",
         "/UV_VERSION/"
+      ]
+    },
+    {
+      "description": "Group AI/ML tools",
+      "groupName": "AI/ML tools",
+      "semanticCommitType": "build", 
+      "matchPackageNames": [
+        "/CLAUDE_CODE_VERSION/",
+        "/CODEX_VERSION/"
       ]
     },
     {
