@@ -17,8 +17,7 @@
   },
   "devDependencies": {
     "json5": "^2.2.3",
-    "prettier": "^3.2.5",
-    "renovate": "^41.121.2"
+    "prettier": "^3.2.5"
   },
   "engines": {
     "node": ">=18.0.0"
