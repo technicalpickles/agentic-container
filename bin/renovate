@@ -17,6 +17,31 @@ fi
 # Prepare Docker environment variables
 DOCKER_ENV_ARGS=()
 
+# Set default config file if not specified
+if [[ -z "${RENOVATE_CONFIG_FILE:-}" ]]; then
+    export RENOVATE_CONFIG_FILE=".github/renovate.json5"
+fi
+
+# Set default tokens for local testing using gh auth (consistent with other scripts)
+# Users can override by setting RENOVATE_TOKEN or GITHUB_TOKEN environment variables
+
+# If GITHUB_TOKEN is unset, try to get it from gh auth
+if [[ -z "${GITHUB_TOKEN:-}" ]] && command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+    export GITHUB_TOKEN=$(gh auth token)
+    echo "🔐 Using GitHub token from gh auth for GITHUB_TOKEN (no disk storage)" >&2
+fi
+
+# Set RENOVATE_TOKEN if not already set
+if [[ -z "${RENOVATE_TOKEN:-}" ]]; then
+    # Try GITHUB_TOKEN first (common in CI environments or now set from gh auth)
+    if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+        export RENOVATE_TOKEN="$GITHUB_TOKEN"
+    else
+        echo "Warning: No RENOVATE_TOKEN, GITHUB_TOKEN, or gh auth found. Some features may not work." >&2
+        echo "Set RENOVATE_TOKEN environment variable or run 'gh auth login' for full functionality." >&2
+    fi
+fi
+
 # Pass through important environment variables
 ENV_VARS=(
     "GITHUB_TOKEN"
