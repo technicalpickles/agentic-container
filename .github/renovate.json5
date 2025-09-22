@@ -232,6 +232,34 @@
       "depNameTemplate": "trivy",
       "packageNameTemplate": "aquasecurity/trivy",
       "extractVersionTemplate": "^v?(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update Claude Code version in Dockerfiles",
+      "fileMatch": [
+        "(^|/)Dockerfile$",
+        "Dockerfile\\.[^/]*$"
+      ],
+      "matchStrings": [
+        "ARG\\s+(?<depName>CLAUDE_CODE_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "datasourceTemplate": "npm",
+      "packageNameTemplate": "@anthropic-ai/claude-code",
+      "extractVersionTemplate": "^v?(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Update Codex version in Dockerfiles",
+      "fileMatch": [
+        "(^|/)Dockerfile$",
+        "Dockerfile\\.[^/]*$"
+      ],
+      "matchStrings": [
+        "ARG\\s+(?<depName>CODEX_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "datasourceTemplate": "npm",
+      "packageNameTemplate": "@openai/codex",
+      "extractVersionTemplate": "^v?(?<version>.*)$"
     }
   ],
   
@@ -242,7 +270,9 @@
   "automerge": false,
   "automergeType": "pr",
   "automergeStrategy": "merge",
-  "ignoreDeps": ["CLAUDE_CODE_VERSION", "CODEX_VERSION"],
+  "ignoreDeps": [
+    // No dependencies currently ignored
+  ],
   "commitMessageTopic": "{{depName}}",
   "commitMessageAction": "to",
   "commitMessageExtra": "{{#if isPinDigest}}{{{newDigestShort}}}{{else}}{{#if isMajor}}v{{newMajor}}{{else}}{{#if isSingleVersion}}{{prettyNewVersion}}{{else}}{{#if newValue}}{{{newValue}}}{{else}}{{{newDigestShort}}}{{/if}}{{/if}}{{/if}}{{/if}}",

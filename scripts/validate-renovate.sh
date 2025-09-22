@@ -71,6 +71,8 @@ validate_version_detection() {
         "UV_VERSION=0.8.17"
         "NODE_VERSION=24.8.0"
         "PYTHON_VERSION=3.13.7"
+        "CLAUDE_CODE_VERSION=1.0.0"
+        "CODEX_VERSION=2.0.0"
     )
     
     # First verify these versions exist in the codebase
@@ -115,6 +117,84 @@ validate_version_detection() {
         if [[ "$VERBOSE" == "false" ]]; then
             print_status "INFO" "Run with --verbose to see detailed debug information"
         fi
+        exit 1
+    fi
+}
+
+# Function to validate version coverage - ensure all _VERSION variables have Renovate rules
+validate_version_coverage() {
+    print_status "INFO" "Validating version coverage..."
+    
+    # Find all _VERSION variables in codebase
+    local found_versions=()
+    while IFS= read -r version_var; do
+        found_versions+=("$version_var")
+    done < <(grep -r "ARG.*_VERSION=" . --include="*Dockerfile*" --exclude-dir=node_modules --exclude-dir=log | grep -o "[A-Z_]*_VERSION" | sort -u)
+    
+    # Find all _VERSION variables configured in Renovate
+    local configured_versions=()
+    while IFS= read -r version_var; do
+        configured_versions+=("$version_var")
+    done < <(grep -o "depName>[A-Z_]*_VERSION" .github/renovate.json5 | grep -o "[A-Z_]*_VERSION" | sort -u)
+    
+    # Find ignored dependencies
+    local ignored_versions=()
+    if grep -A10 '"ignoreDeps"' .github/renovate.json5 | grep -q '"[A-Z_]*_VERSION"'; then
+        while IFS= read -r version_var; do
+            ignored_versions+=("$version_var")
+        done < <(grep -A10 '"ignoreDeps"' .github/renovate.json5 | grep -o '"[A-Z_]*_VERSION"' | tr -d '"' | sort -u)
+    fi
+    
+    # Check for missing coverage
+    local missing_coverage=()
+    local total_found=${#found_versions[@]}
+    local covered_count=0
+    
+    for version_var in "${found_versions[@]}"; do
+        local is_configured=false
+        local is_ignored=false
+        
+        # Check if configured
+        for configured in "${configured_versions[@]}"; do
+            if [[ "$version_var" == "$configured" ]]; then
+                is_configured=true
+                break
+            fi
+        done
+        
+        # Check if ignored (only if array has elements)
+        if [[ ${#ignored_versions[@]} -gt 0 ]]; then
+            for ignored in "${ignored_versions[@]}"; do
+                if [[ "$version_var" == "$ignored" ]]; then
+                    is_ignored=true
+                    break
+                fi
+            done
+        fi
+        
+        if [[ "$is_configured" == "true" ]]; then
+            ((covered_count++))
+            if [[ "$VERBOSE" == "true" ]]; then
+                print_status "PASS" "$version_var has Renovate rule"
+            fi
+        elif [[ "$is_ignored" == "true" ]]; then
+            ((covered_count++))
+            if [[ "$VERBOSE" == "true" ]]; then
+                print_status "INFO" "$version_var is explicitly ignored"
+            fi
+        else
+            missing_coverage+=("$version_var")
+            print_status "FAIL" "$version_var found in codebase but missing from Renovate rules"
+        fi
+    done
+    
+    # Report results
+    if [[ ${#missing_coverage[@]} -eq 0 ]]; then
+        print_status "PASS" "Version coverage complete: $covered_count/$total_found variables covered"
+    else
+        print_status "FAIL" "Version coverage incomplete: ${#missing_coverage[@]} variables missing Renovate rules"
+        print_status "INFO" "Missing coverage for: ${missing_coverage[*]}"
+        print_status "INFO" "Add custom managers or add to ignoreDeps in .github/renovate.json5"
         exit 1
     fi
 }
@@ -219,3 +299,6 @@ else
 fi
 
 print_status "INFO" "Validation log saved to: $validation_log"
+
+# Validate version coverage - ensure all _VERSION variables have Renovate rules
+validate_version_coverage
