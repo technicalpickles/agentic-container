@@ -11,7 +11,9 @@
     "format:yaml:check": "prettier --check '**/*.{yaml,yml}'",
     "format:markdown:check": "prettier --check '**/*.md'",
     "validate-renovate": "./scripts/validate-renovate.sh",
-    "validate-renovate:quick": "./scripts/validate-renovate.sh --quick"
+    "validate-renovate:quick": "./scripts/validate-renovate.sh --quick",
+    "renovate": "./bin/renovate",
+    "renovate-config-validator": "./bin/renovate-config-validator"
   },
   "devDependencies": {
     "json5": "^2.2.3",

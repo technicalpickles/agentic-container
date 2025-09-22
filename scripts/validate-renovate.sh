@@ -56,8 +56,8 @@ if ! npx json5 --validate .github/renovate.json5 >/dev/null 2>&1; then
 fi
 print_status "PASS" "JSON5 syntax valid"
 
-# Official Renovate validation (Docker-only)
-if docker run --rm -v "$PWD:/usr/src/app" ghcr.io/renovatebot/renovate:latest renovate-config-validator "/usr/src/app/.github/renovate.json5" >/dev/null 2>&1; then
+# Official Renovate validation (using bin wrapper)
+if ./bin/renovate-config-validator >/dev/null 2>&1; then
     print_status "PASS" "Renovate configuration valid"
 else
     print_status "FAIL" "Renovate configuration validation failed"
