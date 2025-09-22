@@ -140,8 +140,8 @@ jobs:
             echo "📝 No documentation changes to commit"
           else
             echo "📝 Committing documentation updates..."
-            # Remove [skip ci] to ensure documentation changes are validated
-            git commit -m "docs: Auto-update documentation and cookbook index"
+            # Use [skip ci] to prevent triggering other workflows and avoid circular dependencies
+            git commit -m "docs: Auto-update documentation and cookbook index [skip ci]"
             git push
             echo "✅ Documentation updated successfully"
           fi
