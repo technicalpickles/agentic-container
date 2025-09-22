@@ -3,10 +3,18 @@ name: Lint and Validate
 on:
   push:
     branches: [main]
-    paths-ignore: ["docs/**", "README.md", "*.md"]
+    paths-ignore: 
+      - "docs/**"
+      - "!docs/cookbooks/**/Dockerfile*"
+      - "README.md"
+      - "*.md"
   pull_request:
     branches: [main]
-    paths-ignore: ["docs/**", "README.md", "*.md"]
+    paths-ignore: 
+      - "docs/**"
+      - "!docs/cookbooks/**/Dockerfile*"
+      - "README.md"
+      - "*.md"
 
 jobs:
   hadolint:

@@ -3,10 +3,18 @@ name: Build, Test, and Publish
 on:
   push:
     branches: [main]
-    paths-ignore: ["docs/**", "README.md", "*.md"]
+    paths-ignore: 
+      - "docs/**"
+      - "!docs/cookbooks/**/Dockerfile*"
+      - "README.md"
+      - "*.md"
   pull_request:
     branches: [main]
-    paths-ignore: ["docs/**", "README.md", "*.md"]
+    paths-ignore: 
+      - "docs/**"
+      - "!docs/cookbooks/**/Dockerfile*"
+      - "README.md"
+      - "*.md"
   schedule:
     # Rebuild weekly to get latest base image updates
     - cron: "0 2 * * 0"

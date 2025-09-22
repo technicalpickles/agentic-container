@@ -31,7 +31,7 @@ FROM ubuntu:24.04 AS standard
 FROM ghcr.io/technicalpickles/agentic-container:latest
 ```
 
-**Files**: Dockerfile, all cookbook Dockerfiles, templates/Dockerfile.fullstack-web, templates/Dockerfile.python-ml
+**Files**: Dockerfile, all cookbook Dockerfiles
 
 ### 3. **GitHub Actions Versions** (@v syntax)
 **File**: `.github/workflows/build-test-publish.yml`
@@ -141,7 +141,6 @@ download_url="https://github.com/wagoodman/dive/releases/download/v${DIVE_VERSIO
 ### **Needs Custom Configuration**
 - `Dockerfile` - ARG version declarations
 - `docs/cookbooks/*/Dockerfile` - ARG versions
-- `templates/Dockerfile.*` - ARG versions
 - Download URL patterns in Dockerfiles and scripts
 
 ### **Requires Workarounds**

@@ -29,7 +29,6 @@ OPTIONS:
     -t, --tool TOOL         Add development tool (can be used multiple times)  
     -p, --package PKG       Add system package (can be used multiple times)
     -f, --dockerfile FILE   Use custom Dockerfile instead of generating one
-    --template TEMPLATE     Use a predefined template (python-ml, fullstack-web)
     --platforms PLATFORMS   Target platforms for build (default: linux/amd64,linux/arm64)
     --push                  Push the image after building (default: false)
     --latest                Also tag as 'latest' (default: false)
@@ -37,12 +36,13 @@ OPTIONS:
     -h, --help              Show this help message
 
 EXAMPLES:
-    # Create and publish a Python ML development environment
+    # Create and publish a Python development environment
     publish-extended-image.sh \\
-        --template python-ml \\
+        --language python@3.13 \\
+        --tool black --tool pytest \\
         --push \\
         python \\
-        ghcr.io/myorg/python-ml-dev:v1.0.0
+        ghcr.io/myorg/python-dev:v1.0.0
 
     # Create a custom Ruby environment with additional tools
     publish-extended-image.sh \\
@@ -73,7 +73,6 @@ LANGUAGES=()
 TOOLS=()
 PACKAGES=()
 CUSTOM_DOCKERFILE=""
-TEMPLATE=""
 PLATFORMS="linux/amd64,linux/arm64"
 PUSH=false
 LATEST=false
@@ -95,10 +94,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         -f|--dockerfile)
             CUSTOM_DOCKERFILE="$2"
-            shift 2
-            ;;
-        --template)
-            TEMPLATE="$2"
             shift 2
             ;;
         --platforms)
@@ -215,14 +210,6 @@ main() {
         fi
         dockerfile_path="$CUSTOM_DOCKERFILE"
         echo "📄 Using custom Dockerfile: $dockerfile_path"
-    elif [[ -n "$TEMPLATE" ]]; then
-        local template_path="$SCRIPT_DIR/../templates/Dockerfile.$TEMPLATE"
-        if [[ ! -f "$template_path" ]]; then
-            echo "ERROR: Template not found: $template_path" >&2
-            exit 1
-        fi
-        dockerfile_path="$template_path"
-        echo "📋 Using template: $TEMPLATE"
     else
         echo "🏗️  Generating Dockerfile extending $BASE_REGISTRY:$BASE_IMAGE"
         generate_dockerfile "$dockerfile_path" "$BASE_IMAGE"
