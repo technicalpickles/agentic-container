@@ -67,12 +67,17 @@ validate_version_detection() {
     # Get all _VERSION variables from codebase
     local codebase_versions=()
     while IFS= read -r version_var; do
-        codebase_versions+=("$version_var")
-    done < <(grep -r "ARG.*_VERSION=" . --include="*Dockerfile*" --exclude-dir=node_modules --exclude-dir=log | grep -o "[A-Z_]*_VERSION" | sort -u)
+        [[ -n "$version_var" ]] && codebase_versions+=("$version_var")
+    done < <(grep -r "ARG.*_VERSION=" . --include="*Dockerfile*" --exclude-dir=node_modules --exclude-dir=log | grep -o "[A-Z_]*_VERSION" | sort -u || true)
     
     # Check what Renovate detected for each version variable
     detected_count=0
     total_expected=${#codebase_versions[@]}
+    
+    if [[ $total_expected -eq 0 ]]; then
+        print_status "INFO" "No _VERSION variables found in codebase"
+        return 0
+    fi
     
     print_status "INFO" "Checking version detection for ${total_expected} _VERSION variables..."
     
@@ -80,7 +85,7 @@ validate_version_detection() {
         # Look for this version variable in Renovate output
         if grep -q "\"depName\".*\"${version_var}\"" "$log_file"; then
             # Extract the detected version
-            detected_version=$(grep -A5 "\"depName\".*\"${version_var}\"" "$log_file" | grep -o "\"currentValue\".*\"[^\"]*\"" | head -1 | grep -o '"[^"]*"$' | tr -d '"')
+            detected_version=$(grep -A5 "\"depName\".*\"${version_var}\"" "$log_file" | grep -o "\"currentValue\".*\"[^\"]*\"" | head -1 | grep -o '"[^"]*"$' | tr -d '"' || true)
             if [[ -n "$detected_version" ]]; then
                 ((detected_count++))
                 print_status "PASS" "Detected ${version_var}=${detected_version}"
@@ -119,27 +124,32 @@ validate_version_coverage() {
     # Find all _VERSION variables in codebase
     local found_versions=()
     while IFS= read -r version_var; do
-        found_versions+=("$version_var")
-    done < <(grep -r "ARG.*_VERSION=" . --include="*Dockerfile*" --exclude-dir=node_modules --exclude-dir=log | grep -o "[A-Z_]*_VERSION" | sort -u)
+        [[ -n "$version_var" ]] && found_versions+=("$version_var")
+    done < <(grep -r "ARG.*_VERSION=" . --include="*Dockerfile*" --exclude-dir=node_modules --exclude-dir=log | grep -o "[A-Z_]*_VERSION" | sort -u || true)
     
     # Find all _VERSION variables configured in Renovate
     local configured_versions=()
     while IFS= read -r version_var; do
-        configured_versions+=("$version_var")
-    done < <(grep -o "depName>[A-Z_]*_VERSION" .github/renovate.json5 | grep -o "[A-Z_]*_VERSION" | sort -u)
+        [[ -n "$version_var" ]] && configured_versions+=("$version_var")
+    done < <(grep -o "depName>[A-Z_]*_VERSION" .github/renovate.json5 | grep -o "[A-Z_]*_VERSION" | sort -u || true)
     
     # Find ignored dependencies
     local ignored_versions=()
     if grep -A10 '"ignoreDeps"' .github/renovate.json5 | grep -q '"[A-Z_]*_VERSION"'; then
         while IFS= read -r version_var; do
-            ignored_versions+=("$version_var")
-        done < <(grep -A10 '"ignoreDeps"' .github/renovate.json5 | grep -o '"[A-Z_]*_VERSION"' | tr -d '"' | sort -u)
+            [[ -n "$version_var" ]] && ignored_versions+=("$version_var")
+        done < <(grep -A10 '"ignoreDeps"' .github/renovate.json5 | grep -o '"[A-Z_]*_VERSION"' | tr -d '"' | sort -u || true)
     fi
     
     # Check for missing coverage
     local missing_coverage=()
     local total_found=${#found_versions[@]}
     local covered_count=0
+    
+    if [[ $total_found -eq 0 ]]; then
+        print_status "INFO" "No _VERSION variables found in codebase for coverage validation"
+        return 0
+    fi
     
     for version_var in "${found_versions[@]}"; do
         local is_configured=false
