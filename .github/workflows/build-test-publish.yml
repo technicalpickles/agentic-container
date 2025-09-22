@@ -3,18 +3,8 @@ name: Build, Test, and Publish
 on:
   push:
     branches: [main]
-    paths-ignore: 
-      - "docs/**"
-      - "!docs/cookbooks/**/Dockerfile*"
-      - "README.md"
-      - "*.md"
   pull_request:
     branches: [main]
-    paths-ignore: 
-      - "docs/**"
-      - "!docs/cookbooks/**/Dockerfile*"
-      - "README.md"
-      - "*.md"
   schedule:
     # Rebuild weekly to get latest base image updates
     - cron: "0 2 * * 0"
@@ -24,9 +14,104 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      base-dockerfile: ${{ steps.changes.outputs.base-dockerfile }}
+      cookbook-dockerfiles: ${{ steps.changes.outputs.cookbook-dockerfiles }}
+      docs-only: ${{ steps.changes.outputs.docs-only }}
+      any-code: ${{ steps.changes.outputs.any-code }}
+      changed-cookbooks: ${{ steps.changes.outputs.changed-cookbooks }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect file changes
+        id: changes
+        run: |
+          # Get the base commit for comparison
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          else
+            # For push events, compare with previous commit
+            BASE_SHA="${{ github.event.before }}"
+            HEAD_SHA="${{ github.sha }}"
+          fi
+          
+          echo "Comparing $BASE_SHA..$HEAD_SHA"
+          
+          # Get list of changed files
+          CHANGED_FILES=$(git diff --name-only $BASE_SHA..$HEAD_SHA)
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+          
+          # Initialize outputs
+          BASE_DOCKERFILE=false
+          COOKBOOK_DOCKERFILES=false
+          DOCS_ONLY=true
+          ANY_CODE=false
+          CHANGED_COOKBOOKS=""
+          
+          # Check each changed file
+          while IFS= read -r file; do
+            echo "Checking file: $file"
+            
+            # Check if base Dockerfile changed
+            if [[ "$file" == "Dockerfile" ]]; then
+              BASE_DOCKERFILE=true
+              ANY_CODE=true
+              DOCS_ONLY=false
+              echo "Base Dockerfile changed"
+            fi
+            
+            # Check if cookbook Dockerfiles changed
+            if [[ "$file" =~ ^docs/cookbooks/[^/]+/Dockerfile ]]; then
+              COOKBOOK_DOCKERFILES=true
+              ANY_CODE=true
+              DOCS_ONLY=false
+              # Extract cookbook name
+              COOKBOOK=$(echo "$file" | sed 's|docs/cookbooks/\([^/]*\)/.*|\1|')
+              if [[ -n "$CHANGED_COOKBOOKS" ]]; then
+                CHANGED_COOKBOOKS="$CHANGED_COOKBOOKS,$COOKBOOK"
+              else
+                CHANGED_COOKBOOKS="$COOKBOOK"
+              fi
+              echo "Cookbook Dockerfile changed: $COOKBOOK"
+            fi
+            
+            # Check if any non-docs files changed
+            if [[ ! "$file" =~ ^docs/ ]] && [[ "$file" != "README.md" ]] && [[ ! "$file" =~ \.md$ ]]; then
+              ANY_CODE=true
+              DOCS_ONLY=false
+              echo "Code file changed: $file"
+            fi
+          done <<< "$CHANGED_FILES"
+          
+          # Remove duplicates from changed cookbooks
+          CHANGED_COOKBOOKS=$(echo "$CHANGED_COOKBOOKS" | tr ',' '\n' | sort -u | tr '\n' ',' | sed 's/,$//')
+          
+          echo "base-dockerfile=$BASE_DOCKERFILE" >> $GITHUB_OUTPUT
+          echo "cookbook-dockerfiles=$COOKBOOK_DOCKERFILES" >> $GITHUB_OUTPUT  
+          echo "docs-only=$DOCS_ONLY" >> $GITHUB_OUTPUT
+          echo "any-code=$ANY_CODE" >> $GITHUB_OUTPUT
+          echo "changed-cookbooks=$CHANGED_COOKBOOKS" >> $GITHUB_OUTPUT
+          
+          echo "Final outputs:"
+          echo "  base-dockerfile: $BASE_DOCKERFILE"
+          echo "  cookbook-dockerfiles: $COOKBOOK_DOCKERFILES"
+          echo "  docs-only: $DOCS_ONLY"
+          echo "  any-code: $ANY_CODE"
+          echo "  changed-cookbooks: $CHANGED_COOKBOOKS"
+
   build-standard:
     name: Build Standard Image
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.any-code == 'true' || github.event_name == 'schedule'
     permissions:
       contents: read
       packages: write
@@ -110,32 +195,42 @@ jobs:
 
   parallel-validation:
     name: Parallel Validation
-    needs: build-standard
+    needs: [detect-changes, build-standard]
     runs-on: ubuntu-latest
+    if: always() && (needs.build-standard.result == 'success' || needs.build-standard.result == 'skipped')
     strategy:
       fail-fast: false
       matrix:
         include:
+          # Dev build only runs for base dockerfile changes or schedule
           - job: build-dev
             name: Build Dev Image
+            condition: ${{ needs.detect-changes.outputs.base-dockerfile == 'true' || github.event_name == 'schedule' }}
+          # Test all cookbooks if base dockerfile changed, or only changed cookbooks otherwise
           - job: test-cookbooks
             name: Test Cookbooks
             cookbook: python-cli
+            condition: ${{ needs.detect-changes.outputs.base-dockerfile == 'true' || contains(needs.detect-changes.outputs.changed-cookbooks, 'python-cli') || github.event_name == 'schedule' }}
           - job: test-cookbooks
             name: Test Cookbooks
             cookbook: nodejs-backend
+            condition: ${{ needs.detect-changes.outputs.base-dockerfile == 'true' || contains(needs.detect-changes.outputs.changed-cookbooks, 'nodejs-backend') || github.event_name == 'schedule' }}
           - job: test-cookbooks
             name: Test Cookbooks
             cookbook: go-microservices
+            condition: ${{ needs.detect-changes.outputs.base-dockerfile == 'true' || contains(needs.detect-changes.outputs.changed-cookbooks, 'go-microservices') || github.event_name == 'schedule' }}
           - job: test-cookbooks
             name: Test Cookbooks
             cookbook: rails-fullstack
+            condition: ${{ needs.detect-changes.outputs.base-dockerfile == 'true' || contains(needs.detect-changes.outputs.changed-cookbooks, 'rails-fullstack') || github.event_name == 'schedule' }}
           - job: test-cookbooks
             name: Test Cookbooks
             cookbook: react-frontend
+            condition: ${{ needs.detect-changes.outputs.base-dockerfile == 'true' || contains(needs.detect-changes.outputs.changed-cookbooks, 'react-frontend') || github.event_name == 'schedule' }}
           - job: test-cookbooks
             name: Test Cookbooks
             cookbook: multistage-production
+            condition: ${{ needs.detect-changes.outputs.base-dockerfile == 'true' || contains(needs.detect-changes.outputs.changed-cookbooks, 'multistage-production') || github.event_name == 'schedule' }}
 
     permissions:
       contents: read
@@ -150,7 +245,7 @@ jobs:
 
       # Dev build specific steps
       - name: Log in to Container Registry (dev build only)
-        if: matrix.job == 'build-dev' && github.ref == 'refs/heads/main'
+        if: matrix.job == 'build-dev' && matrix.condition == 'true' && github.ref == 'refs/heads/main'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -158,7 +253,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract dev metadata
-        if: matrix.job == 'build-dev' && github.ref == 'refs/heads/main'
+        if: matrix.job == 'build-dev' && matrix.condition == 'true' && github.ref == 'refs/heads/main'
         id: meta-dev
         uses: docker/metadata-action@v5
         with:
@@ -167,7 +262,7 @@ jobs:
             type=raw,value=dev
 
       - name: Build dev image
-        if: matrix.job == 'build-dev' && github.ref == 'refs/heads/main'
+        if: matrix.job == 'build-dev' && matrix.condition == 'true' && github.ref == 'refs/heads/main'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -188,27 +283,27 @@ jobs:
 
       # Cookbook testing specific steps
       - name: Download base image artifact (PR cookbook testing)
-        if: matrix.job == 'test-cookbooks' && github.event_name == 'pull_request'
+        if: matrix.job == 'test-cookbooks' && matrix.condition == 'true' && github.event_name == 'pull_request'
         uses: actions/download-artifact@v4
         with:
           name: base-image
           path: /tmp/
 
       - name: Load base image for testing (PR only)
-        if: matrix.job == 'test-cookbooks' && github.event_name == 'pull_request'
+        if: matrix.job == 'test-cookbooks' && matrix.condition == 'true' && github.event_name == 'pull_request'
         run: |
           docker load < /tmp/base-image.tar
           docker images
 
       - name: Pull base image for testing (main branch)
-        if: matrix.job == 'test-cookbooks' && github.event_name != 'pull_request'
+        if: matrix.job == 'test-cookbooks' && matrix.condition == 'true' && github.event_name != 'pull_request'
         run: |
           # For main branch builds, pull the just-built image
           docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main
           docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-base
 
       - name: Build cookbook extension image
-        if: matrix.job == 'test-cookbooks'
+        if: matrix.job == 'test-cookbooks' && matrix.condition == 'true'
         run: |
           echo "🏗️  Building ${{ matrix.cookbook }} cookbook..."
           docker build \
@@ -217,13 +312,13 @@ jobs:
             .
 
       - name: Run goss tests for cookbook
-        if: matrix.job == 'test-cookbooks'
+        if: matrix.job == 'test-cookbooks' && matrix.condition == 'true'
         run: |
           echo "🧪 Running goss tests for ${{ matrix.cookbook }} cookbook..."
           ./scripts/test-dockerfile.sh ${{ matrix.cookbook }} test-extension-${{ matrix.cookbook }}:latest
 
       - name: Clean up test images
-        if: matrix.job == 'test-cookbooks' && always()
+        if: matrix.job == 'test-cookbooks' && matrix.condition == 'true' && always()
         run: |
           docker rmi test-extension-${{ matrix.cookbook }}:latest || true
           docker rmi ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-base || true
