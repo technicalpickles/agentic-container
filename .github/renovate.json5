@@ -2,7 +2,6 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended", ":semanticCommits", ":dependencyDashboard"],
   "timezone": "America/New_York",
-  "schedule": ["before 6am every weekday", "every weekend"],
   "packageRules": [
     {
       "description": "Group GitHub Actions updates",
@@ -49,6 +48,12 @@
       "matchDepTypes": ["devDependencies"],
       "matchUpdateTypes": ["patch"],
       "automerge": true
+    },
+    {
+      "description": "Auto-merge patch updates (Renovate best practice)",
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "automergeType": "pr"
     }
   ],
   "customManagers": [
@@ -276,8 +281,6 @@
   "commitMessageTopic": "{{depName}}",
   "commitMessageAction": "to",
   "commitMessageExtra": "{{#if isPinDigest}}{{{newDigestShort}}}{{else}}{{#if isMajor}}v{{newMajor}}{{else}}{{#if isSingleVersion}}{{prettyNewVersion}}{{else}}{{#if newValue}}{{{newValue}}}{{else}}{{{newDigestShort}}}{{/if}}{{/if}}{{/if}}{{/if}}",
-  "prConcurrentLimit": 3,
-  "prHourlyLimit": 2,
   "dependencyDashboard": true,
   "dependencyDashboardTitle": "🤖 Dependency Updates Dashboard",
   "labels": ["dependencies", "renovate"],
