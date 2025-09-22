@@ -60,11 +60,11 @@ jobs:
             echo "renovate_config_changed=false" >> $GITHUB_OUTPUT  
           fi
 
-      - name: Run pattern validation (on config changes)
+      - name: Run additional validation (on config changes)
         if: steps.changes.outputs.renovate_config_changed == 'true'
         run: |
-          echo "🚀 Running enhanced pattern validation due to Renovate config changes..."
-          ./scripts/validate-renovate.sh --pattern-only
+          echo "🚀 Running additional validation due to Renovate config changes..."
+          ./scripts/validate-renovate.sh
 
 
   check-version-coverage:
