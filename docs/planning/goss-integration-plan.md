@@ -60,8 +60,6 @@ This plan outlines how to add comprehensive goss testing for the main Dockerfile
 ├── docs/cookbooks/
 │   ├── _templates/
 │   │   ├── goss-template.yaml
-│   │   ├── goss-standard-base.yaml  # Template for cookbooks extending standard
-│   │   └── goss-dev-base.yaml       # Template for cookbooks extending dev
 │   └── [existing cookbooks]/
 └── scripts/
     └── test-dockerfile.sh     # Enhanced to support base targets
@@ -201,9 +199,8 @@ env:
 
 **Inherits Standard + Additional Languages:**
 ```yaml
-# Include standard tests
-include:
-  - standard.yaml
+# Note: Base tests from standard are merged at runtime by the unified test script.
+# No YAML include is required or supported.
 
 # Additional language tests
 command:
@@ -365,72 +362,71 @@ strategy:
 
 ### Phase 4: Cookbook Reuse Strategy
 
-#### 4.1 Base Test Templates
+#### 4.1 Base Test Reuse via Runtime Composition
 
-**Standard Base Template (`docs/cookbooks/_templates/goss-standard-base.yaml`):**
-```yaml
-# Include standard target tests
-include:
-  - ../../../goss/standard.yaml
+Cookbooks automatically reuse base validation without YAML includes. The unified test script composes multiple goss files at runtime using repeated `-g` flags:
 
-# Cookbook-specific tests
-command:
-  # Add your cookbook-specific tool tests here
-  # Examples:
-  # "your-tool --version":
-  #   exit-status: 0
-  #   stdout: [/\d+\.\d+/]
+- Base common: `goss/base-common.yaml`
+- Standard target: `goss/standard.yaml`
+- Dev target (if applicable): `goss/dev.yaml`
+- Cookbook-specific: `docs/cookbooks/<cookbook>/goss.yaml`
 
-# Add cookbook-specific file tests
-file:
-  # Add your cookbook-specific files here
-```
-
-**Dev Base Template (`docs/cookbooks/_templates/goss-dev-base.yaml`):**
-```yaml
-# Include dev target tests  
-include:
-  - ../../../goss/dev.yaml
-
-# Cookbook-specific tests
-command:
-  # Add your cookbook-specific tool tests here
-
-# Add cookbook-specific file tests
-file:
-  # Add your cookbook-specific files here
-```
+Implications:
+- No `include` directive is needed (goss does not support it).
+- Cookbook `goss.yaml` should contain only cookbook-specific tests.
+- For cookbooks based on the dev target, the script detects dev via the cookbook `Dockerfile` and mounts both standard and dev base tests.
 
 #### 4.2 Cookbook Migration Strategy
 
 **For existing cookbooks:**
-1. **Option A**: Keep existing tests, add base validation
-2. **Option B**: Migrate to base templates for consistency
+1. Keep existing cookbook tests as-is
+2. Base validation is added automatically by the test script
 
 **For new cookbooks:**
-1. Use base templates as starting point
+1. Copy the generic template `docs/cookbooks/_templates/goss-template.yaml` to `goss.yaml`
 2. Add cookbook-specific tests
-3. Inherit all base validation automatically
+3. Base validation (standard and/or dev) is automatically included at test time
 
 #### 4.3 Template Usage Examples
 
 **Creating a new Python cookbook:**
 ```bash
 cd docs/cookbooks/my-python-cookbook
-cp ../_templates/goss-standard-base.yaml goss.yaml
+cp ../_templates/goss-template.yaml goss.yaml
 
 # Edit goss.yaml to add Python-specific tests
-# Standard target tests are automatically included
+# Base target tests (standard) are automatically included by the test script
 ```
 
 **Creating a new multi-language cookbook:**
 ```bash
 cd docs/cookbooks/my-multi-lang-cookbook  
-cp ../_templates/goss-dev-base.yaml goss.yaml
+cp ../_templates/goss-template.yaml goss.yaml
 
 # Edit goss.yaml to add cookbook-specific tests
-# Dev target tests (including all languages) are automatically included
+# Base target tests (standard + dev) are automatically included by the test script when
+# the cookbook uses the dev base image
 ```
+
+### 4.4 Validation
+
+**Preview runtime composition (no build/run):**
+
+Use the unified script's dry-run mode to verify which base goss files will be merged and the exact `goss` command that would execute, without building images or starting containers:
+
+```bash
+# Preview a cookbook's composition
+DRY_RUN=true ./scripts/test-dockerfile.sh docs/cookbooks/python-cli/Dockerfile
+
+# Preview base target composition
+DRY_RUN=true ./scripts/test-dockerfile.sh standard
+DRY_RUN=true ./scripts/test-dockerfile.sh dev
+```
+
+**CI validation:**
+
+- Base targets are tested via the `test-base-targets` job in `.github/workflows/build-test-publish.yml`.
+- Local workflow logic can be validated with `./scripts/test-workflows-locally.sh` using `act`.
 
 ## Implementation Benefits
 
@@ -470,8 +466,6 @@ cp ../_templates/goss-dev-base.yaml goss.yaml
 ├── docs/cookbooks/
 │   ├── _templates/
 │   │   ├── goss-template.yaml     # EXISTING: Generic template
-│   │   ├── goss-standard-base.yaml # NEW: Standard base template
-│   │   └── goss-dev-base.yaml     # NEW: Dev base template
 │   └── [cookbooks]/               # EXISTING: Individual cookbooks
 ├── scripts/
 │   └── test-dockerfile.sh         # ENHANCED: Support base targets
@@ -484,7 +478,7 @@ cp ../_templates/goss-dev-base.yaml goss.yaml
 1. **Create base goss test files** (`goss/standard.yaml`, `goss/dev.yaml`)
 2. **Enhance test script** to support base targets
 3. **Update CI workflow** to test base targets
-4. **Create base templates** for cookbook reuse
+4. **Update docs** to reflect runtime composition (no YAML include)
 5. **Test implementation** with existing cookbooks
 6. **Document new usage patterns** in README and docs
 
