@@ -196,7 +196,8 @@ DOCKERFILE_EOF
     rm my-python-app.dockerfile
 
 TESTING APPROACH:
-    • Builds the Docker image from your Dockerfile
+    • Builds the Docker image from your Dockerfile using --build-arg BASE_IMAGE override
+    • Uses local base image (agentic-container:latest) for cookbook testing
     • Tests container startup and basic functionality
     • Requires goss.yaml file in same directory as Dockerfile
     • Runs comprehensive goss tests using pre-installed goss
@@ -272,8 +273,6 @@ ensure_base_image() {
             if docker build -f "$base_dockerfile" -t "$base_image" --secret id=github_token,src="$token_file" "$PROJECT_ROOT"; then
                 rm -f "$token_file"
                 log_success "Base image built successfully"
-                # Tag as :main for local cookbook testing compatibility
-                docker tag "$base_image" agentic-container:main >/dev/null 2>&1 || true
             else
                 rm -f "$token_file"
                 log_error "Failed to build base image"
@@ -283,7 +282,6 @@ ensure_base_image() {
             log_warning "No GitHub token available, may hit API rate limits"
             if docker build -f "$base_dockerfile" -t "$base_image" "$PROJECT_ROOT"; then
                 log_success "Base image built successfully"
-                docker tag "$base_image" agentic-container:main >/dev/null 2>&1 || true
             else
                 log_error "Failed to build base image"
                 exit 1
@@ -309,7 +307,6 @@ ensure_base_image() {
             if docker build -f "$base_dockerfile" -t "$base_image" --secret id=github_token,src="$token_file" "$PROJECT_ROOT"; then
                 rm -f "$token_file"
                 log_success "Base image rebuilt successfully"
-                docker tag "$base_image" agentic-container:main >/dev/null 2>&1 || true
             else
                 rm -f "$token_file"
                 log_error "Failed to rebuild base image"
@@ -319,7 +316,6 @@ ensure_base_image() {
             log_warning "No GitHub token available, may hit API rate limits"
             if docker build -f "$base_dockerfile" -t "$base_image" "$PROJECT_ROOT"; then
                 log_success "Base image rebuilt successfully"
-                docker tag "$base_image" agentic-container:main >/dev/null 2>&1 || true
             else
                 log_error "Failed to rebuild base image"
                 exit 1
@@ -327,10 +323,6 @@ ensure_base_image() {
         fi
     else
         log_info "Base image is up to date"
-        # Ensure local alias tag for cookbook testing compatibility
-        if ! docker image inspect agentic-container:main >/dev/null 2>&1; then
-            docker tag "$base_image" agentic-container:main >/dev/null 2>&1 || true
-        fi
     fi
 }
 
@@ -502,30 +494,25 @@ test_dockerfile() {
             return 1
         fi
     else
-        # In local mode, build the image
+        # In local mode, build the image with ARG override
         image_name="test-dockerfile-$(date +%s)"
         log_info "Testing dockerfile: $(basename "$dockerfile")"
         
         if is_truthy "$DRY_RUN"; then
             log_info "DRY-RUN: would build test image: $image_name from $dockerfile"
+            log_info "DRY-RUN: would use --build-arg BASE_IMAGE=agentic-container:latest"
         else
-            # Create a temporary dockerfile with local image references for testing
-            local temp_dockerfile="$SCRIPT_DIR/temp-$(basename "$dockerfile")"
-            sed 's|ghcr.io/technicalpickles/agentic-container:|agentic-container:|g' "$dockerfile" > "$temp_dockerfile"
-            
-            # Ensure local alias for base image used by cookbooks
-            if ! docker image inspect agentic-container:main >/dev/null 2>&1; then
-                docker tag agentic-container:latest agentic-container:main >/dev/null 2>&1 || true
-            fi
-
-            # Build the image
+            # Build the image directly with BASE_IMAGE override - no temp files needed!
             log_info "Building test image: $image_name"
-            if docker build -f "$temp_dockerfile" -t "$image_name" "$PROJECT_ROOT"; then
+            log_info "Using base image override: agentic-container:latest"
+            
+            if docker build -f "$dockerfile" \
+                --build-arg BASE_IMAGE=agentic-container:latest \
+                -t "$image_name" \
+                "$PROJECT_ROOT"; then
                 log_success "Build successful: $image_name"
-                rm "$temp_dockerfile"
             else
                 log_error "Build failed for: $(basename "$dockerfile")"
-                rm "$temp_dockerfile" 2>/dev/null || true
                 FAILED_TESTS+=("Build failed")
                 return 1
             fi
