@@ -2,12 +2,12 @@
 
 # list-pr-tags.sh
 #
-# Purpose: List all ephemeral PR tags in the GitHub Container Registry
+# Purpose: Guide for listing ephemeral PR tags in the GitHub Container Registry
 # Created: 2025-09-23
 # Usage: ./scripts/list-pr-tags.sh [PR_NUMBER]
 #
-# This script helps identify which ephemeral PR tags exist in the registry,
-# useful for manual cleanup or verification that cleanup worked properly.
+# This script provides instructions for finding ephemeral PR tags since
+# GitHub CLI requires read:packages scope which may not be available locally.
 
 set -euo pipefail
 
@@ -63,13 +63,39 @@ list_tags() {
     # Try GitHub CLI first if available
     if [ "$HAS_GH" = true ]; then
         echo -e "${YELLOW}🔍 Trying GitHub CLI...${NC}"
-        if tags=$(gh api "/users/technicalpickles/packages/container/agentic-container/versions" \
+        
+        # First, let's try the simpler approach - get all tags and filter locally
+        local all_tags
+        if all_tags=$(gh api "/users/technicalpickles/packages/container/agentic-container/versions" \
             --paginate \
-            --jq '.[] | select(.metadata.container.tags[] | test("^'"$pattern"'")) | .metadata.container.tags[]' \
-            2>/dev/null | sort); then
+            --jq '.[].metadata.container.tags[]' \
+            2>/dev/null); then
+            
+            echo -e "  ${BLUE}📋 All available tags:${NC}"
+            echo "$all_tags" | head -10 | sed 's/^/    /'
+            if [ $(echo "$all_tags" | wc -l) -gt 10 ]; then
+                echo "    ... and $(( $(echo "$all_tags" | wc -l) - 10 )) more"
+            fi
+            echo
+            
+            # Filter for PR tags
+            tags=$(echo "$all_tags" | grep -E "^$pattern" | sort || true)
             success=true
         else
-            echo -e "  ${YELLOW}⚠️  GitHub CLI failed, trying Docker...${NC}"
+            echo -e "  ${YELLOW}⚠️  GitHub CLI failed, trying alternative endpoint...${NC}"
+            # Try the org endpoint instead
+            if all_tags=$(gh api "/orgs/technicalpickles/packages/container/agentic-container/versions" \
+                --paginate \
+                --jq '.[].metadata.container.tags[]' \
+                2>/dev/null); then
+                
+                echo -e "  ${BLUE}📋 All available tags (org endpoint):${NC}"
+                echo "$all_tags" | head -10 | sed 's/^/    /'
+                echo
+                
+                tags=$(echo "$all_tags" | grep -E "^$pattern" | sort || true)
+                success=true
+            fi
         fi
     fi
     
@@ -113,8 +139,8 @@ if [ -n "$PR_NUMBER" ]; then
     # List tags for specific PR
     list_tags "pr-${PR_NUMBER}-" "Tags for PR #${PR_NUMBER}"
 else
-    # List all PR tags
-    list_tags "pr-[0-9]" "All ephemeral PR tags"
+    # List all PR tags (more permissive pattern)
+    list_tags "pr-" "All ephemeral PR tags"
 fi
 
 echo
