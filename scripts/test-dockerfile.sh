@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 test_base_target() {
     local target="$1" # standard | dev
     local image_name=""
@@ -77,7 +79,6 @@ test_base_target() {
         return 1
     fi
 }
-#!/usr/bin/env bash
 
 # test-dockerfile.sh - Build and validate Dockerfiles with comprehensive testing
 #

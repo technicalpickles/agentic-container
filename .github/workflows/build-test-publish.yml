@@ -193,6 +193,41 @@ jobs:
           path: /tmp/base-image.tar
           retention-days: 1
 
+  test-base-targets:
+    name: Test Base Target (${{ matrix.target }})
+    needs: detect-changes
+    if: needs.detect-changes.outputs.base-dockerfile == 'true' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [standard, dev]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Ensure script is executable
+        run: chmod +x scripts/test-dockerfile.sh
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build base target image
+        env:
+          DOCKER_BUILDKIT: "1"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🧱 Building ${{ matrix.target }} target..."
+          docker build --target ${{ matrix.target }} -t test-${{ matrix.target }}:latest \
+            --secret id=github_token,env=GITHUB_TOKEN .
+
+      - name: Run goss tests for base target
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🧪 Testing ${{ matrix.target }} target via goss..."
+          ./scripts/test-dockerfile.sh ${{ matrix.target }} test-${{ matrix.target }}:latest
+
   parallel-validation:
     name: Parallel Validation
     needs: [detect-changes, build-standard]
