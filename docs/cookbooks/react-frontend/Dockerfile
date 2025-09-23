@@ -1,6 +1,7 @@
 # Frontend Development Extension
 # Demonstrates: npm global installs for frontend tools
-FROM ghcr.io/technicalpickles/agentic-container:main
+ARG BASE_IMAGE=ghcr.io/technicalpickles/agentic-container:main
+FROM ${BASE_IMAGE}
 
 # Node.js already available - add packages via npm
 USER root

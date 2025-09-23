@@ -1,6 +1,7 @@
 # Ruby Development Extension
 # Demonstrates: mise install for Ruby, gem package manager
-FROM ghcr.io/technicalpickles/agentic-container:main
+ARG BASE_IMAGE=ghcr.io/technicalpickles/agentic-container:main
+FROM ${BASE_IMAGE}
 
 # Build argument for Ruby version (can be overridden during build)
 ARG RUBY_VERSION=3.4.5

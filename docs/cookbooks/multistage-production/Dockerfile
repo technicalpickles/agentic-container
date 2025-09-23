@@ -1,6 +1,7 @@
 # Multi-Stage Build Pattern
 # Demonstrates: multi-stage builds for optimized production images
-FROM ghcr.io/technicalpickles/agentic-container:main AS builder
+ARG BASE_IMAGE=ghcr.io/technicalpickles/agentic-container:main
+FROM ${BASE_IMAGE} AS builder
 
 # Build stage - install build tools
 USER root
@@ -12,7 +13,7 @@ USER agent
 RUN pip install --no-cache-dir wheel setuptools
 
 # Runtime stage - minimal dependencies only
-FROM ghcr.io/technicalpickles/agentic-container:main AS runtime
+FROM ${BASE_IMAGE} AS runtime
 
 # Install only runtime dependencies
 RUN pip install --no-cache-dir requests
