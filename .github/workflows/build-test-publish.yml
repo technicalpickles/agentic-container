@@ -195,7 +195,7 @@ jobs:
 
   test-base-targets:
     name: Test Base Target (${{ matrix.target }})
-    needs: detect-changes
+    needs: [detect-changes, build-standard]
     if: needs.detect-changes.outputs.base-dockerfile == 'true' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
     strategy:
@@ -211,15 +211,37 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+      
+      # For PRs: use artifact from build-standard for standard target
+      - name: Download base image artifact (PR only, standard target)
+        if: github.event_name == 'pull_request' && matrix.target == 'standard'
+        uses: actions/download-artifact@v5
+        with:
+          name: base-image
+          path: /tmp/
 
-      - name: Build base target image
+      - name: Load and tag base image for testing (PR only, standard target)
+        if: github.event_name == 'pull_request' && matrix.target == 'standard'
+        run: |
+          docker load < /tmp/base-image.tar
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-base test-standard:latest
+
+      # For pushes/schedule: pull image pushed by build-standard (standard target)
+      - name: Pull and tag image for testing (non-PR, standard target)
+        if: github.event_name != 'pull_request' && matrix.target == 'standard'
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main test-standard:latest
+
+      # Dev target: build locally for testing (no artifact produced by build-standard)
+      - name: Build dev target image for testing
+        if: matrix.target == 'dev'
         env:
           DOCKER_BUILDKIT: "1"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "🧱 Building ${{ matrix.target }} target..."
-          docker build --target ${{ matrix.target }} -t test-${{ matrix.target }}:latest \
-            --secret id=github_token,env=GITHUB_TOKEN .
+          echo "🧱 Building dev target..."
+          docker build --target dev -t test-dev:latest --secret id=github_token,env=GITHUB_TOKEN .
 
       - name: Run goss tests for base target
         env:
