@@ -39,6 +39,7 @@
         "/UV_VERSION/",
         "/CLAUDE_CODE_VERSION/",
         "/CODEX_VERSION/",
+        "/GOSS_VERSION/",
       ],
       matchDepNames: ["hadolint", "goss", "yamllint", "trivy"],
     },
@@ -131,6 +132,17 @@
       ],
       datasourceTemplate: "github-releases",
       packageNameTemplate: "astral-sh/uv",
+      extractVersionTemplate: "^v?(?<version>.*)$",
+    },
+    {
+      customType: "regex",
+      description: "Update goss version in Dockerfiles",
+      managerFilePatterns: ["/(^|/)Dockerfile$/", "/Dockerfile\\.[^/]*$/"],
+      matchStrings: [
+        "ARG\\s+(?<depName>GOSS_VERSION)=(?<currentValue>\\d+\\.\\d+\\.\\d+)",
+      ],
+      datasourceTemplate: "github-releases",
+      packageNameTemplate: "goss-org/goss",
       extractVersionTemplate: "^v?(?<version>.*)$",
     },
     {
