@@ -52,9 +52,9 @@ print_status() {
     local status=$1
     local message=$2
     case $status in
-        "PASS") echo -e "${GREEN}✅ PASS:${NC} $message" ;;
-        "FAIL") echo -e "${RED}❌ FAIL:${NC} $message" ;;
-        "INFO") echo -e "${BLUE}ℹ️  INFO:${NC} $message" ;;
+        "PASS") printf "%b\n" "${GREEN}✅ PASS:${NC} $message" ;;
+        "FAIL") printf "%b\n" "${RED}❌ FAIL:${NC} $message" ;;
+        "INFO") printf "%b\n" "${BLUE}ℹ️  INFO:${NC} $message" ;;
     esac
 }
 
