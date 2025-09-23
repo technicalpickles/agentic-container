@@ -1,0 +1,26 @@
+command:
+  "ruby --version":
+    exit-status: 0
+    stdout: [ /ruby \d+\.\d+/ ]
+  "gem --version":
+    exit-status: 0
+    stdout: [ /\d+\.\d+/ ]
+  "go version":
+    exit-status: 0
+    stdout: [ /go version go\d+\.\d+/ ]
+  "lefthook version":
+    exit-status: 0
+    stdout: [ /\d+\.\d+/ ]
+
+file:
+  /usr/local/share/mise/installs/ruby:
+    exists: true
+    filetype: directory
+  /usr/local/share/mise/installs/go:
+    exists: true
+    filetype: directory
+  /usr/local/share/mise/installs/lefthook:
+    exists: true
+    filetype: directory
+
+
