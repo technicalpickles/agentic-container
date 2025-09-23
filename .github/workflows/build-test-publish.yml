@@ -130,7 +130,7 @@ jobs:
           buildkitd-flags: --allow-insecure-entitlement security.insecure
 
       - name: Log in to Container Registry
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false)
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -175,18 +175,37 @@ jobs:
           #   NODE_VERSION=20.17.0
           #   PYTHON_VERSION=3.12.6
 
-      - name: Export image for testing (PR only)
-        if: github.event_name == 'pull_request'
+      - name: Build and push ephemeral PR image (same-repo PRs only)
+        id: build-ephemeral
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: standard
+          platforms: linux/amd64
+          push: true
+          load: false
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.number }}-${{ github.sha }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: |
+            type=gha,scope=standard-${{ github.ref_name }}
+            type=gha,scope=standard-main
+          cache-to: type=gha,mode=max,scope=standard-${{ github.ref_name }}
+          secrets: |
+            github_token=${{ secrets.GITHUB_TOKEN }}
+
+      - name: Export image for testing (fork PRs only)
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true
         run: |
-          # For PRs, we need to make the image available for cookbook testing
-          # Tag it with a consistent name for the test jobs
+          # For fork PRs, we need to make the image available for cookbook testing via tar artifact
+          # Same-repo PRs use ephemeral registry tags instead
           docker tag ${{ steps.meta.outputs.tags }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-base
 
           # Save image to a tarball for sharing with parallel jobs
           docker save ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-base > /tmp/base-image.tar
 
-      - name: Upload base image artifact (PR only)
-        if: github.event_name == 'pull_request'
+      - name: Upload base image artifact (fork PRs only)
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true
         uses: actions/upload-artifact@v4
         with:
           name: base-image
@@ -212,16 +231,31 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       
-      # For PRs: use artifact from build-standard for standard target
-      - name: Download base image artifact (PR only, standard target)
-        if: github.event_name == 'pull_request' && matrix.target == 'standard'
+      # For same-repo PRs: use ephemeral registry tag for standard target
+      - name: Log in to GHCR for ephemeral tag pull (same-repo PRs, standard target)
+        if: github.event_name == 'pull_request' && matrix.target == 'standard' && github.event.pull_request.head.repo.fork == false
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull ephemeral PR image for base testing (same-repo PRs, standard target)
+        if: github.event_name == 'pull_request' && matrix.target == 'standard' && github.event.pull_request.head.repo.fork == false
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.number }}-${{ github.sha }}
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.number }}-${{ github.sha }} test-standard:latest
+
+      # For fork PRs: use artifact from build-standard for standard target
+      - name: Download base image artifact (fork PRs only, standard target)
+        if: github.event_name == 'pull_request' && matrix.target == 'standard' && github.event.pull_request.head.repo.fork == true
         uses: actions/download-artifact@v5
         with:
           name: base-image
           path: /tmp/
 
-      - name: Load and tag base image for testing (PR only, standard target)
-        if: github.event_name == 'pull_request' && matrix.target == 'standard'
+      - name: Load and tag base image for testing (fork PRs only, standard target)
+        if: github.event_name == 'pull_request' && matrix.target == 'standard' && github.event.pull_request.head.repo.fork == true
         run: |
           docker load < /tmp/base-image.tar
           docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-base test-standard:latest
@@ -339,16 +373,32 @@ jobs:
           cache-to: type=gha,mode=max,scope=dev-${{ github.ref_name }}
 
       # Cookbook testing specific steps
-      - name: Download base image artifact (PR cookbook testing)
-        if: matrix.job == 'test-cookbooks' && matrix.condition == 'true' && github.event_name == 'pull_request'
+      - name: Log in to GHCR for ephemeral tag pull (same-repo PRs only)
+        if: matrix.job == 'test-cookbooks' && matrix.condition == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull ephemeral PR image (same-repo PRs only)
+        if: matrix.job == 'test-cookbooks' && matrix.condition == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+        run: |
+          echo "🏗️  Using ephemeral PR image for ${{ matrix.cookbook }} cookbook..."
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.number }}-${{ github.sha }}
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.number }}-${{ github.sha }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-base
+
+      - name: Download base image artifact (fork PRs only)
+        if: matrix.job == 'test-cookbooks' && matrix.condition == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true
         uses: actions/download-artifact@v5
         with:
           name: base-image
           path: /tmp/
 
-      - name: Load base image for testing (PR only)
-        if: matrix.job == 'test-cookbooks' && matrix.condition == 'true' && github.event_name == 'pull_request'
+      - name: Load base image for testing (fork PRs only)
+        if: matrix.job == 'test-cookbooks' && matrix.condition == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true
         run: |
+          echo "🏗️  Using tar artifact for fork PR ${{ matrix.cookbook }} cookbook..."
           docker load < /tmp/base-image.tar
           docker images
 
@@ -359,8 +409,18 @@ jobs:
           docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main
           docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:test-base
 
-      - name: Build cookbook extension image
-        if: matrix.job == 'test-cookbooks' && matrix.condition == 'true'
+      - name: Build cookbook extension image (same-repo PR with ephemeral tag)
+        if: matrix.job == 'test-cookbooks' && matrix.condition == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+        run: |
+          echo "🏗️  Building ${{ matrix.cookbook }} cookbook with ephemeral base image..."
+          docker build \
+            -f docs/cookbooks/${{ matrix.cookbook }}/Dockerfile \
+            --build-arg BASE_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.number }}-${{ github.sha }} \
+            -t test-extension-${{ matrix.cookbook }}:latest \
+            .
+
+      - name: Build cookbook extension image (fork PR or main branch)
+        if: matrix.job == 'test-cookbooks' && matrix.condition == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == true)
         run: |
           echo "🏗️  Building ${{ matrix.cookbook }} cookbook..."
           docker build \
