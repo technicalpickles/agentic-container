@@ -1,6 +1,7 @@
 # Node.js Development Extension  
 # Demonstrates: npm global package installation, system packages
-FROM ghcr.io/technicalpickles/agentic-container:main
+ARG BASE_IMAGE=ghcr.io/technicalpickles/agentic-container:main
+FROM ${BASE_IMAGE}
 
 # Add system dependencies and Node.js packages as root
 USER root

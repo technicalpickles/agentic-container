@@ -1,6 +1,7 @@
 # Python Development Extension
 # Demonstrates: pip package manager usage
-FROM ghcr.io/technicalpickles/agentic-container:main
+ARG BASE_IMAGE=ghcr.io/technicalpickles/agentic-container:main
+FROM ${BASE_IMAGE}
 
 # Python already available - add packages via pip
 RUN pip install --no-cache-dir \

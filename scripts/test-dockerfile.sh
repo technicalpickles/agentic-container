@@ -1,5 +1,93 @@
 #!/usr/bin/env bash
 
+test_base_target() {
+    local target="$1" # standard | dev
+    local image_name=""
+
+    if [[ "$CI_MODE" == true ]]; then
+        image_name="$TEST_IMAGE"
+        if is_truthy "$DRY_RUN"; then
+            log_info "DRY-RUN: would test pre-built base image: $image_name"
+        else
+            log_info "Testing pre-built base image: $image_name"
+            if ! docker image inspect "$image_name" >/dev/null 2>&1; then
+                log_error "Pre-built image not found: $image_name"
+                FAILED_TESTS+=("Image not found")
+                return 1
+            fi
+        fi
+    else
+        image_name="test-${target}:latest"
+        if is_truthy "$DRY_RUN"; then
+            log_info "DRY-RUN: would build base target '$target' as $image_name"
+        else
+            log_info "Building base target '$target' as $image_name"
+            # Use gh token if available
+            if [[ -n "${GITHUB_TOKEN:-}" ]] || (command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1); then
+                token_file=$(mktemp)
+                if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+                    printf '%s' "$GITHUB_TOKEN" > "$token_file"
+                else
+                    gh auth token > "$token_file"
+                fi
+                execute_or_dry_run "docker build --target \"$target\" -t \"$image_name\" --secret id=github_token,src=\"$token_file\" \"$PROJECT_ROOT\"" || { rm -f "$token_file"; log_error "Failed to build $target image"; return 1; }
+                rm -f "$token_file"
+            else
+                if ! execute_or_dry_run "docker build --target \"$target\" -t \"$image_name\" \"$PROJECT_ROOT\""; then
+                    log_error "Failed to build $target image"; return 1; 
+                fi
+            fi
+            log_success "Build successful: $image_name"
+        fi
+    fi
+
+    # Prepare goss files
+    local base_common_file="$PROJECT_ROOT/goss/base-common.yaml"
+    local base_standard_file="$PROJECT_ROOT/goss/standard.yaml"
+    local base_dev_file="$PROJECT_ROOT/goss/dev.yaml"
+
+    local docker_cmd="docker run --rm --user root"
+    if [[ -f "$base_common_file" ]]; then
+        docker_cmd="$docker_cmd -v \"$base_common_file:/tmp/goss-base-common.yaml:ro\""
+    fi
+    if [[ "$target" == "dev" ]]; then
+        if [[ -f "$base_standard_file" ]]; then
+            docker_cmd="$docker_cmd -v \"$base_standard_file:/tmp/goss-base-standard.yaml:ro\""
+        fi
+        if [[ -f "$base_dev_file" ]]; then
+            docker_cmd="$docker_cmd -v \"$base_dev_file:/tmp/goss-base-dev.yaml:ro\""
+        fi
+    else
+        if [[ -f "$base_standard_file" ]]; then
+            docker_cmd="$docker_cmd -v \"$base_standard_file:/tmp/goss-base.yaml:ro\""
+        fi
+    fi
+
+    # Add GITHUB_TOKEN if available
+    if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+        docker_cmd="$docker_cmd -e GITHUB_TOKEN"
+    fi
+
+    docker_cmd="$docker_cmd \"$image_name\" bash -c '"
+    docker_cmd="$docker_cmd set -euo pipefail; "
+    docker_cmd="$docker_cmd if ! command -v goss >/dev/null 2>&1; then mise use -g goss@latest || mise use -g goss@0.4.9; fi; "
+    docker_cmd="$docker_cmd echo \"📋 Running goss tests for base target...\"; "
+    if [[ "$target" == "dev" ]]; then
+        docker_cmd="$docker_cmd goss -g /tmp/goss-base-common.yaml -g /tmp/goss-base-standard.yaml -g /tmp/goss-base-dev.yaml validate --format documentation --color"
+    else
+        docker_cmd="$docker_cmd goss -g /tmp/goss-base-common.yaml -g /tmp/goss-base.yaml validate --format documentation --color"
+    fi
+    docker_cmd="$docker_cmd '"
+
+    if execute_or_dry_run "$docker_cmd"; then
+        log_success "Base goss tests passed for $target!"
+    else
+        log_error "Base goss tests failed for $target"
+        FAILED_TESTS+=("goss validation ($target)")
+        return 1
+    fi
+}
+
 # test-dockerfile.sh - Build and validate Dockerfiles with comprehensive testing
 #
 # This script builds and validates any Dockerfile using comprehensive goss test 
@@ -21,6 +109,9 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 DOCKERFILE=""
 CLEANUP=""
 FAILED_TESTS=()
+MODE="cookbook" # cookbook | base
+BASE_TARGET=""   # standard | dev
+DRY_RUN="${DRY_RUN:-false}"
 
 # Colors for output
 RED='\033[0;31m'
@@ -30,19 +121,37 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 log_info() {
-    echo -e "${BLUE}ℹ️  $1${NC}"
+    printf "%b\n" "${BLUE}ℹ️  $1${NC}"
 }
 
 log_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    printf "%b\n" "${GREEN}✅ $1${NC}"
 }
 
 log_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    printf "%b\n" "${YELLOW}⚠️  $1${NC}"
 }
 
 log_error() {
-    echo -e "${RED}❌ $1${NC}"
+    printf "%b\n" "${RED}❌ $1${NC}"
+}
+
+# Helper: check truthy values for env flags (1/true/yes)
+is_truthy() {
+    local v
+    v=$(printf '%s' "${1:-}" | tr '[:upper:]' '[:lower:]')
+    [[ "$v" == "1" || "$v" == "true" || "$v" == "yes" ]]
+}
+
+# Helper: echo command in dry-run or execute normally
+execute_or_dry_run() {
+    local cmd="$1"
+    if is_truthy "$DRY_RUN"; then
+        echo "[DRY-RUN] $cmd"
+        return 0
+    else
+        eval "$cmd"
+    fi
 }
 
 show_help() {
@@ -51,11 +160,17 @@ test-dockerfile.sh - Build and validate Dockerfiles with comprehensive testing
 
 USAGE:
     ./test-dockerfile.sh <dockerfile-path> [--cleanup]
+    ./test-dockerfile.sh standard [--cleanup]
+    ./test-dockerfile.sh dev [--cleanup]
+    ./test-dockerfile.sh standard test-standard:latest
+    ./test-dockerfile.sh dev test-dev:latest
     ./test-dockerfile.sh --help
 
 ARGUMENTS:
     dockerfile-path    Path to your Dockerfile to test
-    --cleanup         Remove built test images after testing
+    standard|dev       Test base target (builds target image locally)
+    test-*:latest      CI mode: use pre-built image name for base targets
+    --cleanup          Remove built test images after testing
 
 DESCRIPTION:
     This script builds and validates any Dockerfile using comprehensive goss 
@@ -81,7 +196,8 @@ DOCKERFILE_EOF
     rm my-python-app.dockerfile
 
 TESTING APPROACH:
-    • Builds the Docker image from your Dockerfile
+    • Builds the Docker image from your Dockerfile using --build-arg BASE_IMAGE override
+    • Uses local base image (agentic-container:latest) for cookbook testing
     • Tests container startup and basic functionality
     • Requires goss.yaml file in same directory as Dockerfile
     • Runs comprehensive goss tests using pre-installed goss
@@ -98,6 +214,18 @@ COOKBOOK EXAMPLES:
     
     Each cookbook includes both Dockerfile and goss.yaml for complete testing.
 
+BASE TARGET EXAMPLES:
+    # Local base target tests
+    ./test-dockerfile.sh standard
+    ./test-dockerfile.sh dev
+
+    # CI mode with pre-built images
+    ./test-dockerfile.sh standard test-standard:latest
+    ./test-dockerfile.sh dev test-dev:latest
+
+ENVIRONMENT:
+    DRY_RUN=true       Preview planned docker/goss commands without executing
+
 EOF
 }
 
@@ -105,6 +233,11 @@ EOF
 ensure_base_image() {
     local base_dockerfile="$PROJECT_ROOT/Dockerfile"
     local base_image="agentic-container:latest"
+    
+    if is_truthy "$DRY_RUN"; then
+        log_info "DRY-RUN: would ensure base image '$base_image' is up to date (skipping)"
+        return 0
+    fi
     
     # Skip base image building in CI environment
     if [[ -n "${CI:-}" ]] || [[ -n "${GITHUB_ACTIONS:-}" ]]; then
@@ -131,22 +264,19 @@ ensure_base_image() {
         log_info "Base image '$base_image' not found, building..."
         if [[ "$has_gh_token" == true ]]; then
             log_info "Using GitHub token via secret mounting to avoid API rate limits ($github_token_source)"
+            token_file=$(mktemp)
             if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-                # Use GITHUB_TOKEN environment variable
-                if docker build -f "$base_dockerfile" -t "$base_image" --secret id=github_token,src=<(echo "$GITHUB_TOKEN") "$PROJECT_ROOT"; then
-                    log_success "Base image built successfully"
-                else
-                    log_error "Failed to build base image"
-                    exit 1
-                fi
+                printf '%s' "$GITHUB_TOKEN" > "$token_file"
             else
-                # Use gh auth token
-                if docker build -f "$base_dockerfile" -t "$base_image" --secret id=github_token,src=<(gh auth token) "$PROJECT_ROOT"; then
-                    log_success "Base image built successfully"
-                else
-                    log_error "Failed to build base image"
-                    exit 1
-                fi
+                gh auth token > "$token_file"
+            fi
+            if docker build -f "$base_dockerfile" -t "$base_image" --secret id=github_token,src="$token_file" "$PROJECT_ROOT"; then
+                rm -f "$token_file"
+                log_success "Base image built successfully"
+            else
+                rm -f "$token_file"
+                log_error "Failed to build base image"
+                exit 1
             fi
         else
             log_warning "No GitHub token available, may hit API rate limits"
@@ -168,22 +298,19 @@ ensure_base_image() {
         log_info "Base Dockerfile is newer than image, rebuilding..."
         if [[ "$has_gh_token" == true ]]; then
             log_info "Using GitHub token via secret mounting to avoid API rate limits ($github_token_source)"
+            token_file=$(mktemp)
             if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-                # Use GITHUB_TOKEN environment variable
-                if docker build -f "$base_dockerfile" -t "$base_image" --secret id=github_token,src=<(echo "$GITHUB_TOKEN") "$PROJECT_ROOT"; then
-                    log_success "Base image rebuilt successfully"
-                else
-                    log_error "Failed to rebuild base image"
-                    exit 1
-                fi
+                printf '%s' "$GITHUB_TOKEN" > "$token_file"
             else
-                # Use gh auth token
-                if docker build -f "$base_dockerfile" -t "$base_image" --secret id=github_token,src=<(gh auth token) "$PROJECT_ROOT"; then
-                    log_success "Base image rebuilt successfully"
-                else
-                    log_error "Failed to rebuild base image"
-                    exit 1
-                fi
+                gh auth token > "$token_file"
+            fi
+            if docker build -f "$base_dockerfile" -t "$base_image" --secret id=github_token,src="$token_file" "$PROJECT_ROOT"; then
+                rm -f "$token_file"
+                log_success "Base image rebuilt successfully"
+            else
+                rm -f "$token_file"
+                log_error "Failed to rebuild base image"
+                exit 1
             fi
         else
             log_warning "No GitHub token available, may hit API rate limits"
@@ -206,23 +333,38 @@ parse_args() {
         exit 0
     fi
     
-    # Handle different usage patterns
+    # Handle base target usage
+    if [[ $# -ge 1 ]] && [[ "$1" == "standard" || "$1" == "dev" ]]; then
+        MODE="base"
+        BASE_TARGET="$1"
+        if [[ $# -eq 2 ]] && [[ "$2" =~ ^test-(standard|dev):latest$ ]]; then
+            TEST_IMAGE="$2"
+            CI_MODE=true
+            log_info "CI mode detected: testing base target '$BASE_TARGET' with image '$TEST_IMAGE'"
+        else
+            CLEANUP="${2:-}"
+            CI_MODE=false
+        fi
+        return
+    fi
+
+    # Handle cookbook CI usage: ./test-dockerfile.sh cookbook-name test-extension-*:latest
     if [[ $# -eq 2 ]] && [[ ! -f "$1" ]] && [[ "$2" =~ ^test-extension-.*:latest$ ]]; then
-        # CI usage: ./test-dockerfile.sh cookbook-name test-extension-cookbook-name:latest
         local cookbook_name="$1"
         local image_name="$2"
         DOCKERFILE="docs/cookbooks/$cookbook_name/Dockerfile"
         TEST_IMAGE="$image_name"
         CI_MODE=true
         log_info "CI mode detected: testing cookbook '$cookbook_name' with image '$image_name'"
-    else
-        # Local usage: ./test-dockerfile.sh dockerfile-path [--cleanup]
-        DOCKERFILE="$1"
-        CLEANUP="${2:-}"
-        CI_MODE=false
+        return
     fi
+
+    # Local cookbook usage: ./test-dockerfile.sh dockerfile-path [--cleanup]
+    DOCKERFILE="$1"
+    CLEANUP="${2:-}"
+    CI_MODE=false
     
-    if [[ ! -f "$DOCKERFILE" ]]; then
+    if [[ "$MODE" == "cookbook" && ! -f "$DOCKERFILE" ]]; then
         log_error "Dockerfile not found: $DOCKERFILE"
         echo
         show_help
@@ -246,11 +388,19 @@ test_comprehensive_validation() {
     local cookbook_name=""
     local dockerfile_dir=$(dirname "$dockerfile")
     local goss_file=""
+    local base_target="standard"
+    local base_common_file="$PROJECT_ROOT/goss/base-common.yaml"
+    local base_standard_file="$PROJECT_ROOT/goss/standard.yaml"
+    local base_dev_file="$PROJECT_ROOT/goss/dev.yaml"
     
     # Try to find corresponding goss.yaml file
     if [[ "$dockerfile" == *"/cookbooks/"* ]]; then
         cookbook_name=$(basename "$dockerfile_dir")
         goss_file="$dockerfile_dir/goss.yaml"
+        # Best-effort detect base target from FROM reference
+        if grep -Eiq 'agentic-container:.*dev' "$dockerfile"; then
+            base_target="dev"
+        fi
     fi
     
     # Use goss tests (required for all extensions)
@@ -259,6 +409,24 @@ test_comprehensive_validation() {
         local absolute_goss_file="$(cd "$(dirname "$goss_file")" && pwd)/$(basename "$goss_file")"
         # Prepare docker run command with GITHUB_TOKEN if available
         local docker_cmd="docker run --rm --user root -v \"$absolute_goss_file:/tmp/goss.yaml:ro\""
+
+        # Mount base goss files if present
+        if [[ -f "$base_common_file" ]]; then
+            docker_cmd="$docker_cmd -v \"$base_common_file:/tmp/goss-base-common.yaml:ro\""
+        fi
+        if [[ "$base_target" == "dev" && -f "$base_dev_file" ]]; then
+            # Mount both standard and dev to ensure dev inherits standard
+            if [[ -f "$base_standard_file" ]]; then
+                docker_cmd="$docker_cmd -v \"$base_standard_file:/tmp/goss-base-standard.yaml:ro\""
+            fi
+            docker_cmd="$docker_cmd -v \"$base_dev_file:/tmp/goss-base-dev.yaml:ro\""
+            log_info "Including base tests: goss/base-common.yaml, goss/standard.yaml and goss/dev.yaml"
+        elif [[ -f "$base_standard_file" ]]; then
+            docker_cmd="$docker_cmd -v \"$base_standard_file:/tmp/goss-base.yaml:ro\""
+            log_info "Including base tests: goss/base-common.yaml and goss/standard.yaml"
+        else
+            log_warning "Base goss files not found; running cookbook tests only"
+        fi
         
         # Add GITHUB_TOKEN if available (for GitHub Actions or local development)
         if [[ -n "${GITHUB_TOKEN:-}" ]]; then
@@ -272,10 +440,21 @@ test_comprehensive_validation() {
         docker_cmd="$docker_cmd mise use -g goss@latest || mise use -g goss@0.4.9; "
         docker_cmd="$docker_cmd fi; "
         docker_cmd="$docker_cmd echo \"📋 Running goss tests with pre-installed goss...\"; "
-        docker_cmd="$docker_cmd goss -g /tmp/goss.yaml validate --format documentation --color"
+        # Run validation with multiple goss files if mounted
+        docker_cmd="$docker_cmd if [ -f /tmp/goss-base-common.yaml ] && [ -f /tmp/goss-base-dev.yaml ] && [ -f /tmp/goss-base-standard.yaml ]; then "
+        docker_cmd="$docker_cmd goss -g /tmp/goss-base-common.yaml -g /tmp/goss-base-standard.yaml -g /tmp/goss-base-dev.yaml -g /tmp/goss.yaml validate --format documentation --color; "
+        docker_cmd="$docker_cmd elif [ -f /tmp/goss-base-common.yaml ] && [ -f /tmp/goss-base-dev.yaml ]; then "
+        docker_cmd="$docker_cmd goss -g /tmp/goss-base-common.yaml -g /tmp/goss-base-dev.yaml -g /tmp/goss.yaml validate --format documentation --color; "
+        docker_cmd="$docker_cmd elif [ -f /tmp/goss-base-common.yaml ] && [ -f /tmp/goss-base.yaml ]; then "
+        docker_cmd="$docker_cmd goss -g /tmp/goss-base-common.yaml -g /tmp/goss-base.yaml -g /tmp/goss.yaml validate --format documentation --color; "
+        docker_cmd="$docker_cmd elif [ -f /tmp/goss-base-common.yaml ]; then "
+        docker_cmd="$docker_cmd goss -g /tmp/goss-base-common.yaml -g /tmp/goss.yaml validate --format documentation --color; "
+        docker_cmd="$docker_cmd else "
+        docker_cmd="$docker_cmd goss -g /tmp/goss.yaml validate --format documentation --color; "
+        docker_cmd="$docker_cmd fi"
         docker_cmd="$docker_cmd '"
         
-        if eval "$docker_cmd"; then
+        if execute_or_dry_run "$docker_cmd"; then
             log_success "All goss tests passed for $cookbook_name!"
         else
             log_error "Goss tests failed for $cookbook_name"
@@ -315,44 +494,52 @@ test_dockerfile() {
             return 1
         fi
     else
-        # In local mode, build the image
+        # In local mode, build the image with ARG override
         image_name="test-dockerfile-$(date +%s)"
         log_info "Testing dockerfile: $(basename "$dockerfile")"
         
-        # Create a temporary dockerfile with local image references for testing
-        local temp_dockerfile="$SCRIPT_DIR/temp-$(basename "$dockerfile")"
-        sed 's|ghcr.io/technicalpickles/agentic-container:|agentic-container:|g' "$dockerfile" > "$temp_dockerfile"
-        
-        # Build the image
-        log_info "Building test image: $image_name"
-        if docker build -f "$temp_dockerfile" -t "$image_name" "$PROJECT_ROOT"; then
-            log_success "Build successful: $image_name"
-            rm "$temp_dockerfile"
+        if is_truthy "$DRY_RUN"; then
+            log_info "DRY-RUN: would build test image: $image_name from $dockerfile"
+            log_info "DRY-RUN: would use --build-arg BASE_IMAGE=agentic-container:latest"
         else
-            log_error "Build failed for: $(basename "$dockerfile")"
-            rm "$temp_dockerfile" 2>/dev/null || true
-            FAILED_TESTS+=("Build failed")
-            return 1
+            # Build the image directly with BASE_IMAGE override - no temp files needed!
+            log_info "Building test image: $image_name"
+            log_info "Using base image override: agentic-container:latest"
+            
+            if docker build -f "$dockerfile" \
+                --build-arg BASE_IMAGE=agentic-container:latest \
+                -t "$image_name" \
+                "$PROJECT_ROOT"; then
+                log_success "Build successful: $image_name"
+            else
+                log_error "Build failed for: $(basename "$dockerfile")"
+                FAILED_TESTS+=("Build failed")
+                return 1
+            fi
         fi
     fi
     
     # Basic startup test
-    log_info "Testing basic functionality..."
-    
-    # Test 1: Container starts and basic commands work
-    if docker run --rm "$image_name" bash -c 'echo "Container startup test passed"'; then
-        log_success "Container startup test passed"
+    if is_truthy "$DRY_RUN"; then
+        log_info "DRY-RUN: skipping container startup and workspace tests"
     else
-        log_error "Container startup test failed"
-        FAILED_TESTS+=("Startup test")
-    fi
-    
-    # Test 2: Working directory is accessible
-    if docker run --rm "$image_name" bash -c 'cd /workspace && pwd'; then
-        log_success "Working directory is accessible"
-    else
-        log_error "Working directory test failed"
-        FAILED_TESTS+=("Working directory")
+        log_info "Testing basic functionality..."
+        
+        # Test 1: Container starts and basic commands work
+        if docker run --rm "$image_name" bash -c 'echo "Container startup test passed"'; then
+            log_success "Container startup test passed"
+        else
+            log_error "Container startup test failed"
+            FAILED_TESTS+=("Startup test")
+        fi
+        
+        # Test 2: Working directory is accessible
+        if docker run --rm "$image_name" bash -c 'cd /workspace && pwd'; then
+            log_success "Working directory is accessible"
+        else
+            log_error "Working directory test failed"
+            FAILED_TESTS+=("Working directory")
+        fi
     fi
     
     # Test 3: Comprehensive validation (goss tests required)
@@ -361,7 +548,9 @@ test_dockerfile() {
     # Cleanup test image (only in local mode)
     if [[ "$CI_MODE" == false ]]; then
         if [[ "$CLEANUP" == "--cleanup" ]]; then
-            if docker rmi "$image_name" >/dev/null 2>&1; then
+            if is_truthy "$DRY_RUN"; then
+                log_info "DRY-RUN: would remove test image $image_name"
+            elif docker rmi "$image_name" >/dev/null 2>&1; then
                 log_success "Cleaned up test image"
             else
                 log_warning "Failed to cleanup test image: $image_name"
@@ -380,13 +569,16 @@ main() {
     parse_args "$@"
     
     log_info "Starting dockerfile validation..."
-    log_info "Testing Dockerfile: $DOCKERFILE"
-    
-    # Ensure base image is up to date
-    ensure_base_image
-    
-    # Test the dockerfile
-    test_dockerfile "$DOCKERFILE"
+    if [[ "$MODE" == "base" ]]; then
+        log_info "Testing base target: $BASE_TARGET"
+        test_base_target "$BASE_TARGET"
+    else
+        log_info "Testing Dockerfile: $DOCKERFILE"
+        # Ensure base image is up to date
+        ensure_base_image
+        # Test the dockerfile
+        test_dockerfile "$DOCKERFILE"
+    fi
     
     # Summary
     echo

@@ -97,3 +97,31 @@ The testing approach uses **container self-installation**:
 
 This solves the traditional dgoss architecture compatibility problems while
 maintaining the benefits of goss testing.
+
+## Base Test Reuse (No YAML include)
+
+Base validation for standard/dev targets is automatically included at test time.
+You do not need to add any YAML `include` directives in your cookbook `goss.yaml`.
+
+How it works:
+- The unified test script mounts multiple goss files and runs goss with repeated `-g` flags.
+- For standard base: `goss/base-common.yaml` + `goss/standard.yaml` are merged.
+- For dev base: `goss/base-common.yaml` + `goss/standard.yaml` + `goss/dev.yaml` are merged.
+- Your cookbook’s `goss.yaml` is also included.
+
+What you should do:
+- Keep cookbook `goss.yaml` focused on cookbook-specific tests only.
+- If your cookbook is based on the dev target, the script detects it from your `Dockerfile` and includes dev base tests automatically.
+
+## Preview Included Base Tests (Dry Run)
+
+You can preview which goss files will be composed and the exact command that would run without executing anything by setting `DRY_RUN=true`:
+
+```bash
+# Preview cookbook test composition
+DRY_RUN=true ./scripts/test-dockerfile.sh docs/cookbooks/<cookbook-name>/Dockerfile
+
+# Preview base target composition (standard or dev)
+DRY_RUN=true ./scripts/test-dockerfile.sh standard
+DRY_RUN=true ./scripts/test-dockerfile.sh dev
+```

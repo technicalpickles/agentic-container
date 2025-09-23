@@ -1,0 +1,26 @@
+command:
+  "dumb-init --version":
+    exit-status: 0
+    stdout: [ /\d+\.\d+/ ]
+  "sudo --version":
+    exit-status: 0
+    stdout: [ "Sudo version" ]
+
+file:
+  /usr/local/bin/mise:
+    exists: true
+    filetype: file
+    mode: "0755"
+  /usr/local/bin/rv:
+    exists: true
+    filetype: file
+    mode: "0755"
+  /usr/local/bin/starship:
+    exists: true
+    filetype: file
+    mode: "0755"
+
+env:
+  # Intentionally left empty; base-common avoids brittle env checks
+
+

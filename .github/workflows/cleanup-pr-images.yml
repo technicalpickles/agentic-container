@@ -1,0 +1,31 @@
+name: Cleanup PR Images
+
+on:
+  pull_request:
+    types: [closed]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  cleanup-pr-images:
+    name: Delete Ephemeral PR Images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete PR image tags
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        with:
+          # Delete all tags matching pr-<PR_NUMBER>-*
+          delete-tags: pr-${{ github.event.pull_request.number }}-*
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          
+      - name: Log cleanup completion
+        run: |
+          echo "🧹 Cleaned up ephemeral images for PR #${{ github.event.pull_request.number }}"
+          echo "Deleted tags matching: pr-${{ github.event.pull_request.number }}-*"

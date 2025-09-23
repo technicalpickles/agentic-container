@@ -1,0 +1,112 @@
+command:
+  "git --version":
+    exit-status: 0
+    stdout: [ "git version" ]
+  "curl --version":
+    exit-status: 0
+    stdout: [ "curl" ]
+  "vim --version":
+    exit-status: 0
+    stdout: [ "VIM" ]
+  "jq --version":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+/
+  "rg --version":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+/
+  "fdfind --version":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+/
+
+  "docker --version":
+    exit-status: 0
+    stdout: [ "Docker version" ]
+  "docker compose version":
+    exit-status: 0
+    stdout: [ "Docker Compose version" ]
+
+  "gh --version":
+    exit-status: 0
+    stdout: [ "gh version" ]
+
+  "mise --version":
+    exit-status: 0
+    stdout:
+      - /\d{4}\.\d+\.\d+/
+  "rv --version":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+/
+
+  "node --version":
+    exit-status: 0
+    stdout:
+      - /v\d+\.\d+\.\d+/
+  "python3 --version":
+    exit-status: 0
+    stdout: [ "Python 3" ]
+  "npm --version":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+\.\d+/
+  "pip --version":
+    exit-status: 0
+    stdout: [ "pip" ]
+
+  "ast-grep --version":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+/
+  "uv --version":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+/
+  "goss --version":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+/
+
+  "starship --version":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+/
+
+file:
+  /workspace:
+    exists: true
+    filetype: directory
+  /usr/local/share/mise:
+    exists: true
+    filetype: directory
+  /etc/mise:
+    exists: true
+    filetype: directory
+  /home/agent:
+    exists: true
+    filetype: directory
+
+user:
+  agent:
+    exists: true
+    uid: 1001
+    gid: 1001
+    groups:
+      - agent
+      - docker
+      - mise
+    home: "/home/agent"
+
+env:
+  MISE_DATA_DIR:
+    value: "/usr/local/share/mise"
+  MISE_CONFIG_DIR:
+    value: "/etc/mise"
+  MISE_CACHE_DIR:
+    value: "/tmp/mise-cache"
+  PATH:
+    contains: [ "/usr/local/share/mise/shims" ]
+
+

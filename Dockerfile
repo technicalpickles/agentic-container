@@ -12,7 +12,8 @@ ARG AST_GREP_VERSION=0.39.5
 ARG LEFTHOOK_VERSION=1.13.4
 ARG UV_VERSION=0.8.21
 ARG CLAUDE_CODE_VERSION=1.0.120
-ARG CODEX_VERSION=2.0.0
+ARG CODEX_VERSION=0.39.0
+ARG GOSS_VERSION=0.4.9
 
 FROM ubuntu:24.04 AS builder
 
@@ -37,11 +38,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Install rv (fast precompiled Ruby binaries)
     && curl --proto '=https' --tlsv1.2 -LsSf https://github.com/spinel-coop/rv/releases/download/v0.1.1/rv-installer.sh | sh \
     && mv /root/.cargo/bin/rv /usr/local/bin/rv \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install commonly used languages in builder stage
-# Install Node.js (https://endoflife.date/nodejs) and Python (https://endoflife.date/python)
-RUN mise install node@${NODE_VERSION} \
+    && rm -rf /var/lib/apt/lists/* \
+    # Install commonly used languages in builder stage
+    # Install Node.js (https://endoflife.date/nodejs) and Python (https://endoflife.date/python)
+    && mise install node@${NODE_VERSION} \
     && mise install python@${PYTHON_VERSION}
 
 # =============================================================================
@@ -82,6 +82,19 @@ ARG AST_GREP_VERSION
 ARG UV_VERSION
 ARG CLAUDE_CODE_VERSION
 ARG CODEX_VERSION
+ARG GOSS_VERSION
+
+# Create a non-root user for devcontainer use
+ARG USERNAME=agent
+ARG USER_UID=1001
+ARG USER_GID=$USER_UID
+
+# Set up mise for system-wide installations (optimized configuration)
+ENV MISE_DATA_DIR=/usr/local/share/mise
+ENV MISE_CONFIG_DIR=/etc/mise  
+ENV MISE_CACHE_DIR=/tmp/mise-cache
+# Add mise shims to PATH - no activation needed!
+ENV PATH="/usr/local/share/mise/shims:${PATH}"
 
 # Install essential runtime packages and development tools
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -132,15 +145,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && find /usr/share/doc -depth -type f ! -name copyright -delete 2>/dev/null || true \
     && rm -rf /usr/share/man/* /usr/share/groff/* /usr/share/info/* /usr/share/lintian/* /usr/share/linda/* 2>/dev/null || true
 
-
-
-# Set up mise for system-wide installations (optimized configuration)
-ENV MISE_DATA_DIR=/usr/local/share/mise
-ENV MISE_CONFIG_DIR=/etc/mise  
-ENV MISE_CACHE_DIR=/tmp/mise-cache
-# Add mise shims to PATH - no activation needed!
-ENV PATH="/usr/local/share/mise/shims:${PATH}"
-
 # Copy version managers and common languages from builder stage
 COPY --from=builder /usr/local/bin/mise /usr/local/bin/mise
 COPY --from=builder /usr/local/bin/rv /usr/local/bin/rv
@@ -149,10 +153,9 @@ COPY --from=builder $MISE_DATA_DIR/installs/python $MISE_DATA_DIR/installs/pytho
 
 # Create mise group for shared access to directories and add root to it
 RUN groupadd --gid 2000 mise \
-    && usermod -aG mise root
-
-# Configure mise with optimized setup and add shims to PATH with group permissions
-RUN mkdir -p $MISE_DATA_DIR $MISE_CONFIG_DIR $MISE_CACHE_DIR \
+    && usermod -aG mise root \
+    # Configure mise with optimized setup and add shims to PATH with group permissions
+    && mkdir -p $MISE_DATA_DIR $MISE_CONFIG_DIR $MISE_CACHE_DIR \
     # Set group ownership and permissions for shared access
     && chgrp -R mise $MISE_DATA_DIR $MISE_CONFIG_DIR $MISE_CACHE_DIR \
     && chmod -R g+ws $MISE_DATA_DIR $MISE_CONFIG_DIR $MISE_CACHE_DIR \
@@ -186,33 +189,22 @@ RUN mkdir -p $MISE_DATA_DIR $MISE_CONFIG_DIR $MISE_CACHE_DIR \
     && rm -rf /var/lib/apt/lists/* /var/cache/apt/* /tmp/* /var/tmp/* \
     && find /var/log -type f -exec truncate -s 0 {} \; 2>/dev/null || true \
     && find /usr/share/doc -depth -type f ! -name copyright -delete 2>/dev/null || true \
-    && rm -rf /usr/share/man/* /usr/share/groff/* /usr/share/info/* /usr/share/lintian/* /usr/share/linda/* 2>/dev/null || true
+    && rm -rf /usr/share/man/* /usr/share/groff/* /usr/share/info/* /usr/share/lintian/* /usr/share/linda/* 2>/dev/null || true \
 
-# Create a non-root user for devcontainer use
-ARG USERNAME=agent
-ARG USER_UID=1001
-ARG USER_GID=$USER_UID
-
-# Create user and group
-RUN groupadd --gid $USER_GID $USERNAME \
+    # Create user and group
+    &&  groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
     && (groupadd docker 2>/dev/null || true) \
     && usermod -aG docker,mise $USERNAME \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME \
     # Create workspace directory
-    && mkdir -p /workspace && chown $USERNAME:$USERNAME /workspace
-
-# Add extension helper script
-COPY scripts/extend-image.sh /usr/local/bin/extend-image
-RUN chmod +x /usr/local/bin/extend-image
-
-# Install starship prompt
-RUN curl -sS https://starship.rs/install.sh | FORCE=true sh \
-    && echo 'eval "$(starship init bash)"' >> /etc/bash.bashrc
-
-# Set up enhanced shell for non-root user  
-RUN echo 'eval "$(starship init bash)"' >> /home/$USERNAME/.bashrc && \
+    && mkdir -p /workspace && chown $USERNAME:$USERNAME /workspace \
+    # Install starship prompt
+    && curl -sS https://starship.rs/install.sh | FORCE=true sh \
+    && echo 'eval "$(starship init bash)"' >> /etc/bash.bashrc && \
+    # Set up enhanced shell for non-root user  
+    echo 'eval "$(starship init bash)"' >> /home/$USERNAME/.bashrc && \
     # Add mise shims to PATH in user shell files (for RUN commands)
     echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /home/$USERNAME/.bashrc && \
     echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /home/$USERNAME/.bash_profile && \
@@ -224,24 +216,23 @@ RUN echo 'eval "$(starship init bash)"' >> /home/$USERNAME/.bashrc && \
     # Also add mise activation for interactive shell features
     echo 'eval "$(mise activate bash)"' >> /home/$USERNAME/.bashrc && \
     echo 'eval "$(mise activate bash)"' >> /home/$USERNAME/.bash_profile && \
-    echo 'eval "$(mise activate bash)"' >> /home/$USERNAME/.profile
-
-# Set up environment for both interactive and non-interactive use
-RUN echo 'export DEBIAN_FRONTEND=noninteractive' >> /home/$USERNAME/.bashrc && \
+    echo 'eval "$(mise activate bash)"' >> /home/$USERNAME/.profile && \
+    # Set up environment for both interactive and non-interactive use
+    echo 'export DEBIAN_FRONTEND=noninteractive' >> /home/$USERNAME/.bashrc && \
     echo 'export TERM=xterm-256color' >> /home/$USERNAME/.bashrc && \
     echo 'export LANG=en_US.UTF-8' >> /home/$USERNAME/.bashrc && \
-    echo 'export LC_ALL=en_US.UTF-8' >> /home/$USERNAME/.bashrc
-
-USER $USERNAME
-
-# Set git safe directory for the workspace (important for devcontainers)
-RUN git config --global --add safe.directory /workspace && \
-    git config --global --add safe.directory '*'
-
-# Configure git with reasonable defaults for devcontainers  
-RUN git config --global init.defaultBranch main && \
+    echo 'export LC_ALL=en_US.UTF-8' >> /home/$USERNAME/.bashrc && \
+    # Set git safe directory for the workspace (important for devcontainers)
+    git config --global --add safe.directory /workspace && \
+    git config --global --add safe.directory '*' && \
+    # Configure git with reasonable defaults for devcontainers  
+    git config --global init.defaultBranch main && \
     git config --global pull.rebase false && \
     git config --global core.autocrlf input
+
+# Add extension helper script
+COPY --chmod=755 scripts/extend-image.sh /usr/local/bin/extend-image
+USER $USERNAME
 
 # Set working directory
 WORKDIR /workspace
@@ -254,7 +245,6 @@ ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 
 # Default command - can be overridden
 CMD ["/bin/bash", "--login"]
-
 
 
 # =============================================================================
