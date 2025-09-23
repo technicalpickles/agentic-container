@@ -1,0 +1,81 @@
+name: Manual Cleanup PR Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to clean up (leave empty for bulk cleanup of all pr-* tags)'
+        required: false
+        type: string
+      tag_pattern:
+        description: 'Custom tag pattern to delete (e.g., pr-24-*). Overrides PR number if provided.'
+        required: false
+        type: string
+      dry_run:
+        description: 'Dry run - show what would be deleted without actually deleting'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  manual-cleanup:
+    name: Manual Cleanup PR Images
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine cleanup pattern
+        id: pattern
+        run: |
+          if [ -n "${{ inputs.tag_pattern }}" ]; then
+            echo "pattern=${{ inputs.tag_pattern }}" >> $GITHUB_OUTPUT
+            echo "description=Custom pattern: ${{ inputs.tag_pattern }}" >> $GITHUB_OUTPUT
+          elif [ -n "${{ inputs.pr_number }}" ]; then
+            echo "pattern=pr-${{ inputs.pr_number }}-*" >> $GITHUB_OUTPUT
+            echo "description=PR #${{ inputs.pr_number }} tags" >> $GITHUB_OUTPUT
+          else
+            echo "pattern=pr-*" >> $GITHUB_OUTPUT
+            echo "description=All PR tags" >> $GITHUB_OUTPUT
+          fi
+          
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "mode=DRY RUN" >> $GITHUB_OUTPUT
+          else
+            echo "mode=ACTUAL DELETION" >> $GITHUB_OUTPUT
+          fi
+
+      - name: List tags to be deleted (dry run)
+        if: inputs.dry_run == true
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        with:
+          delete-tags: ${{ steps.pattern.outputs.pattern }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          owner: ${{ github.repository_owner }}
+          name: ${{ github.event.repository.name }}
+          dry-run: true
+
+      - name: Delete PR image tags
+        if: inputs.dry_run != true
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        with:
+          delete-tags: ${{ steps.pattern.outputs.pattern }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          owner: ${{ github.repository_owner }}
+          name: ${{ github.event.repository.name }}
+
+      - name: Log cleanup completion
+        run: |
+          echo "🧹 ${{ steps.pattern.outputs.mode }}: Cleaned up ${{ steps.pattern.outputs.description }}"
+          echo "Pattern used: ${{ steps.pattern.outputs.pattern }}"
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "⚠️  This was a dry run - no tags were actually deleted"
+            echo "Re-run without dry_run to perform actual cleanup"
+          else
+            echo "✅ Tags have been deleted from the registry"
+          fi

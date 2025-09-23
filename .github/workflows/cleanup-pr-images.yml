@@ -23,7 +23,8 @@ jobs:
           # Delete all tags matching pr-<PR_NUMBER>-*
           delete-tags: pr-${{ github.event.pull_request.number }}-*
           token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}
+          owner: ${{ github.repository_owner }}
+          name: ${{ github.event.repository.name }}
           
       - name: Log cleanup completion
         run: |
