@@ -26,17 +26,23 @@ PR_NUMBER="${1:-}"
 echo -e "${BLUE}🔍 Listing ephemeral PR tags from ${REGISTRY}/${IMAGE_NAME}${NC}"
 echo
 
-# Check if GitHub CLI is available
-if ! command -v gh &> /dev/null; then
-    echo -e "${RED}❌ Error: GitHub CLI (gh) is required but not installed${NC}"
-    echo "Install it from: https://cli.github.com/"
-    exit 1
+# Check available tools
+HAS_GH=false
+HAS_DOCKER=false
+
+if command -v gh &> /dev/null && gh auth status &> /dev/null; then
+    HAS_GH=true
 fi
 
-# Check if user is authenticated
-if ! gh auth status &> /dev/null; then
-    echo -e "${RED}❌ Error: Not authenticated with GitHub CLI${NC}"
-    echo "Run: gh auth login"
+if command -v docker &> /dev/null; then
+    HAS_DOCKER=true
+fi
+
+if [ "$HAS_GH" = false ] && [ "$HAS_DOCKER" = false ]; then
+    echo -e "${RED}❌ Error: Neither GitHub CLI nor Docker is available${NC}"
+    echo "Install one of:"
+    echo "• GitHub CLI: https://cli.github.com/"
+    echo "• Docker: https://docker.com/"
     exit 1
 fi
 
@@ -51,13 +57,37 @@ list_tags() {
     echo "Pattern: ${pattern}"
     echo
     
-    # Get package versions (tags) using GitHub CLI
-    local tags
-    if tags=$(gh api "/orgs/technicalpickles/packages/container/agentic-container/versions" \
-        --paginate \
-        --jq '.[] | select(.metadata.container.tags[] | test("^'"$pattern"'")) | .metadata.container.tags[]' \
-        2>/dev/null | sort); then
-        
+    local tags=""
+    local success=false
+    
+    # Try GitHub CLI first if available
+    if [ "$HAS_GH" = true ]; then
+        echo -e "${YELLOW}🔍 Trying GitHub CLI...${NC}"
+        if tags=$(gh api "/users/technicalpickles/packages/container/agentic-container/versions" \
+            --paginate \
+            --jq '.[] | select(.metadata.container.tags[] | test("^'"$pattern"'")) | .metadata.container.tags[]' \
+            2>/dev/null | sort); then
+            success=true
+        else
+            echo -e "  ${YELLOW}⚠️  GitHub CLI failed, trying Docker...${NC}"
+        fi
+    fi
+    
+    # Try Docker if GitHub CLI failed or isn't available
+    if [ "$success" = false ] && [ "$HAS_DOCKER" = true ]; then
+        echo -e "${YELLOW}🔍 Trying Docker registry API...${NC}"
+        # Note: This approach requires authentication to work properly
+        # For now, we'll provide instructions for manual checking
+        echo -e "  ${YELLOW}ℹ️  Docker-based tag listing requires additional setup${NC}"
+        echo -e "  ${BLUE}💡 Try these manual approaches:${NC}"
+        echo "     1. Check GitHub Packages UI: https://github.com/technicalpickles/agentic-container/pkgs/container/agentic-container"
+        echo "     2. Use 'gh auth login' and try again"
+        echo "     3. Use the manual cleanup workflow with dry_run=true to see what tags exist"
+        return
+    fi
+    
+    # Display results
+    if [ "$success" = true ]; then
         if [ -n "$tags" ]; then
             echo "$tags" | while read -r tag; do
                 echo -e "  ${GREEN}✓${NC} $tag"
@@ -71,7 +101,10 @@ list_tags() {
             echo -e "  ${YELLOW}ℹ️  No tags found matching pattern${NC}"
         fi
     else
-        echo -e "  ${RED}❌ Error fetching tags (check permissions)${NC}"
+        echo -e "  ${RED}❌ Unable to fetch tags${NC}"
+        echo -e "  ${BLUE}💡 Alternative approaches:${NC}"
+        echo "     • Visit: https://github.com/technicalpickles/agentic-container/pkgs/container/agentic-container"
+        echo "     • Run manual cleanup with dry_run=true to see what exists"
     fi
 }
 
