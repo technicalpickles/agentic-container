@@ -11,6 +11,10 @@ command:
   "lefthook version":
     exit-status: 0
     stdout: [ /\d+\.\d+/ ]
+  "ast-grep --version":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+/
 
 file:
   /usr/local/share/mise/installs/ruby:

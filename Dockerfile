@@ -38,11 +38,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Install rv (fast precompiled Ruby binaries)
     && curl --proto '=https' --tlsv1.2 -LsSf https://github.com/spinel-coop/rv/releases/download/v0.1.1/rv-installer.sh | sh \
     && mv /root/.cargo/bin/rv /usr/local/bin/rv \
-    && rm -rf /var/lib/apt/lists/* \
-    # Install commonly used languages in builder stage
-    # Install Node.js (https://endoflife.date/nodejs) and Python (https://endoflife.date/python)
-    && mise install node@${NODE_VERSION} \
-    && mise install python@${PYTHON_VERSION}
+    && rm -rf /var/lib/apt/lists/*
 
 # =============================================================================
 # LANGUAGE-SPECIFIC BUILD STAGES FOR DEV IMAGE
@@ -63,6 +59,18 @@ ARG GO_VERSION
 # https://endoflife.date/go - Install to global mise directory  
 RUN mise install go@${GO_VERSION}
 
+FROM builder AS node-stage
+# Re-declare ARG for this stage (inherit from global)
+ARG NODE_VERSION
+# https://endoflife.date/nodejs - Install to global mise directory
+RUN mise install node@${NODE_VERSION}
+
+FROM builder AS python-stage
+# Re-declare ARG for this stage (inherit from global)
+ARG PYTHON_VERSION
+# https://endoflife.date/python - Install to global mise directory
+RUN mise install python@${PYTHON_VERSION}
+
 FROM builder AS lefthook-stage
 # Re-declare ARG for this stage (inherit from global)
 ARG LEFTHOOK_VERSION
@@ -78,10 +86,7 @@ FROM ubuntu:24.04 AS standard
 # Re-declare ARGs needed in this stage (inherit from global)
 ARG NODE_VERSION
 ARG PYTHON_VERSION
-ARG AST_GREP_VERSION
 ARG UV_VERSION
-ARG CLAUDE_CODE_VERSION
-ARG CODEX_VERSION
 ARG GOSS_VERSION
 
 # Create a non-root user for devcontainer use
@@ -95,6 +100,10 @@ ENV MISE_CONFIG_DIR=/etc/mise
 ENV MISE_CACHE_DIR=/tmp/mise-cache
 # Add mise shims to PATH - no activation needed!
 ENV PATH="/usr/local/share/mise/shims:${PATH}"
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
 
 # Install essential runtime packages and development tools
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -141,14 +150,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get autoremove -y \
     && apt-get autoclean \
     && rm -rf /var/lib/apt/lists/* /var/cache/apt/* /tmp/* /var/tmp/* \
-    && find /var/log -type f -exec truncate -s 0 {} \; 2>/dev/null || true \
-    && find /usr/share/doc -depth -type f ! -name copyright -delete 2>/dev/null || true 
+    && find /var/log -type f -exec truncate -s 0 {} \; 2>/dev/null || true
 
 # Copy version managers and common languages from builder stage
 COPY --from=builder /usr/local/bin/mise /usr/local/bin/mise
 COPY --from=builder /usr/local/bin/rv /usr/local/bin/rv
-COPY --from=builder $MISE_DATA_DIR/installs/node $MISE_DATA_DIR/installs/node  
-COPY --from=builder $MISE_DATA_DIR/installs/python $MISE_DATA_DIR/installs/python
+COPY --from=node-stage $MISE_DATA_DIR/installs/node $MISE_DATA_DIR/installs/node  
+COPY --from=python-stage $MISE_DATA_DIR/installs/python $MISE_DATA_DIR/installs/python
 
 # Create mise group for shared access to directories and add root to it
 RUN groupadd --gid 2000 mise \
@@ -165,27 +173,18 @@ RUN groupadd --gid 2000 mise \
     && echo 'umask 002' >> /etc/profile \
     # install node and python globally, since frequently used for mcp
     && mise use -g node@${NODE_VERSION} python@${PYTHON_VERSION} \
-    # Install agent toolchain: ast-grep for structural code search, uv for MCP server support (includes uvx), goss for testing
-    && GITHUB_TOKEN=$(cat /run/secrets/github_token) mise use -g ast-grep@${AST_GREP_VERSION} uv@${UV_VERSION} goss@${GOSS_VERSION} \
-    # Install AI Coding Agents (GitHub CLI already installed above)
-    && npm install -g @anthropic-ai/claude-code@^${CLAUDE_CODE_VERSION} @openai/codex@^${CODEX_VERSION} \
-    && gh extension install github/gh-copilot \
-    && curl -fsSL https://opencode.ai/install | bash \
-    && curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | bash \
-    # Cleanup after all installations
-    && apt-get autoremove -y \
-    && apt-get autoclean \
-    && rm -rf /var/lib/apt/lists/* /var/cache/apt/* /tmp/* /var/tmp/* \
-    && find /var/log -type f -exec truncate -s 0 {} \; 2>/dev/null || true \
+    # Install uv for MCP server support (includes uvx), goss for testing
+    && GITHUB_TOKEN=$(cat /run/secrets/github_token) mise use -g uv@${UV_VERSION} goss@${GOSS_VERSION} \
     # Create user and group
-    &&  groupadd --gid $USER_GID $USERNAME \
+    && groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
     && (groupadd docker 2>/dev/null || true) \
     && usermod -aG docker,mise $USERNAME \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME \
     # Create workspace directory
-    && mkdir -p /workspace && chown $USERNAME:$USERNAME /workspace \
+    && mkdir -p /workspace \
+    && chown $USERNAME:$USERNAME /workspace \
     # Install starship prompt
     && curl -sS https://starship.rs/install.sh | FORCE=true sh \
     && echo 'eval "$(starship init bash)"' >> /etc/bash.bashrc \
@@ -195,11 +194,6 @@ RUN groupadd --gid 2000 mise \
     && echo 'umask 002' >> /home/$USERNAME/.bashrc \
     && echo 'umask 002' >> /home/$USERNAME/.bash_profile \
     && echo 'umask 002' >> /home/$USERNAME/.profile \
-    # Set up environment for both interactive and non-interactive use
-    && echo 'export DEBIAN_FRONTEND=noninteractive' >> /home/$USERNAME/.bashrc \
-    && echo 'export TERM=xterm-256color' >> /home/$USERNAME/.bashrc \
-    && echo 'export LANG=en_US.UTF-8' >> /home/$USERNAME/.bashrc \
-    && echo 'export LC_ALL=en_US.UTF-8' >> /home/$USERNAME/.bashrc \
     # Set git safe directory for the workspace (important for devcontainers)
     && git config --global --add safe.directory /workspace \
     && git config --global --add safe.directory '*' \
@@ -236,6 +230,9 @@ ARG PYTHON_VERSION
 ARG RUBY_VERSION
 ARG GO_VERSION
 ARG LEFTHOOK_VERSION
+ARG AST_GREP_VERSION
+ARG CLAUDE_CODE_VERSION
+ARG CODEX_VERSION
 
 # Copy additional language installations from build stages
 # (python and node are already available from the standard stage)
@@ -245,10 +242,22 @@ COPY --from=go-stage $MISE_DATA_DIR/installs/go $MISE_DATA_DIR/installs/go
 
 USER root
 # Configure global tool versions in system-wide mise config 
-RUN mise use -g python@${PYTHON_VERSION} \
+RUN mise use -g \
+    python@${PYTHON_VERSION} \
     node@${NODE_VERSION} \
     ruby@${RUBY_VERSION} \
     go@${GO_VERSION} \
-    lefthook@${LEFTHOOK_VERSION}
+    lefthook@${LEFTHOOK_VERSION} \
+    ast-grep@${AST_GREP_VERSION} \
+    # Install AI Coding Agents (GitHub CLI already installed above)
+    && npm install -g @anthropic-ai/claude-code@^${CLAUDE_CODE_VERSION} @openai/codex@^${CODEX_VERSION} \
+    && gh extension install github/gh-copilot \
+    && curl -fsSL https://opencode.ai/install | bash \
+    && curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | bash \
+    # Cleanup after all installations
+    && apt-get autoremove -y \
+    && apt-get autoclean \
+    && rm -rf /var/lib/apt/lists/* /var/cache/apt/* /tmp/* /var/tmp/* \
+    && find /var/log -type f -exec truncate -s 0 {} \; 2>/dev/null || true \
 
 USER $USERNAME

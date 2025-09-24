@@ -56,10 +56,6 @@ command:
     exit-status: 0
     stdout: [ "pip" ]
 
-  "ast-grep --version":
-    exit-status: 0
-    stdout:
-      - /\d+\.\d+/
   "uv --version":
     exit-status: 0
     stdout:
