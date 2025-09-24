@@ -255,6 +255,7 @@ CMD ["/bin/bash", "--login"]
 FROM standard AS dev
 
 # Re-declare ARGs needed in this stage (inherit from global)
+ARG USERNAME
 ARG NODE_VERSION
 ARG PYTHON_VERSION
 ARG RUBY_VERSION
@@ -276,7 +277,6 @@ COPY --from=codex-stage $MISE_DATA_DIR/installs/node/$NODE_VERSION/lib/node_modu
 COPY --from=goose-stage /usr/local/bin/goose /usr/local/bin/goose
 COPY --from=opencode-stage /usr/local/bin/opencode /usr/local/bin/opencode
 
-USER root
 # Configure global tool versions in system-wide mise config 
 RUN mise use -g \
     python@${PYTHON_VERSION} \
@@ -292,3 +292,5 @@ RUN mise use -g \
     && find /var/log -type f -exec truncate -s 0 {} \; 2>/dev/null || true \
 
 USER $USERNAME
+
+WORKDIR /workspace
