@@ -57,7 +57,7 @@ jobs:
           delete-tags: ${{ steps.pattern.outputs.pattern }}
           token: ${{ secrets.GITHUB_TOKEN }}
           owner: ${{ github.repository_owner }}
-          name: ${{ github.event.repository.name }}
+          package: ${{ github.event.repository.name }}
           dry-run: true
 
       - name: Delete PR image tags
@@ -67,7 +67,7 @@ jobs:
           delete-tags: ${{ steps.pattern.outputs.pattern }}
           token: ${{ secrets.GITHUB_TOKEN }}
           owner: ${{ github.repository_owner }}
-          name: ${{ github.event.repository.name }}
+          package: ${{ github.event.repository.name }}
 
       - name: Log cleanup completion
         run: |

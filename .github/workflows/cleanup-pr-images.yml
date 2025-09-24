@@ -24,7 +24,7 @@ jobs:
           delete-tags: pr-${{ github.event.pull_request.number }}-*
           token: ${{ secrets.GITHUB_TOKEN }}
           owner: ${{ github.repository_owner }}
-          name: ${{ github.event.repository.name }}
+          package: ${{ github.event.repository.name }}
           
       - name: Log cleanup completion
         run: |
