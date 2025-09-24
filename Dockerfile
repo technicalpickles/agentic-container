@@ -142,8 +142,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get autoclean \
     && rm -rf /var/lib/apt/lists/* /var/cache/apt/* /tmp/* /var/tmp/* \
     && find /var/log -type f -exec truncate -s 0 {} \; 2>/dev/null || true \
-    && find /usr/share/doc -depth -type f ! -name copyright -delete 2>/dev/null || true \
-    && rm -rf /usr/share/man/* /usr/share/groff/* /usr/share/info/* /usr/share/lintian/* /usr/share/linda/* 2>/dev/null || true
+    && find /usr/share/doc -depth -type f ! -name copyright -delete 2>/dev/null || true 
 
 # Copy version managers and common languages from builder stage
 COPY --from=builder /usr/local/bin/mise /usr/local/bin/mise
@@ -161,20 +160,10 @@ RUN groupadd --gid 2000 mise \
     && chmod -R g+ws $MISE_DATA_DIR $MISE_CONFIG_DIR $MISE_CACHE_DIR \
     # Ensure parent directories support group creation
     && chgrp mise /usr/local/share && chmod g+ws /usr/local/share \
-    # Configure environment variables system-wide
-    && echo 'export MISE_DATA_DIR=/usr/local/share/mise' >> /etc/environment \
-    && echo 'export MISE_CONFIG_DIR=/etc/mise' >> /etc/environment \
-    && echo 'export MISE_CACHE_DIR=/tmp/mise-cache' >> /etc/environment \
-    # Add mise shims to PATH system-wide (enables tools in RUN commands without activation)
-    && echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /etc/environment \
-    && echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /etc/bash.bashrc \
-    && echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /etc/profile \
     # Set umask for group-writable files
     && echo 'umask 002' >> /etc/bash.bashrc \
     && echo 'umask 002' >> /etc/profile \
-    # Also add mise activation for interactive shell features (auto-switching, etc.)
-    && echo 'eval "$(mise activate bash)"' >> /etc/bash.bashrc \
-    && echo 'eval "$(mise activate bash)"' >> /etc/profile \
+    # install node and python globally, since frequently used for mcp
     && mise use -g node@${NODE_VERSION} python@${PYTHON_VERSION} \
     # Install agent toolchain: ast-grep for structural code search, uv for MCP server support (includes uvx), goss for testing
     && GITHUB_TOKEN=$(cat /run/secrets/github_token) mise use -g ast-grep@${AST_GREP_VERSION} uv@${UV_VERSION} goss@${GOSS_VERSION} \
@@ -188,9 +177,6 @@ RUN groupadd --gid 2000 mise \
     && apt-get autoclean \
     && rm -rf /var/lib/apt/lists/* /var/cache/apt/* /tmp/* /var/tmp/* \
     && find /var/log -type f -exec truncate -s 0 {} \; 2>/dev/null || true \
-    && find /usr/share/doc -depth -type f ! -name copyright -delete 2>/dev/null || true \
-    && rm -rf /usr/share/man/* /usr/share/groff/* /usr/share/info/* /usr/share/lintian/* /usr/share/linda/* 2>/dev/null || true \
-
     # Create user and group
     &&  groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
@@ -205,18 +191,10 @@ RUN groupadd --gid 2000 mise \
     && echo 'eval "$(starship init bash)"' >> /etc/bash.bashrc \
     # Set up enhanced shell for non-root user  
     && echo 'eval "$(starship init bash)"' >> /home/$USERNAME/.bashrc \
-    # Add mise shims to PATH in user shell files (for RUN commands)
-    && echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /home/$USERNAME/.bashrc \
-    && echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /home/$USERNAME/.bash_profile \
-    && echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /home/$USERNAME/.profile \
     # Set umask for group-writable files
     && echo 'umask 002' >> /home/$USERNAME/.bashrc \
     && echo 'umask 002' >> /home/$USERNAME/.bash_profile \
     && echo 'umask 002' >> /home/$USERNAME/.profile \
-    # Also add mise activation for interactive shell features
-    && echo 'eval "$(mise activate bash)"' >> /home/$USERNAME/.bashrc \
-    && echo 'eval "$(mise activate bash)"' >> /home/$USERNAME/.bash_profile \
-    && echo 'eval "$(mise activate bash)"' >> /home/$USERNAME/.profile \
     # Set up environment for both interactive and non-interactive use
     && echo 'export DEBIAN_FRONTEND=noninteractive' >> /home/$USERNAME/.bashrc \
     && echo 'export TERM=xterm-256color' >> /home/$USERNAME/.bashrc \
@@ -230,8 +208,6 @@ RUN groupadd --gid 2000 mise \
     && git config --global pull.rebase false \
     && git config --global core.autocrlf input
 
-# Add extension helper script
-COPY --chmod=755 scripts/extend-image.sh /usr/local/bin/extend-image
 USER $USERNAME
 
 # Set working directory
