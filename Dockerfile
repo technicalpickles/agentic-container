@@ -202,33 +202,33 @@ RUN groupadd --gid 2000 mise \
     && mkdir -p /workspace && chown $USERNAME:$USERNAME /workspace \
     # Install starship prompt
     && curl -sS https://starship.rs/install.sh | FORCE=true sh \
-    && echo 'eval "$(starship init bash)"' >> /etc/bash.bashrc && \
+    && echo 'eval "$(starship init bash)"' >> /etc/bash.bashrc \
     # Set up enhanced shell for non-root user  
-    echo 'eval "$(starship init bash)"' >> /home/$USERNAME/.bashrc && \
+    && echo 'eval "$(starship init bash)"' >> /home/$USERNAME/.bashrc \
     # Add mise shims to PATH in user shell files (for RUN commands)
-    echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /home/$USERNAME/.bashrc && \
-    echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /home/$USERNAME/.bash_profile && \
-    echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /home/$USERNAME/.profile && \
+    && echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /home/$USERNAME/.bashrc \
+    && echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /home/$USERNAME/.bash_profile \
+    && echo 'export PATH="/usr/local/share/mise/shims:$PATH"' >> /home/$USERNAME/.profile \
     # Set umask for group-writable files
-    echo 'umask 002' >> /home/$USERNAME/.bashrc && \
-    echo 'umask 002' >> /home/$USERNAME/.bash_profile && \
-    echo 'umask 002' >> /home/$USERNAME/.profile && \
+    && echo 'umask 002' >> /home/$USERNAME/.bashrc \
+    && echo 'umask 002' >> /home/$USERNAME/.bash_profile \
+    && echo 'umask 002' >> /home/$USERNAME/.profile \
     # Also add mise activation for interactive shell features
-    echo 'eval "$(mise activate bash)"' >> /home/$USERNAME/.bashrc && \
-    echo 'eval "$(mise activate bash)"' >> /home/$USERNAME/.bash_profile && \
-    echo 'eval "$(mise activate bash)"' >> /home/$USERNAME/.profile && \
+    && echo 'eval "$(mise activate bash)"' >> /home/$USERNAME/.bashrc \
+    && echo 'eval "$(mise activate bash)"' >> /home/$USERNAME/.bash_profile \
+    && echo 'eval "$(mise activate bash)"' >> /home/$USERNAME/.profile \
     # Set up environment for both interactive and non-interactive use
-    echo 'export DEBIAN_FRONTEND=noninteractive' >> /home/$USERNAME/.bashrc && \
-    echo 'export TERM=xterm-256color' >> /home/$USERNAME/.bashrc && \
-    echo 'export LANG=en_US.UTF-8' >> /home/$USERNAME/.bashrc && \
-    echo 'export LC_ALL=en_US.UTF-8' >> /home/$USERNAME/.bashrc && \
+    && echo 'export DEBIAN_FRONTEND=noninteractive' >> /home/$USERNAME/.bashrc \
+    && echo 'export TERM=xterm-256color' >> /home/$USERNAME/.bashrc \
+    && echo 'export LANG=en_US.UTF-8' >> /home/$USERNAME/.bashrc \
+    && echo 'export LC_ALL=en_US.UTF-8' >> /home/$USERNAME/.bashrc \
     # Set git safe directory for the workspace (important for devcontainers)
-    git config --global --add safe.directory /workspace && \
-    git config --global --add safe.directory '*' && \
+    && git config --global --add safe.directory /workspace \
+    && git config --global --add safe.directory '*' \
     # Configure git with reasonable defaults for devcontainers  
-    git config --global init.defaultBranch main && \
-    git config --global pull.rebase false && \
-    git config --global core.autocrlf input
+    && git config --global init.defaultBranch main \
+    && git config --global pull.rebase false \
+    && git config --global core.autocrlf input
 
 # Add extension helper script
 COPY --chmod=755 scripts/extend-image.sh /usr/local/bin/extend-image
