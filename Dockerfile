@@ -38,7 +38,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     cmake \
     curl \
     ca-certificates \
+    unzip \
     xz-utils \
+    zip \
     # Install version managers in builder stage
     && curl https://mise.run | MISE_INSTALL_PATH=/usr/local/bin/mise sh \
     # Install rv (fast precompiled Ruby binaries)
@@ -106,6 +108,10 @@ ARG GOOSE_VERSION
 ENV GOOSE_BIN_DIR=/usr/local/bin
 ENV CONFIGURE=false
 RUN curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | bash
+
+FROM builder AS opencode-stage
+RUN curl -fsSL https://opencode.ai/install | bash \
+    && mv /root/.opencode/bin/opencode /usr/local/bin/opencode
 
 # =============================================================================
 # STANDARD LAYER: Main development image with enhanced experience
@@ -270,10 +276,11 @@ ARG STARSHIP_VERSION
 COPY --from=ruby-stage $MISE_DATA_DIR/installs/ruby $MISE_DATA_DIR/installs/ruby
 COPY --from=lefthook-stage $MISE_DATA_DIR/installs/lefthook $MISE_DATA_DIR/installs/lefthook
 COPY --from=go-stage $MISE_DATA_DIR/installs/go $MISE_DATA_DIR/installs/go
-COPY --from=claude-code-stage $MISE_DATA_DIR/installs/node/$NODE_VERSION/claude-code@$CLAUDE_CODE_VERSION $MISE_DATA_DIR/installs/node/$NODE_VERSION/claude-code@$CLAUDE_CODE_VERSION
-COPY --from=codex-stage $MISE_DATA_DIR/installs/node/$NODE_VERSION/codex@$CODEX_VERSION $MISE_DATA_DIR/installs/node/$NODE_VERSION/codex@$CODEX_VERSION
-COPY --from=goose-stage $MISE_DATA_DIR/installs/goose $MISE_DATA_DIR/installs/goose
 COPY --from=ast-grep-stage $MISE_DATA_DIR/installs/ast-grep $MISE_DATA_DIR/installs/ast-grep
+COPY --from=claude-code-stage $MISE_DATA_DIR/installs/node/$NODE_VERSION/lib/node_modules/@anthropic-ai/claude-code $MISE_DATA_DIR/installs/node/$NODE_VERSION/lib/node_modules/@anthropic-ai/claude-code
+COPY --from=codex-stage $MISE_DATA_DIR/installs/node/$NODE_VERSION/lib/node_modules/@openai/codex $MISE_DATA_DIR/installs/node/$NODE_VERSION/lib/node_modules/@openai/codex
+COPY --from=goose-stage /usr/local/bin/goose /usr/local/bin/goose
+COPY --from=opencode-stage /usr/local/bin/opencode /usr/local/bin/opencode
 
 USER root
 # Configure global tool versions in system-wide mise config 
@@ -284,10 +291,6 @@ RUN mise use -g \
     go@${GO_VERSION} \
     lefthook@${LEFTHOOK_VERSION} \
     ast-grep@${AST_GREP_VERSION} \
-    # Install AI Coding Agents (GitHub CLI already installed above)
-    && gh extension install github/gh-copilot \
-    && curl -fsSL https://opencode.ai/install | bash \
-    && curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | bash \
     # Cleanup after all installations
     && apt-get autoremove -y \
     && apt-get autoclean \
