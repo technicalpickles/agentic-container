@@ -219,6 +219,8 @@ RUN groupadd --gid 2000 mise \
     && mise use -g node@${NODE_VERSION} python@${PYTHON_VERSION} starship@${STARSHIP_VERSION} \
     # Install uv for MCP server support (includes uvx), goss for testing
     && GITHUB_TOKEN=$(cat /run/secrets/github_token) mise use -g uv@${UV_VERSION} goss@${GOSS_VERSION} \
+    # Fix permissions on config files for mise group access
+    && chmod g+w $MISE_CONFIG_DIR/config.toml \
     # Create user and group
     && groupadd --gid $USER_GID $USERNAME \
     && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
@@ -285,11 +287,15 @@ RUN mise use -g \
     go@${GO_VERSION} \
     lefthook@${LEFTHOOK_VERSION} \
     ast-grep@${AST_GREP_VERSION} \
+    # Regenerate shims after installing all tools
+    && mise reshim \
+    # Fix permissions on config files for mise group access
+    && chmod g+w $MISE_CONFIG_DIR/config.toml \
     # Cleanup after all installations, just in case
     && apt-get autoremove -y \
     && apt-get autoclean \
     && rm -rf /var/lib/apt/lists/* /var/cache/apt/* /tmp/* /var/tmp/* \
-    && find /var/log -type f -exec truncate -s 0 {} \; 2>/dev/null || true \
+    && find /var/log -type f -exec truncate -s 0 {} \; 2>/dev/null || true
 
 USER $USERNAME
 
