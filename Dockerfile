@@ -14,6 +14,7 @@ ARG UV_VERSION=0.8.22
 ARG CLAUDE_CODE_VERSION=1.0.123
 ARG CODEX_VERSION=0.40.0
 ARG GOSS_VERSION=0.4.9
+ARG STARSHIP_VERSION=1.23.0
 
 FROM ubuntu:24.04 AS builder
 
@@ -21,14 +22,19 @@ FROM ubuntu:24.04 AS builder
 ARG NODE_VERSION
 ARG PYTHON_VERSION
 
-# Set mise environment for consistent installation paths
+# Set up mise for system-wide installations (optimized configuration)
 ENV MISE_DATA_DIR=/usr/local/share/mise
+ENV MISE_CONFIG_DIR=/etc/mise  
+ENV MISE_CACHE_DIR=/tmp/mise-cache
+# Add mise shims to PATH - no activation needed!
+ENV PATH="/usr/local/share/mise/shims:${PATH}"
 
 # Install build dependencies only
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 # hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    bzip2 \
     cmake \
     curl \
     ca-certificates \
@@ -51,30 +57,55 @@ FROM builder AS ruby-stage
 ARG RUBY_VERSION
 # https://endoflife.date/ruby - Install to global mise directory using rv (fast precompiled binaries)
 RUN rv ruby install --install-dir $MISE_DATA_DIR/installs/ruby/ ruby-${RUBY_VERSION} && \
-    mv $MISE_DATA_DIR/installs/ruby/ruby-${RUBY_VERSION} $MISE_DATA_DIR/installs/ruby/${RUBY_VERSION}
+    mv $MISE_DATA_DIR/installs/ruby/ruby-${RUBY_VERSION} $MISE_DATA_DIR/installs/ruby/${RUBY_VERSION} \
+    && mise use -g ruby@${RUBY_VERSION}
 
 FROM builder AS go-stage
 # Re-declare ARG for this stage (inherit from global)
 ARG GO_VERSION
 # https://endoflife.date/go - Install to global mise directory  
-RUN mise install go@${GO_VERSION}
+RUN mise use -g go@${GO_VERSION}
 
 FROM builder AS node-stage
 # Re-declare ARG for this stage (inherit from global)
 ARG NODE_VERSION
 # https://endoflife.date/nodejs - Install to global mise directory
-RUN mise install node@${NODE_VERSION}
+RUN mise use -g node@${NODE_VERSION}
 
 FROM builder AS python-stage
 # Re-declare ARG for this stage (inherit from global)
 ARG PYTHON_VERSION
 # https://endoflife.date/python - Install to global mise directory
-RUN mise install python@${PYTHON_VERSION}
+RUN mise use -g python@${PYTHON_VERSION}
 
 FROM builder AS lefthook-stage
 # Re-declare ARG for this stage (inherit from global)
 ARG LEFTHOOK_VERSION
-RUN mise install lefthook@${LEFTHOOK_VERSION}
+RUN mise use -g lefthook@${LEFTHOOK_VERSION}
+
+FROM node-stage AS claude-code-stage
+# Re-declare ARG for this stage (inherit from global)
+ARG CLAUDE_CODE_VERSION
+ARG NODE_VERSION
+RUN npm install -g @anthropic-ai/claude-code@^${CLAUDE_CODE_VERSION}
+
+FROM node-stage AS codex-stage
+ARG CODEX_VERSION
+ARG NODE_VERSION
+RUN npm install -g @openai/codex@^${CODEX_VERSION}
+
+FROM builder AS starship-stage
+RUN mise use -g starship@${STARSHIP_VERSION}
+
+FROM builder AS ast-grep-stage
+ARG AST_GREP_VERSION
+RUN mise use -g ast-grep@${AST_GREP_VERSION}
+
+FROM builder AS goose-stage
+ARG GOOSE_VERSION
+ENV GOOSE_BIN_DIR=/usr/local/bin
+ENV CONFIGURE=false
+RUN curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | bash
 
 # =============================================================================
 # STANDARD LAYER: Main development image with enhanced experience
@@ -88,6 +119,7 @@ ARG NODE_VERSION
 ARG PYTHON_VERSION
 ARG UV_VERSION
 ARG GOSS_VERSION
+ARG STARSHIP_VERSION
 
 # Create a non-root user for devcontainer use
 ARG USERNAME=agent
@@ -152,11 +184,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* /var/cache/apt/* /tmp/* /var/tmp/* \
     && find /var/log -type f -exec truncate -s 0 {} \; 2>/dev/null || true
 
+# Copy shared shell profile (early in layer for caching)
+COPY shell-profile.sh /etc/bash.bashrc
+COPY shell-profile.sh /etc/profile
+COPY --chown=$USERNAME:$USERNAME shell-profile.sh /home/$USERNAME/.bashrc
+COPY --chown=$USERNAME:$USERNAME shell-profile.sh /home/$USERNAME/.bash_profile
+COPY --chown=$USERNAME:$USERNAME shell-profile.sh /home/$USERNAME/.profile
+
 # Copy version managers and common languages from builder stage
 COPY --from=builder /usr/local/bin/mise /usr/local/bin/mise
 COPY --from=builder /usr/local/bin/rv /usr/local/bin/rv
 COPY --from=node-stage $MISE_DATA_DIR/installs/node $MISE_DATA_DIR/installs/node  
 COPY --from=python-stage $MISE_DATA_DIR/installs/python $MISE_DATA_DIR/installs/python
+COPY --from=starship-stage $MISE_DATA_DIR/installs/starship $MISE_DATA_DIR/installs/starship
 
 # Create mise group for shared access to directories and add root to it
 RUN groupadd --gid 2000 mise \
@@ -168,11 +208,8 @@ RUN groupadd --gid 2000 mise \
     && chmod -R g+ws $MISE_DATA_DIR $MISE_CONFIG_DIR $MISE_CACHE_DIR \
     # Ensure parent directories support group creation
     && chgrp mise /usr/local/share && chmod g+ws /usr/local/share \
-    # Set umask for group-writable files
-    && echo 'umask 002' >> /etc/bash.bashrc \
-    && echo 'umask 002' >> /etc/profile \
     # install node and python globally, since frequently used for mcp
-    && mise use -g node@${NODE_VERSION} python@${PYTHON_VERSION} \
+    && mise use -g node@${NODE_VERSION} python@${PYTHON_VERSION} starship@${STARSHIP_VERSION} \
     # Install uv for MCP server support (includes uvx), goss for testing
     && GITHUB_TOKEN=$(cat /run/secrets/github_token) mise use -g uv@${UV_VERSION} goss@${GOSS_VERSION} \
     # Create user and group
@@ -185,22 +222,15 @@ RUN groupadd --gid 2000 mise \
     # Create workspace directory
     && mkdir -p /workspace \
     && chown $USERNAME:$USERNAME /workspace \
-    # Install starship prompt
-    && curl -sS https://starship.rs/install.sh | FORCE=true sh \
-    && echo 'eval "$(starship init bash)"' >> /etc/bash.bashrc \
-    # Set up enhanced shell for non-root user  
-    && echo 'eval "$(starship init bash)"' >> /home/$USERNAME/.bashrc \
-    # Set umask for group-writable files
-    && echo 'umask 002' >> /home/$USERNAME/.bashrc \
-    && echo 'umask 002' >> /home/$USERNAME/.bash_profile \
-    && echo 'umask 002' >> /home/$USERNAME/.profile \
     # Set git safe directory for the workspace (important for devcontainers)
     && git config --global --add safe.directory /workspace \
     && git config --global --add safe.directory '*' \
     # Configure git with reasonable defaults for devcontainers  
     && git config --global init.defaultBranch main \
     && git config --global pull.rebase false \
-    && git config --global core.autocrlf input
+    && git config --global core.autocrlf input \
+    # make sure user owns their home directory
+    && chown -R $USERNAME:$USERNAME /home/$USERNAME
 
 USER $USERNAME
 
@@ -233,12 +263,17 @@ ARG LEFTHOOK_VERSION
 ARG AST_GREP_VERSION
 ARG CLAUDE_CODE_VERSION
 ARG CODEX_VERSION
+ARG STARSHIP_VERSION
 
 # Copy additional language installations from build stages
 # (python and node are already available from the standard stage)
 COPY --from=ruby-stage $MISE_DATA_DIR/installs/ruby $MISE_DATA_DIR/installs/ruby
 COPY --from=lefthook-stage $MISE_DATA_DIR/installs/lefthook $MISE_DATA_DIR/installs/lefthook
 COPY --from=go-stage $MISE_DATA_DIR/installs/go $MISE_DATA_DIR/installs/go
+COPY --from=claude-code-stage $MISE_DATA_DIR/installs/node/$NODE_VERSION/claude-code@$CLAUDE_CODE_VERSION $MISE_DATA_DIR/installs/node/$NODE_VERSION/claude-code@$CLAUDE_CODE_VERSION
+COPY --from=codex-stage $MISE_DATA_DIR/installs/node/$NODE_VERSION/codex@$CODEX_VERSION $MISE_DATA_DIR/installs/node/$NODE_VERSION/codex@$CODEX_VERSION
+COPY --from=goose-stage $MISE_DATA_DIR/installs/goose $MISE_DATA_DIR/installs/goose
+COPY --from=ast-grep-stage $MISE_DATA_DIR/installs/ast-grep $MISE_DATA_DIR/installs/ast-grep
 
 USER root
 # Configure global tool versions in system-wide mise config 
@@ -250,7 +285,6 @@ RUN mise use -g \
     lefthook@${LEFTHOOK_VERSION} \
     ast-grep@${AST_GREP_VERSION} \
     # Install AI Coding Agents (GitHub CLI already installed above)
-    && npm install -g @anthropic-ai/claude-code@^${CLAUDE_CODE_VERSION} @openai/codex@^${CODEX_VERSION} \
     && gh extension install github/gh-copilot \
     && curl -fsSL https://opencode.ai/install | bash \
     && curl -fsSL https://github.com/block/goose/releases/download/stable/download_cli.sh | bash \
