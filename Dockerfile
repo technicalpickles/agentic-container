@@ -227,7 +227,7 @@ RUN groupadd --gid 2000 mise \
     git config --global --add safe.directory '*' && \
     # Configure git with reasonable defaults for devcontainers  
     git config --global init.defaultBranch main && \
-    git config --global pull.rebase false &&
+    git config --global pull.rebase false && \
     git config --global core.autocrlf input
 
 # Add extension helper script
