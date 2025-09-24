@@ -1,0 +1,15 @@
+# Git configuration for agentic-container
+# This file contains global git settings applied during container setup
+
+[init]
+	defaultBranch = main
+
+[pull]
+	rebase = false
+
+[core]
+	autocrlf = input
+
+[safe]
+	directory = /workspace
+	directory = *

@@ -190,12 +190,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* /var/cache/apt/* /tmp/* /var/tmp/* \
     && find /var/log -type f -exec truncate -s 0 {} \; 2>/dev/null || true
 
-# Copy shared shell profile (early in layer for caching)
-COPY shell-profile.sh /etc/bash.bashrc
-COPY shell-profile.sh /etc/profile
-COPY --chown=$USERNAME:$USERNAME shell-profile.sh /home/$USERNAME/.bashrc
-COPY --chown=$USERNAME:$USERNAME shell-profile.sh /home/$USERNAME/.bash_profile
-COPY --chown=$USERNAME:$USERNAME shell-profile.sh /home/$USERNAME/.profile
+# Copy configuration files
+COPY config/gitconfig /etc/gitconfig
+COPY config/shell-profile.sh /etc/bash.bashrc
+COPY config/shell-profile.sh /etc/profile
+COPY --chown=$USERNAME:$USERNAME config/shell-profile.sh /home/$USERNAME/.bashrc
+COPY --chown=$USERNAME:$USERNAME config/shell-profile.sh /home/$USERNAME/.bash_profile
+COPY --chown=$USERNAME:$USERNAME config/shell-profile.sh /home/$USERNAME/.profile
 
 # Copy version managers and common languages from builder stage
 COPY --from=builder /usr/local/bin/mise /usr/local/bin/mise
@@ -228,13 +229,6 @@ RUN groupadd --gid 2000 mise \
     # Create workspace directory
     && mkdir -p /workspace \
     && chown $USERNAME:$USERNAME /workspace \
-    # Set git safe directory for the workspace (important for devcontainers)
-    && git config --global --add safe.directory /workspace \
-    && git config --global --add safe.directory '*' \
-    # Configure git with reasonable defaults for devcontainers  
-    && git config --global init.defaultBranch main \
-    && git config --global pull.rebase false \
-    && git config --global core.autocrlf input \
     # make sure user owns their home directory
     && chown -R $USERNAME:$USERNAME /home/$USERNAME
 
@@ -291,7 +285,7 @@ RUN mise use -g \
     go@${GO_VERSION} \
     lefthook@${LEFTHOOK_VERSION} \
     ast-grep@${AST_GREP_VERSION} \
-    # Cleanup after all installations
+    # Cleanup after all installations, just in case
     && apt-get autoremove -y \
     && apt-get autoclean \
     && rm -rf /var/lib/apt/lists/* /var/cache/apt/* /tmp/* /var/tmp/* \
