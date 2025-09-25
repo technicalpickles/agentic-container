@@ -11,6 +11,14 @@ command:
   "lefthook version":
     exit-status: 0
     stdout: [ /\d+\.\d+/ ]
+  "ast-grep --version":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+/
+  "opencode --version":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+/
 
 file:
   /usr/local/share/mise/installs/ruby:
@@ -20,6 +28,24 @@ file:
     exists: true
     filetype: directory
   /usr/local/share/mise/installs/lefthook:
+    exists: true
+    filetype: directory
+  /usr/local/share/mise/installs/ast-grep:
+    exists: true
+    filetype: directory
+  /usr/local/bin/goose:
+    exists: true
+    filetype: file
+    mode: "0755"
+  /usr/local/bin/opencode:
+    exists: true
+    filetype: file
+    mode: "0777"
+  # Test npm global packages are installed (directories exist)
+  /usr/local/share/mise/installs/node/24.8.0/lib/node_modules/@anthropic-ai/claude-code:
+    exists: true
+    filetype: directory
+  /usr/local/share/mise/installs/node/24.8.0/lib/node_modules/@openai/codex:
     exists: true
     filetype: directory
 

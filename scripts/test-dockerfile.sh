@@ -18,26 +18,24 @@ test_base_target() {
         fi
     else
         image_name="test-${target}:latest"
+        local build_local_script="$SCRIPT_DIR/build-local.sh"
+        
         if is_truthy "$DRY_RUN"; then
-            log_info "DRY-RUN: would build base target '$target' as $image_name"
+            log_info "DRY-RUN: would build base target '$target' as $image_name using build-local.sh"
         else
-            log_info "Building base target '$target' as $image_name"
-            # Use gh token if available
-            if [[ -n "${GITHUB_TOKEN:-}" ]] || (command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1); then
-                token_file=$(mktemp)
-                if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-                    printf '%s' "$GITHUB_TOKEN" > "$token_file"
-                else
-                    gh auth token > "$token_file"
-                fi
-                execute_or_dry_run "docker build --target \"$target\" -t \"$image_name\" --secret id=github_token,src=\"$token_file\" \"$PROJECT_ROOT\"" || { rm -f "$token_file"; log_error "Failed to build $target image"; return 1; }
-                rm -f "$token_file"
-            else
-                if ! execute_or_dry_run "docker build --target \"$target\" -t \"$image_name\" \"$PROJECT_ROOT\""; then
-                    log_error "Failed to build $target image"; return 1; 
-                fi
+            # Verify build-local.sh exists
+            if [[ ! -f "$build_local_script" ]]; then
+                log_error "build-local.sh not found at: $build_local_script"
+                return 1
             fi
-            log_success "Build successful: $image_name"
+            
+            log_info "Building base target '$target' as $image_name using build-local.sh"
+            if "$build_local_script" "$target" "$image_name"; then
+                log_success "Build successful: $image_name"
+            else
+                log_error "Failed to build $target image"
+                return 1
+            fi
         fi
     fi
 
@@ -71,6 +69,7 @@ test_base_target() {
     docker_cmd="$docker_cmd \"$image_name\" bash -c '"
     docker_cmd="$docker_cmd set -euo pipefail; "
     docker_cmd="$docker_cmd if ! command -v goss >/dev/null 2>&1; then mise use -g goss@latest || mise use -g goss@0.4.9; fi; "
+    docker_cmd="$docker_cmd mise reshim; "
     docker_cmd="$docker_cmd echo \"📋 Running goss tests for base target...\"; "
     if [[ "$target" == "dev" ]]; then
         docker_cmd="$docker_cmd goss -g /tmp/goss-base-common.yaml -g /tmp/goss-base-standard.yaml -g /tmp/goss-base-dev.yaml validate --format documentation --color"
@@ -233,6 +232,7 @@ EOF
 ensure_base_image() {
     local base_dockerfile="$PROJECT_ROOT/Dockerfile"
     local base_image="agentic-container:latest"
+    local build_local_script="$SCRIPT_DIR/build-local.sh"
     
     if is_truthy "$DRY_RUN"; then
         log_info "DRY-RUN: would ensure base image '$base_image' is up to date (skipping)"
@@ -245,47 +245,20 @@ ensure_base_image() {
         return 0
     fi
     
-    # Check for GitHub token access (local development or CI)
-    local has_gh_token=false
-    local github_token_source=""
-    
-    if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-        # GitHub Actions environment
-        has_gh_token=true
-        github_token_source="GITHUB_TOKEN environment variable"
-    elif command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
-        # Local development with gh CLI
-        has_gh_token=true
-        github_token_source="gh auth token"
+    # Verify build-local.sh exists
+    if [[ ! -f "$build_local_script" ]]; then
+        log_error "build-local.sh not found at: $build_local_script"
+        exit 1
     fi
     
     # Check if base image exists
     if ! docker image inspect "$base_image" >/dev/null 2>&1; then
-        log_info "Base image '$base_image' not found, building..."
-        if [[ "$has_gh_token" == true ]]; then
-            log_info "Using GitHub token via secret mounting to avoid API rate limits ($github_token_source)"
-            token_file=$(mktemp)
-            if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-                printf '%s' "$GITHUB_TOKEN" > "$token_file"
-            else
-                gh auth token > "$token_file"
-            fi
-            if docker build -f "$base_dockerfile" -t "$base_image" --secret id=github_token,src="$token_file" "$PROJECT_ROOT"; then
-                rm -f "$token_file"
-                log_success "Base image built successfully"
-            else
-                rm -f "$token_file"
-                log_error "Failed to build base image"
-                exit 1
-            fi
+        log_info "Base image '$base_image' not found, building using build-local.sh..."
+        if "$build_local_script" standard "$base_image"; then
+            log_success "Base image built successfully"
         else
-            log_warning "No GitHub token available, may hit API rate limits"
-            if docker build -f "$base_dockerfile" -t "$base_image" "$PROJECT_ROOT"; then
-                log_success "Base image built successfully"
-            else
-                log_error "Failed to build base image"
-                exit 1
-            fi
+            log_error "Failed to build base image"
+            exit 1
         fi
         return
     fi
@@ -295,31 +268,12 @@ ensure_base_image() {
     local image_time=$(docker image inspect "$base_image" --format '{{.Created}}' | xargs -I {} date -d {} +%s 2>/dev/null || docker image inspect "$base_image" --format '{{.Created}}' | xargs -I {} date -j -f '%Y-%m-%dT%H:%M:%S' {} +%s 2>/dev/null || echo 0)
     
     if [[ "$dockerfile_time" -gt "$image_time" ]]; then
-        log_info "Base Dockerfile is newer than image, rebuilding..."
-        if [[ "$has_gh_token" == true ]]; then
-            log_info "Using GitHub token via secret mounting to avoid API rate limits ($github_token_source)"
-            token_file=$(mktemp)
-            if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-                printf '%s' "$GITHUB_TOKEN" > "$token_file"
-            else
-                gh auth token > "$token_file"
-            fi
-            if docker build -f "$base_dockerfile" -t "$base_image" --secret id=github_token,src="$token_file" "$PROJECT_ROOT"; then
-                rm -f "$token_file"
-                log_success "Base image rebuilt successfully"
-            else
-                rm -f "$token_file"
-                log_error "Failed to rebuild base image"
-                exit 1
-            fi
+        log_info "Base Dockerfile is newer than image, rebuilding using build-local.sh..."
+        if "$build_local_script" standard "$base_image"; then
+            log_success "Base image rebuilt successfully"
         else
-            log_warning "No GitHub token available, may hit API rate limits"
-            if docker build -f "$base_dockerfile" -t "$base_image" "$PROJECT_ROOT"; then
-                log_success "Base image rebuilt successfully"
-            else
-                log_error "Failed to rebuild base image"
-                exit 1
-            fi
+            log_error "Failed to rebuild base image"
+            exit 1
         fi
     else
         log_info "Base image is up to date"
@@ -439,6 +393,7 @@ test_comprehensive_validation() {
         docker_cmd="$docker_cmd if ! command -v goss >/dev/null 2>&1; then "
         docker_cmd="$docker_cmd mise use -g goss@latest || mise use -g goss@0.4.9; "
         docker_cmd="$docker_cmd fi; "
+        docker_cmd="$docker_cmd mise reshim; "
         docker_cmd="$docker_cmd echo \"📋 Running goss tests with pre-installed goss...\"; "
         # Run validation with multiple goss files if mounted
         docker_cmd="$docker_cmd if [ -f /tmp/goss-base-common.yaml ] && [ -f /tmp/goss-base-dev.yaml ] && [ -f /tmp/goss-base-standard.yaml ]; then "

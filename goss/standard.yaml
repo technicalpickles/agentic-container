@@ -56,10 +56,6 @@ command:
     exit-status: 0
     stdout: [ "pip" ]
 
-  "ast-grep --version":
-    exit-status: 0
-    stdout:
-      - /\d+\.\d+/
   "uv --version":
     exit-status: 0
     stdout:
@@ -73,6 +69,17 @@ command:
     exit-status: 0
     stdout:
       - /\d+\.\d+/
+  # Test that umask is properly set via shell profile (requires sourcing bashrc)
+  "bash -c 'source /etc/bash.bashrc && umask'":
+    exit-status: 0
+    stdout: [ "0002" ]
+  # Test that mise is available (installed directly, not via shim)
+  "bash -c 'command -v mise'":
+    exit-status: 0
+    stdout: [ "/usr/local/bin/mise" ]
+  # Test that starship is available (exit code only, path may vary)
+  "which starship":
+    exit-status: 0
 
 file:
   /workspace:
@@ -87,6 +94,27 @@ file:
   /home/agent:
     exists: true
     filetype: directory
+  # Test that shell-profile.sh is copied to all shell init locations
+  /etc/bash.bashrc:
+    exists: true
+    filetype: file
+    contents: [ "umask 002", "mise activate bash", "starship init bash" ]
+  /etc/profile:
+    exists: true
+    filetype: file
+    contents: [ "umask 002", "mise activate bash", "starship init bash" ]
+  /home/agent/.bashrc:
+    exists: true
+    filetype: file
+    contents: [ "umask 002", "mise activate bash", "starship init bash" ]
+  /home/agent/.bash_profile:
+    exists: true
+    filetype: file
+    contents: [ "umask 002", "mise activate bash", "starship init bash" ]
+  /home/agent/.profile:
+    exists: true
+    filetype: file
+    contents: [ "umask 002", "mise activate bash", "starship init bash" ]
 
 user:
   agent:
@@ -108,5 +136,6 @@ env:
     value: "/tmp/mise-cache"
   PATH:
     contains: [ "/usr/local/share/mise/shims" ]
+
 
 
