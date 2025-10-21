@@ -40,12 +40,12 @@ file:
   /usr/local/bin/opencode:
     exists: true
     filetype: file
-    mode: "0777"
+    mode: "0755"
   # Test npm global packages are installed (directories exist)
-  /usr/local/share/mise/installs/node/24.8.0/lib/node_modules/@anthropic-ai/claude-code:
+  /usr/local/share/mise/installs/node/{{.Env.NODE_VERSION}}/lib/node_modules/@anthropic-ai/claude-code:
     exists: true
     filetype: directory
-  /usr/local/share/mise/installs/node/24.8.0/lib/node_modules/@openai/codex:
+  /usr/local/share/mise/installs/node/{{.Env.NODE_VERSION}}/lib/node_modules/@openai/codex:
     exists: true
     filetype: directory
 
