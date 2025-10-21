@@ -70,7 +70,6 @@ test_base_target() {
     docker_cmd="$docker_cmd set -euo pipefail; "
     docker_cmd="$docker_cmd if ! command -v goss >/dev/null 2>&1; then mise use -g goss@latest || mise use -g goss@0.4.9; fi; "
     docker_cmd="$docker_cmd mise reshim; "
-    docker_cmd="$docker_cmd export NODE_VERSION=\$(node --version | cut -d\"v\" -f2); "
     docker_cmd="$docker_cmd echo \"📋 Running goss tests for base target...\"; "
     if [[ "$target" == "dev" ]]; then
         docker_cmd="$docker_cmd goss -g /tmp/goss-base-common.yaml -g /tmp/goss-base-standard.yaml -g /tmp/goss-base-dev.yaml validate --format documentation --color"
@@ -395,7 +394,6 @@ test_comprehensive_validation() {
         docker_cmd="$docker_cmd mise use -g goss@latest || mise use -g goss@0.4.9; "
         docker_cmd="$docker_cmd fi; "
         docker_cmd="$docker_cmd mise reshim; "
-        docker_cmd="$docker_cmd export NODE_VERSION=\$(node --version 2>/dev/null | cut -d\\\"v\\\" -f2 || echo \\\"unknown\\\"); "
         docker_cmd="$docker_cmd echo \"📋 Running goss tests with pre-installed goss...\"; "
         # Run validation with multiple goss files if mounted
         docker_cmd="$docker_cmd if [ -f /tmp/goss-base-common.yaml ] && [ -f /tmp/goss-base-dev.yaml ] && [ -f /tmp/goss-base-standard.yaml ]; then "

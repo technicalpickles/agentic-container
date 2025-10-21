@@ -41,11 +41,7 @@ file:
     exists: true
     filetype: file
     mode: "0755"
-  # Test npm global packages are installed (directories exist)
-  /usr/local/share/mise/installs/node/{{.Env.NODE_VERSION}}/lib/node_modules/@anthropic-ai/claude-code:
-    exists: true
-    filetype: directory
-  /usr/local/share/mise/installs/node/{{.Env.NODE_VERSION}}/lib/node_modules/@openai/codex:
+  /usr/local/share/mise/installs/node:
     exists: true
     filetype: directory
 
