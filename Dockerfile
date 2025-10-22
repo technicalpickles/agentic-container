@@ -164,6 +164,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     dumb-init \
     sudo \
     procps \
+    # Runtime libraries
+    libatomic1 \
     # Locale support
     locales \
     # Development tools
