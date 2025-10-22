@@ -19,6 +19,14 @@ command:
     exit-status: 0
     stdout:
       - /\d+\.\d+/
+  "claude --version":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+/
+  "codex --version":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+/
 
 file:
   /usr/local/share/mise/installs/ruby:

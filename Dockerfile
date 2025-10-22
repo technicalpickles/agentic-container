@@ -85,16 +85,14 @@ FROM builder AS lefthook-stage
 ARG LEFTHOOK_VERSION
 RUN mise use -g lefthook@${LEFTHOOK_VERSION}
 
-FROM node-stage AS claude-code-stage
-# Re-declare ARG for this stage (inherit from global)
+FROM node-stage AS npm-globals-stage
+# Re-declare ARGs for this stage (inherit from global)
 ARG CLAUDE_CODE_VERSION
-ARG NODE_VERSION
-RUN npm install -g @anthropic-ai/claude-code@^${CLAUDE_CODE_VERSION}
-
-FROM node-stage AS codex-stage
 ARG CODEX_VERSION
 ARG NODE_VERSION
-RUN npm install -g @openai/codex@^${CODEX_VERSION}
+# Install all npm global packages sequentially so npm manages all bin symlinks
+RUN npm install -g @anthropic-ai/claude-code@^${CLAUDE_CODE_VERSION} \
+    && npm install -g @openai/codex@^${CODEX_VERSION}
 
 FROM builder AS starship-stage
 RUN mise use -g starship@${STARSHIP_VERSION}
@@ -274,12 +272,13 @@ COPY --from=ruby-stage $MISE_DATA_DIR/installs/ruby $MISE_DATA_DIR/installs/ruby
 COPY --from=lefthook-stage $MISE_DATA_DIR/installs/lefthook $MISE_DATA_DIR/installs/lefthook
 COPY --from=go-stage $MISE_DATA_DIR/installs/go $MISE_DATA_DIR/installs/go
 COPY --from=ast-grep-stage $MISE_DATA_DIR/installs/ast-grep $MISE_DATA_DIR/installs/ast-grep
-COPY --from=claude-code-stage $MISE_DATA_DIR/installs/node/$NODE_VERSION/lib/node_modules/@anthropic-ai/claude-code $MISE_DATA_DIR/installs/node/$NODE_VERSION/lib/node_modules/@anthropic-ai/claude-code
-COPY --from=codex-stage $MISE_DATA_DIR/installs/node/$NODE_VERSION/lib/node_modules/@openai/codex $MISE_DATA_DIR/installs/node/$NODE_VERSION/lib/node_modules/@openai/codex
+# Copy npm global packages from combined stage (symlinks will be recreated below)
+COPY --from=npm-globals-stage $MISE_DATA_DIR/installs/node/$NODE_VERSION/lib/node_modules/@anthropic-ai/claude-code $MISE_DATA_DIR/installs/node/$NODE_VERSION/lib/node_modules/@anthropic-ai/claude-code
+COPY --from=npm-globals-stage $MISE_DATA_DIR/installs/node/$NODE_VERSION/lib/node_modules/@openai/codex $MISE_DATA_DIR/installs/node/$NODE_VERSION/lib/node_modules/@openai/codex
 COPY --from=goose-stage /usr/local/bin/goose /usr/local/bin/goose
 COPY --from=opencode-stage /usr/local/bin/opencode /usr/local/bin/opencode
 
-# Configure global tool versions in system-wide mise config 
+# Configure global tool versions in system-wide mise config
 RUN mise use -g \
     python@${PYTHON_VERSION} \
     node@${NODE_VERSION} \
@@ -287,15 +286,20 @@ RUN mise use -g \
     go@${GO_VERSION} \
     lefthook@${LEFTHOOK_VERSION} \
     ast-grep@${AST_GREP_VERSION} \
-    # Regenerate shims after installing all tools
+    # Regenerate shims after configuring tools
     && mise reshim \
     # Fix permissions on config files for mise group access
     && chmod g+w $MISE_CONFIG_DIR/config.toml \
-    # Cleanup after all installations, just in case
+    # Cleanup after all installations
     && apt-get autoremove -y \
     && apt-get autoclean \
     && rm -rf /var/lib/apt/lists/* /var/cache/apt/* /tmp/* /var/tmp/* \
     && find /var/log -type f -exec truncate -s 0 {} \; 2>/dev/null || true
+
+# Create bin symlinks for npm global packages (Docker COPY follows symlinks, so we recreate them here)
+RUN mkdir -p $MISE_DATA_DIR/installs/node/$NODE_VERSION/bin \
+    && ln -sf ../lib/node_modules/@anthropic-ai/claude-code/cli.js $MISE_DATA_DIR/installs/node/$NODE_VERSION/bin/claude \
+    && ln -sf ../lib/node_modules/@openai/codex/bin/codex.js $MISE_DATA_DIR/installs/node/$NODE_VERSION/bin/codex
 
 USER $USERNAME
 
