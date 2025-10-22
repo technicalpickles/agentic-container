@@ -19,6 +19,14 @@ command:
     exit-status: 0
     stdout:
       - /\d+\.\d+/
+  "claude --version":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+/
+  "codex --version":
+    exit-status: 0
+    stdout:
+      - /\d+\.\d+/
 
 file:
   /usr/local/share/mise/installs/ruby:
@@ -40,12 +48,8 @@ file:
   /usr/local/bin/opencode:
     exists: true
     filetype: file
-    mode: "0777"
-  # Test npm global packages are installed (directories exist)
-  /usr/local/share/mise/installs/node/24.8.0/lib/node_modules/@anthropic-ai/claude-code:
-    exists: true
-    filetype: directory
-  /usr/local/share/mise/installs/node/24.8.0/lib/node_modules/@openai/codex:
+    mode: "0755"
+  /usr/local/share/mise/installs/node:
     exists: true
     filetype: directory
 
