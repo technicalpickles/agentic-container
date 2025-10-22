@@ -4,7 +4,7 @@
 # =============================================================================
 
 # Build arguments for language versions and agent tools (can be overridden during build)
-ARG NODE_VERSION=24.8.0
+ARG NODE_VERSION=24.10.0
 ARG PYTHON_VERSION=3.14.0
 ARG RUBY_VERSION=3.4.5
 ARG GO_VERSION=1.25.3
