@@ -16,7 +16,7 @@ jobs:
       any-code: ${{ steps.changes.outputs.any-code }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -77,7 +77,7 @@ jobs:
     if: needs.detect-lint-changes.outputs.dockerfiles == 'true'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Lint all Dockerfiles with Hadolint
         uses: jbergstroem/hadolint-gh-action@v1.13.0
@@ -93,7 +93,7 @@ jobs:
     if: needs.detect-lint-changes.outputs.yaml-files == 'true'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Run yamllint
         uses: ibiqlik/action-yamllint@v3.1.1
@@ -112,7 +112,7 @@ jobs:
       actions: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Install Trivy
         uses: aquasecurity/setup-trivy@v0.2.4
