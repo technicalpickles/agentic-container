@@ -2,10 +2,8 @@ name: Validate Renovate Configuration
 
 on:
   push:
-    paths: [".github/renovate.json5", "scripts/validate-renovate.sh"]
     branches: [main, renovate/**]
   pull_request:
-    paths: [".github/renovate.json5", "scripts/validate-renovate.sh"]
     branches: [main]
   # Weekly validation to catch configuration drift
   schedule:
@@ -17,9 +15,54 @@ env:
   RENOVATE_CONFIG_MIGRATION: false
 
 jobs:
+  detect-changes:
+    name: Detect Renovate Changes
+    runs-on: ubuntu-latest
+    outputs:
+      renovate-files: ${{ steps.changes.outputs.renovate-files }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect file changes
+        id: changes
+        run: |
+          # Get the base commit for comparison
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          elif [[ "${{ github.event_name }}" == "schedule" ]]; then
+            # For scheduled runs, always validate
+            echo "renovate-files=true" >> $GITHUB_OUTPUT
+            echo "Schedule trigger - will validate"
+            exit 0
+          else
+            # For push events, compare with previous commit
+            BASE_SHA="${{ github.event.before }}"
+            HEAD_SHA="${{ github.sha }}"
+          fi
+
+          # Get list of changed files
+          CHANGED_FILES=$(git diff --name-only $BASE_SHA..$HEAD_SHA)
+
+          # Check if Renovate files changed
+          RENOVATE_FILES=false
+          while IFS= read -r file; do
+            if [[ "$file" == ".github/renovate.json5" ]] || [[ "$file" == "scripts/validate-renovate.sh" ]]; then
+              RENOVATE_FILES=true
+            fi
+          done <<< "$CHANGED_FILES"
+
+          echo "renovate-files=$RENOVATE_FILES" >> $GITHUB_OUTPUT
+          echo "Renovate file changes: $RENOVATE_FILES"
+
   validate-config:
     name: Validate Renovate Configuration
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: always()
     timeout-minutes: 10
 
     permissions:
@@ -33,5 +76,23 @@ jobs:
           # Full history needed to detect changes
           fetch-depth: 0
 
+      - name: Check if validation needed
+        id: check
+        run: |
+          if [[ "${{ needs.detect-changes.outputs.renovate-files }}" == "true" ]]; then
+            echo "should-validate=true" >> $GITHUB_OUTPUT
+            echo "✅ Renovate files changed - validation required"
+          else
+            echo "should-validate=false" >> $GITHUB_OUTPUT
+            echo "⏭️  No Renovate changes - validation not required"
+          fi
+
       - name: Run validation (Docker-only)
+        if: steps.check.outputs.should-validate == 'true'
         run: ./scripts/validate-renovate.sh
+
+      - name: Report skipped
+        if: steps.check.outputs.should-validate == 'false'
+        run: |
+          echo "✅ No Renovate configuration changes detected"
+          echo "Validation skipped - not applicable to this PR"
