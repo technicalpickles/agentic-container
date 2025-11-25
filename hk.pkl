@@ -1,0 +1,64 @@
+amends "package://github.com/jdx/hk/releases/download/v1.20.0/hk@1.20.0#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v1.20.0/hk@1.20.0#/Builtins.pkl"
+
+// Fast linters for pre-commit - catch errors before CI
+local preCommitLinters = new Mapping<String, Step> {
+    // Instant checks - prevent obvious mistakes
+    ["check-merge-conflict"] = Builtins.check_merge_conflict
+    ["check-symlinks"] = Builtins.check_symlinks
+    ["mixed-line-ending"] = Builtins.mixed_line_ending
+    ["trailing-whitespace"] = Builtins.trailing_whitespace
+
+    // Fast formatters - auto-fixable
+    ["prettier"] {
+        glob = "*.{js,jsx,mjs,cjs,ts,tsx,mts,cts,json,json5,yaml,yml,md,mdx}"
+        check = "npx prettier --check {{files}}"
+        fix = "npx prettier --write {{files}}"
+    }
+
+    // Fast linters - match CI checks
+    ["hadolint"] {
+        glob = "**/Dockerfile*"
+        check = "hadolint --config .hadolint.yaml {{files}}"
+    }
+    ["yamllint"] = Builtins.yamllint
+
+    // Validate pkl config itself
+    ["pkl"] {
+        glob = "*.pkl"
+        check = "pkl eval {{files}} >/dev/null"
+    }
+}
+
+// Slower checks for pre-push - more thorough validation
+local prePushLinters = new Mapping<String, Step> {
+    ...preCommitLinters // Include all pre-commit checks
+
+    ["renovate-validator"] {
+        glob = ".github/renovate.json5"
+        check = "./scripts/validate-renovate.sh --quick"
+        batch = false
+    }
+}
+
+hooks {
+    ["pre-commit"] {
+        fix = true    // automatically fix formatting issues
+        stash = "git" // stash unstaged changes while running fixes
+        steps = preCommitLinters
+    }
+
+    ["pre-push"] {
+        fix = false   // don't auto-fix on push, just validate
+        steps = prePushLinters
+    }
+
+    // Manual commands
+    ["fix"] {
+        fix = true
+        steps = preCommitLinters
+    }
+    ["check"] {
+        steps = prePushLinters
+    }
+}

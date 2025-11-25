@@ -27,7 +27,7 @@ if [[ "${1:-}" == "--help" ]] || [[ "${1:-}" == "-h" ]]; then
     echo "    builder           Base Ubuntu build stage with common tools"
     echo "  Language stages:"
     echo "    ruby-stage        Ruby development environment"
-    echo "    go-stage          Go development environment"  
+    echo "    go-stage          Go development environment"
     echo "    node-stage        Node.js development environment"
     echo "    python-stage      Python development environment"
     echo "  Tool stages:"
@@ -89,7 +89,7 @@ if [[ $DASH_DASH_INDEX -gt 0 ]]; then
     if [[ $DASH_DASH_INDEX -gt 2 ]]; then
         TAG="${2:-}"
     fi
-    
+
     # Capture command arguments (everything after --)
     shift $DASH_DASH_INDEX
     COMMAND_ARGS=("$@")
@@ -97,7 +97,7 @@ else
     # No -- found, use old behavior for backward compatibility
     TARGET_OR_COOKBOOK="${1:-standard}"
     TAG="${2:-}"
-    
+
     # Capture command arguments (everything after the second argument)
     if [[ $# -gt 2 ]]; then
         shift 2
@@ -109,12 +109,12 @@ fi
 validate_target() {
     local target="$1"
     local dockerfile="Dockerfile"
-    
+
     if [[ ! -f "$dockerfile" ]]; then
         echo "❌ Error: Dockerfile not found in current directory"
         exit 1
     fi
-    
+
     # Check if the target exists as a stage in the Dockerfile
     if ! grep -q "^FROM .* AS $target$" "$dockerfile"; then
         echo "❌ Error: Target '$target' not found in Dockerfile"
@@ -143,7 +143,7 @@ if [[ -d "$COOKBOOK_DIR" ]]; then
 else
     # It's a target - validate it exists
     validate_target "$TARGET_OR_COOKBOOK"
-    
+
     if [[ -z "$TAG" ]]; then
         TAG="agentic-container-${TARGET_OR_COOKBOOK}:local"
     fi
@@ -197,7 +197,7 @@ if [[ ${#COMMAND_ARGS[@]} -gt 0 ]]; then
     fi
     echo "⚡ Command: ${COMMAND_ARGS[*]}"
     echo ""
-    
+
     docker run --rm \
         --name "agentic-command-$(date +%s)" \
         "$TAG" \
@@ -236,7 +236,7 @@ else
             echo "  mise current     - Show active tool versions"
             echo "  exit             - Leave container (will be auto-removed)"
             echo ""
-            
+
             # Start interactive bash session
             exec /bin/bash
         '

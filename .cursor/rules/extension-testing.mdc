@@ -55,7 +55,7 @@ cd docs/cookbooks
 docker build --target standard -t agentic-container:latest .
 
 # Then test the extension:
-cd docs/cookbooks  
+cd docs/cookbooks
 ./test-extensions.sh {example}/Dockerfile --cleanup
 ```
 
@@ -97,12 +97,12 @@ hadolint docs/cookbooks/{example}/Dockerfile
 ### Node.js Extensions
 ```dockerfile
 # Add npm packages as root
-USER root  
+USER root
 RUN npm install -g {packages}
 USER agent
 ```
 
-### Python Extensions  
+### Python Extensions
 ```dockerfile
 # Python runtime already available in base
 RUN pip install --no-cache-dir {packages}
@@ -130,14 +130,14 @@ USER agent
 ## 6. What the Test Script Validates
 
 The `test-extensions.sh` automatically checks:
-- ✅ Container builds successfully  
+- ✅ Container builds successfully
 - ✅ Container starts and runs basic commands
 - ✅ mise version manager functionality
-- ✅ Working directory accessibility  
+- ✅ Working directory accessibility
 - ✅ Non-root user execution
 - ✅ Package-specific validation based on Dockerfile content:
   - npm packages and TypeScript compiler (if npm install detected)
-  - pip packages and Python functionality (if pip install detected)  
+  - pip packages and Python functionality (if pip install detected)
   - Ruby interpreter and Rails (if gem install detected)
   - Go compiler (if go commands detected)
   - Common development tools (git, curl, etc.)
@@ -161,7 +161,7 @@ The `test-extensions.sh` automatically checks:
 
 Before committing any extension:
 - [ ] Extension is in `docs/cookbooks/{name}/Dockerfile`
-- [ ] Uses build arguments for version management  
+- [ ] Uses build arguments for version management
 - [ ] Passes `hadolint docs/cookbooks/{name}/Dockerfile`
 - [ ] Passes `./test-extensions.sh {name}/Dockerfile --cleanup`
 - [ ] Follows established USER root/agent patterns
@@ -177,7 +177,7 @@ All cookbook examples are automatically:
 ## 10. When NOT to Create a Cookbook
 
 - Simple one-liner installations that don't demonstrate patterns
-- Temporary testing or debugging Dockerfiles  
+- Temporary testing or debugging Dockerfiles
 - Personal customizations not useful to other users
 
 ## Remember

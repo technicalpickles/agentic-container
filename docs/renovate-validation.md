@@ -1,6 +1,7 @@
 # Renovate Configuration Validation
 
-This document provides a comprehensive guide to validating Renovate configurations both locally and in CI/CD pipelines.
+This document provides a comprehensive guide to validating Renovate
+configurations both locally and in CI/CD pipelines.
 
 ## Quick Start
 
@@ -10,7 +11,7 @@ This document provides a comprehensive guide to validating Renovate configuratio
 # Quick validation (syntax + official validator) - ~10 seconds
 ./scripts/validate-renovate.sh --quick
 
-# Full validation (includes pattern testing) - ~30 seconds  
+# Full validation (includes pattern testing) - ~30 seconds
 ./scripts/validate-renovate.sh
 
 # Pattern-only validation (for debugging)
@@ -30,37 +31,43 @@ pre-commit run --files .github/renovate.json5
 
 ## Validation Layers
 
-Our validation strategy includes multiple layers to ensure configuration quality:
+Our validation strategy includes multiple layers to ensure configuration
+quality:
 
 ### 1. Syntax Validation
+
 - **Tool**: `json5` npm package
 - **Purpose**: Ensures JSON5 format is valid
 - **Speed**: Very fast (~1s)
 
 ### 2. Official Validation
+
 - **Tool**: `renovate-config-validator` via Docker
 - **Purpose**: Renovate's built-in validation
-- **Catches**: Schema errors, deprecated options, invalid configurations  
+- **Catches**: Schema errors, deprecated options, invalid configurations
 - **Speed**: Fast (~5s)
 - **Reliability**: No Node.js ES module conflicts
 
 ### 3. Pattern Validation
+
 - **Tool**: Custom scripts with grep/regex
 - **Purpose**: Tests that custom managers will match actual files
-- **Validates**: 
+- **Validates**:
   - Dockerfile ARG patterns (`ARG NODE_VERSION=`, etc.)
-  - Script version patterns  
+  - Script version patterns
   - GitHub Actions version patterns
   - mise.toml tool versions
 
 ### 4. Security Scanning
-- **Checks**: 
+
+- **Checks**:
   - Automerge safety (patch-only)
   - Reasonable rate limits
   - Update scheduling
   - Dependency dashboard enabled
 
 ### 5. Coverage Analysis
+
 - **Purpose**: Ensures all version declarations have corresponding patterns
 - **Reports**: Files with versions vs. configured patterns
 
@@ -82,6 +89,7 @@ When adding new tools or version patterns:
 4. **Verify in CI** that new patterns are detected
 
 Example:
+
 ```javascript
 // 1. Add to renovate.json5 customManagers
 {
@@ -103,12 +111,14 @@ echo "ARG NEW_TOOL_VERSION=1.2.3" >> Dockerfile
 Our workflow (`.github/workflows/validate-renovate.yml`) runs:
 
 **Triggered on:**
+
 - Push to `main` or `renovate/**` branches (when config files change)
-- Pull requests (when config files change)  
+- Pull requests (when config files change)
 - Weekly schedule (Monday 6 AM) - configuration drift detection
 - Manual workflow dispatch
 
 **Jobs:**
+
 - **Full validation**: Runs comprehensive validation using Docker-only approach
 - **Timeout protection**: 10-minute limit prevents hanging
 - **Smart triggering**: Only runs on relevant file changes
@@ -130,7 +140,7 @@ We provide convenient wrapper scripts in `bin/` that hide Docker complexity:
 # Validate default config (.github/renovate.json5)
 ./bin/renovate-config-validator
 
-# Validate specific config file  
+# Validate specific config file
 ./bin/renovate-config-validator path/to/renovate.json
 
 # Via npm script
@@ -146,7 +156,7 @@ npm run renovate-config-validator
 # Dry run (requires GITHUB_TOKEN)
 GITHUB_TOKEN=your_token ./bin/renovate --dry-run repo-name
 
-# Via npm script  
+# Via npm script
 npm run renovate -- --version
 ```
 
@@ -155,7 +165,7 @@ npm run renovate -- --version
 The wrappers automatically pass through these environment variables:
 
 - `GITHUB_TOKEN`
-- `RENOVATE_TOKEN` 
+- `RENOVATE_TOKEN`
 - `LOG_LEVEL`
 - `RENOVATE_CONFIG_FILE`
 - `RENOVATE_DRY_RUN`
@@ -194,6 +204,7 @@ The wrappers automatically pass through these environment variables:
 ### Common Issues
 
 **"Renovate configuration validation failed"**
+
 ```bash
 # Run detailed validation with Docker
 ./bin/renovate-config-validator
@@ -203,11 +214,13 @@ docker run --rm -v "$PWD:/usr/src/app" ghcr.io/renovatebot/renovate:latest renov
 ```
 
 **"No custom patterns detected"**
+
 - Verify your Dockerfile has `ARG VERSION=` declarations
 - Check that file paths match the `fileMatch` patterns
 - Run pattern validation: `./scripts/validate-renovate.sh --pattern-only`
 
 **"Pre-commit hook failing"**
+
 ```bash
 # Update pre-commit hooks
 pre-commit autoupdate
@@ -217,6 +230,7 @@ pre-commit run renovate-config-validator --files .github/renovate.json5
 ```
 
 **ES Module Conflicts (Historical)**
+
 - **Issue**: `Error [ERR_REQUIRE_ESM]: require() of ES Module ... not supported`
 - **Solution**: Our Docker-only approach eliminates all ES module conflicts
 - **Status**: ✅ Resolved - no longer an issue
@@ -241,22 +255,26 @@ docker run --rm -v "$PWD:/usr/src/app" ghcr.io/renovatebot/renovate:latest renov
 
 - **Pattern validation**: < 30 seconds, minimal resources
 - **Full validation**: 30-60 seconds, requires Docker and network access
-- **Weekly validation**: Detects configuration drift without development overhead
+- **Weekly validation**: Detects configuration drift without development
+  overhead
 - **CI timeout**: 10-minute limit prevents hanging builds
 
 ## Integration with Development Workflow
 
 ### During Development
+
 1. Use `--quick` mode for fast feedback
 2. Pre-commit hooks catch issues early
 3. Full validation before pushing complex changes
 
 ### During PR Review
+
 1. GitHub Actions runs full validation automatically
 2. Check validation status in PR checks
 3. Review security and coverage reports in output
 
 ### After Merge
+
 1. Weekly validation ensures ongoing configuration health
 2. Renovate App uses validated configuration
 3. Monitor dependency dashboard for actual update behavior
@@ -264,6 +282,7 @@ docker run --rm -v "$PWD:/usr/src/app" ghcr.io/renovatebot/renovate:latest renov
 ## Maintenance
 
 ### Regular Tasks
+
 - **Weekly**: Review validation results from scheduled runs
 - **Monthly**: Update validation patterns for new tools
 - **Quarterly**: Review and optimize validation performance
@@ -277,4 +296,5 @@ To add validation for new pattern types:
 3. **Verify in CI** that new patterns are detected
 4. **Update documentation** if needed
 
-This comprehensive validation approach ensures configuration quality while maintaining developer productivity and CI efficiency.
+This comprehensive validation approach ensures configuration quality while
+maintaining developer productivity and CI efficiency.

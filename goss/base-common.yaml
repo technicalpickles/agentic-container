@@ -1,10 +1,10 @@
 command:
   "dumb-init --version":
     exit-status: 0
-    stdout: [ /\d+\.\d+/ ]
+    stdout: [/\d+\.\d+/]
   "sudo --version":
     exit-status: 0
-    stdout: [ "Sudo version" ]
+    stdout: ["Sudo version"]
   # Git configuration tests (verify config is loaded properly)
   "git config --list | grep 'init.defaultbranch=main'":
     exit-status: 0
@@ -37,11 +37,9 @@ file:
     mode: "0644"
     contents:
       - "defaultBranch = main"
-      - "rebase = false" 
+      - "rebase = false"
       - "autocrlf = input"
       - "directory = /workspace"
 
 env:
   # Intentionally left empty; base-common avoids brittle env checks
-
-

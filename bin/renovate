@@ -45,7 +45,7 @@ fi
 # Pass through important environment variables
 ENV_VARS=(
     "GITHUB_TOKEN"
-    "RENOVATE_TOKEN" 
+    "RENOVATE_TOKEN"
     "LOG_LEVEL"
     "RENOVATE_CONFIG_FILE"
     "RENOVATE_DRY_RUN"

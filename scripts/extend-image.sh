@@ -17,29 +17,29 @@ USAGE:
 
 COMMANDS:
     init [BASE_IMAGE]     Initialize a new Dockerfile extending the specified base image
-    add-language LANG     Add a language runtime to your Dockerfile  
+    add-language LANG     Add a language runtime to your Dockerfile
     add-tool TOOL         Add a development tool to your Dockerfile
     build [TAG]           Build your extended image
     push [TAG]            Push your extended image to a registry
     help                  Show this help message
 
 BASE IMAGES:
-    standard              Ubuntu + mise + Python + Node.js + ast-grep + dev tools (~950MB)  
+    standard              Ubuntu + mise + Python + Node.js + ast-grep + dev tools (~950MB)
     dev                   Standard + all languages pre-installed (kitchen sink) (~2.2GB)
 
 EXAMPLES:
     # Start with the production-ready standard image
     extend-image.sh init standard
-    
+
     # Start with the dev image (all languages included)
     extend-image.sh init dev
-    
+
     # Add Python to an existing Dockerfile
     extend-image.sh add-language python@3.12
-    
+
     # Build and tag your custom image
     extend-image.sh build my-dev-container:latest
-    
+
     # Push to GitHub Container Registry
     extend-image.sh push ghcr.io/myuser/my-dev-container:latest
 
@@ -53,12 +53,12 @@ EOF
 init_dockerfile() {
     local base_image="${1:-standard}"
     local dockerfile="Dockerfile"
-    
+
     if [[ -f "$dockerfile" ]]; then
         echo "WARNING: $dockerfile already exists. Backing up to $dockerfile.bak"
         cp "$dockerfile" "$dockerfile.bak"
     fi
-    
+
     cat > "$dockerfile" << EOF
 # Extended development container based on agentic-container
 # Base image: $base_image
@@ -70,7 +70,7 @@ FROM $BASE_REGISTRY:$base_image
 # =============================================================================
 
 # Example: Add additional system packages
-# USER root  
+# USER root
 # RUN apt-get update && apt-get install -y \\
 #     your-package \\
 #     another-package \\
@@ -84,7 +84,7 @@ FROM $BASE_REGISTRY:$base_image
 
 # Example: Copy custom configuration files
 # COPY .vimrc /home/\$USERNAME/.vimrc
-# COPY .gitconfig /home/\$USERNAME/.gitconfig  
+# COPY .gitconfig /home/\$USERNAME/.gitconfig
 
 # Switch back to non-root user for the final image
 # USER \$USERNAME
@@ -108,24 +108,24 @@ EOF
 add_language() {
     local lang_spec="${1:-}"
     local dockerfile="Dockerfile"
-    
+
     if [[ -z "$lang_spec" ]]; then
         echo "ERROR: Language specification required (e.g., python@3.12, node@20)"
         exit 1
     fi
-    
+
     if [[ ! -f "$dockerfile" ]]; then
         echo "ERROR: No Dockerfile found. Run 'extend-image.sh init' first."
         exit 1
     fi
-    
+
     # Create backup
     cp "$dockerfile" "$dockerfile.bak"
-    
+
     # Insert language installation before the final USER directive
     local temp_file=$(mktemp)
     local inserted=false
-    
+
     while IFS= read -r line; do
         if [[ "$line" =~ ^USER[[:space:]] ]] && [[ "$inserted" == false ]]; then
             echo "# Added language: $lang_spec" >> "$temp_file"
@@ -135,14 +135,14 @@ add_language() {
         fi
         echo "$line" >> "$temp_file"
     done < "$dockerfile"
-    
+
     # If we didn't find a USER directive, append to the end
     if [[ "$inserted" == false ]]; then
         echo "" >> "$temp_file"
         echo "# Added language: $lang_spec" >> "$temp_file"
         echo "RUN mise install $lang_spec && mise use -g $lang_spec" >> "$temp_file"
     fi
-    
+
     mv "$temp_file" "$dockerfile"
     echo "✅ Added $lang_spec to $dockerfile"
 }
@@ -150,24 +150,24 @@ add_language() {
 add_tool() {
     local tool_spec="${1:-}"
     local dockerfile="Dockerfile"
-    
+
     if [[ -z "$tool_spec" ]]; then
         echo "ERROR: Tool specification required (e.g., gh, jq, kubectl)"
         exit 1
     fi
-    
+
     if [[ ! -f "$dockerfile" ]]; then
         echo "ERROR: No Dockerfile found. Run 'extend-image.sh init' first."
         exit 1
     fi
-    
-    # Create backup  
+
+    # Create backup
     cp "$dockerfile" "$dockerfile.bak"
-    
+
     # Insert tool installation
     local temp_file=$(mktemp)
     local inserted=false
-    
+
     while IFS= read -r line; do
         if [[ "$line" =~ ^USER[[:space:]] ]] && [[ "$inserted" == false ]]; then
             echo "# Added tool: $tool_spec" >> "$temp_file"
@@ -177,13 +177,13 @@ add_tool() {
         fi
         echo "$line" >> "$temp_file"
     done < "$dockerfile"
-    
+
     if [[ "$inserted" == false ]]; then
         echo "" >> "$temp_file"
-        echo "# Added tool: $tool_spec" >> "$temp_file"  
+        echo "# Added tool: $tool_spec" >> "$temp_file"
         echo "RUN mise install $tool_spec" >> "$temp_file"
     fi
-    
+
     mv "$temp_file" "$dockerfile"
     echo "✅ Added $tool_spec to $dockerfile"
 }
@@ -191,15 +191,15 @@ add_tool() {
 build_image() {
     local tag="${1:-extended-dev-container:latest}"
     local dockerfile="Dockerfile"
-    
+
     if [[ ! -f "$dockerfile" ]]; then
         echo "ERROR: No Dockerfile found. Run 'extend-image.sh init' first."
         exit 1
     fi
-    
+
     echo "🏗️  Building image: $tag"
     export DOCKER_BUILDKIT=1
-    
+
     # Check if GitHub CLI is available for token access
     if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
         echo "🔐 Using GitHub token via secret mounting to avoid API rate limits"
@@ -208,18 +208,18 @@ build_image() {
         echo "⚠️  No GitHub token available, may hit API rate limits"
         docker build -t "$tag" -f "$dockerfile" .
     fi
-    
+
     echo "✅ Built image: $tag"
 }
 
 push_image() {
     local tag="${1:-}"
-    
+
     if [[ -z "$tag" ]]; then
         echo "ERROR: Image tag required for push"
         exit 1
     fi
-    
+
     echo "📤 Pushing image: $tag"
     docker push "$tag"
     echo "✅ Pushed image: $tag"
@@ -227,7 +227,7 @@ push_image() {
 
 main() {
     local command="${1:-help}"
-    
+
     case "$command" in
         init)
             shift

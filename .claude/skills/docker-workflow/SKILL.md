@@ -1,18 +1,25 @@
 ---
 name: Docker Build and Test Workflow
-description: Use this skill when building, testing, or working with Docker images in the agentic-container repository. Covers when to rebuild vs reuse images, how to leverage layer caching, and efficient iteration patterns.
+description:
+  Use this skill when building, testing, or working with Docker images in the
+  agentic-container repository. Covers when to rebuild vs reuse images, how to
+  leverage layer caching, and efficient iteration patterns.
 allowed-tools: [Bash, Read, Grep, Glob]
 ---
 
 # Docker Build and Test Workflow
 
-This skill provides guidance for efficiently building, testing, and working with Docker images in this repository.
+This skill provides guidance for efficiently building, testing, and working with
+Docker images in this repository.
 
 ## Core Principles
 
-1. **Scripts rebuild by design** - The testing scripts prioritize reliability over speed by rebuilding images
-2. **Docker layer caching is your friend** - Rebuilds are fast when only small changes occur
-3. **Avoid unnecessary script invocations** - Reuse existing images when possible
+1. **Scripts rebuild by design** - The testing scripts prioritize reliability
+   over speed by rebuilding images
+2. **Docker layer caching is your friend** - Rebuilds are fast when only small
+   changes occur
+3. **Avoid unnecessary script invocations** - Reuse existing images when
+   possible
 4. **Manual cache management** - Only delete images as a last resort
 
 ## Understanding Script Behavior
@@ -20,18 +27,22 @@ This skill provides guidance for efficiently building, testing, and working with
 ### What the Scripts Actually Do
 
 **`scripts/build-local.sh [target]`**
+
 - Builds specified target (standard, dev, or stage)
 - Relies on Docker layer caching for speed
 - Securely handles GitHub token via `gh auth`
 - Always performs a build, but uses cache when available
 
 **`scripts/test-dockerfile.sh [target|dockerfile] [--cleanup]`**
+
 - For **base targets** (standard/dev): Always rebuilds via `build-local.sh`
-- For **cookbooks**: Smart about base (`ensure_base_image()` checks timestamps), but always rebuilds cookbook
+- For **cookbooks**: Smart about base (`ensure_base_image()` checks timestamps),
+  but always rebuilds cookbook
 - Runs comprehensive goss validation tests
 - Keeps test images by default (use `--cleanup` to remove)
 
 **`scripts/shell.sh [target|cookbook] [tag]`**
+
 - Always rebuilds the specified target or cookbook
 - Launches interactive shell in the container
 - Auto-cleans container on exit (but keeps image)
@@ -39,6 +50,7 @@ This skill provides guidance for efficiently building, testing, and working with
 ### The One Smart Cache Check
 
 The `ensure_base_image()` function (used for cookbook testing):
+
 - Checks if `agentic-container:latest` exists
 - Compares Dockerfile modification time vs image creation time
 - **Only rebuilds base if Dockerfile is newer or image missing**
@@ -134,12 +146,14 @@ docker run --rm test-dev:latest command --version
 ```
 
 **Why This Matters:**
+
 - Catches path issues, permission problems, and syntax errors before build
 - Validates that commands work in the actual environment
 - Much faster than rebuild cycles for iteration
 - Helps understand what files/directories already exist
 
 **Common Use Cases:**
+
 - Creating symlinks (test paths are correct)
 - Setting up configuration files
 - Verifying package installations work
@@ -169,12 +183,17 @@ docker run --rm test-dev:latest bash -c 'ls -la /path/to/bin/'
 ```
 
 **Common Multi-Stage Issues:**
-- **Docker COPY follows symlinks** - Converts them to regular files, breaking relative paths
-- **Files exist in stage but not in final** - Check COPY commands copy the right paths
-- **Permissions change between stages** - RUN commands in final stage may run as different user
+
+- **Docker COPY follows symlinks** - Converts them to regular files, breaking
+  relative paths
+- **Files exist in stage but not in final** - Check COPY commands copy the right
+  paths
+- **Permissions change between stages** - RUN commands in final stage may run as
+  different user
 - **ARG not passed to stage** - Re-declare ARG in each stage that needs it
 
 **Solution Patterns:**
+
 - For symlinks: Recreate them in final stage with RUN command
 - For missing files: Verify COPY source path includes the files
 - For permissions: Run chmod in final stage after COPY
@@ -182,21 +201,24 @@ docker run --rm test-dev:latest bash -c 'ls -la /path/to/bin/'
 ## When Rebuilds Are Required
 
 ### You MUST Rebuild When:
+
 - Dockerfile content changed (RUN, COPY, ADD, etc.)
 - ARG versions updated (NODE_VERSION, PYTHON_VERSION, etc.)
 - Base image dependencies changed
 - Files copied into image (COPY/ADD) have changed
 
 ### Layer Cache Makes These Fast When:
+
 - Only bottom layers changed (Dockerfile ordered well)
 - System packages unchanged (apt-get install cached)
 - Language installations unchanged (mise installations cached)
 - Only scripts or configs changed
 
 ### You DON'T Need to Rebuild When:
+
 - Only goss test files changed (mount them at test time)
-- Documentation changed (*.md files)
-- CI configuration changed (.github/workflows/*.yml)
+- Documentation changed (\*.md files)
+- CI configuration changed (.github/workflows/\*.yml)
 - Comments in Dockerfile changed
 
 ## Layer Cache Optimization
@@ -220,6 +242,7 @@ docker system prune -f && docker builder prune -f
 ```
 
 **Why This Matters:**
+
 - Docker stores layers separately from image tags
 - Multiple images can share the same layers
 - Removing an image only removes the tag, not the layers
@@ -255,15 +278,18 @@ RUN apt-get update && apt-get install -y curl
 
 ### When Layer Cache Causes Problems
 
-**Symptom:** Build shows "CACHED" but you changed the Dockerfile
-**Cause:** Layer hash collision or cache from different branch/state
+**Symptom:** Build shows "CACHED" but you changed the Dockerfile **Cause:**
+Layer hash collision or cache from different branch/state
 
 **Solutions:**
-1. **Make a small change to force cache bust** - Add/modify a comment in the RUN command
+
+1. **Make a small change to force cache bust** - Add/modify a comment in the RUN
+   command
 2. **Clear builder cache** - `docker builder prune -f` (fast, selective)
 3. **Use --no-cache** - Only as last resort (slowest, rebuilds everything)
 
 **Example Cache Bust:**
+
 ```dockerfile
 # Before (keeps showing CACHED even after adding commands):
 RUN mise use -g node@${NODE_VERSION} \
@@ -276,6 +302,7 @@ RUN mise use -g node@${NODE_VERSION} \
 ```
 
 **Verifying Changes Persisted:**
+
 ```bash
 # Check if your changes made it into the image:
 docker history test-dev:latest --no-trunc | grep "your-command"
@@ -310,7 +337,8 @@ docker rmi test-standard:latest
 
 ### RUN Command Not Working
 
-**Symptom:** Added commands to Dockerfile but they don't seem to execute or changes don't persist
+**Symptom:** Added commands to Dockerfile but they don't seem to execute or
+changes don't persist
 
 **Debugging Steps:**
 
@@ -329,6 +357,7 @@ docker run --rm --user root test-dev:latest bash -c 'your-command'
 ```
 
 **Common Causes:**
+
 - Layer cache hiding your changes (try cache bust)
 - Command fails silently in `&&` chain (test commands individually)
 - Wrong user (check if RUN runs as root but final image is non-root)
@@ -353,6 +382,7 @@ docker run --rm test-stage:latest bash -c 'ls -la /path/ | grep "^l"'
 ```
 
 **Common Causes:**
+
 - Docker COPY follows symlinks (recreate them in final stage)
 - COPY path doesn't include the files you expect
 - Files in different location than you think
@@ -376,6 +406,7 @@ git diff Dockerfile  # Did the change actually save?
 ```
 
 **Why This Happens:**
+
 - Docker layer cache persists beyond image deletion
 - Layer hash collision (rare but possible)
 - Changes don't affect layer hash (comment-only changes)
@@ -389,7 +420,8 @@ git diff Dockerfile  # Did the change actually save?
 
 ### Tests Failing After Dockerfile Changes
 
-1. **Test with existing image first**: Isolate if it's a Dockerfile vs test issue
+1. **Test with existing image first**: Isolate if it's a Dockerfile vs test
+   issue
 2. **Check goss test validity**: Can tests pass with old image?
 3. **Rebuild and test**: `./scripts/test-dockerfile.sh`
 
@@ -406,6 +438,7 @@ docker images | grep -E '(agentic|test-)'
 ### Cache Seems Corrupted
 
 **Symptoms:**
+
 - Build errors with "snapshot does not exist"
 - Inconsistent build results
 - Cache-related build failures
@@ -577,17 +610,24 @@ Need to work with Docker image?
 ## When to Use This Skill
 
 Invoke this skill when:
+
 - User asks to build or test Docker images
 - User asks how to iterate on Dockerfiles efficiently
 - User complains about slow builds
 - User asks about Docker cache
-- User asks which script to use (build-local.sh vs test-dockerfile.sh vs shell.sh)
+- User asks which script to use (build-local.sh vs test-dockerfile.sh vs
+  shell.sh)
 - User wants to test changes without rebuilding
 - User needs to debug Docker images
-- **RUN command not working** - Guide to test commands manually before adding to Dockerfile
-- **Files missing in final image** - Debug multi-stage builds by inspecting intermediate stages
-- **Build shows CACHED but Dockerfile changed** - Explain image vs layer cache difference
-- **Symlinks or special files not working** - Docker COPY follows symlinks behavior
+- **RUN command not working** - Guide to test commands manually before adding to
+  Dockerfile
+- **Files missing in final image** - Debug multi-stage builds by inspecting
+  intermediate stages
+- **Build shows CACHED but Dockerfile changed** - Explain image vs layer cache
+  difference
+- **Symlinks or special files not working** - Docker COPY follows symlinks
+  behavior
 - **Permission errors in containers** - Test with --user root to debug
-- **Prototyping new features** - Use existing images to test before modifying Dockerfile
+- **Prototyping new features** - Use existing images to test before modifying
+  Dockerfile
 - **Multi-stage build debugging** - Build and inspect intermediate stages

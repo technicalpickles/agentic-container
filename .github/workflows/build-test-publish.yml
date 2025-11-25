@@ -41,25 +41,25 @@ jobs:
             BASE_SHA="${{ github.event.before }}"
             HEAD_SHA="${{ github.sha }}"
           fi
-          
+
           echo "Comparing $BASE_SHA..$HEAD_SHA"
-          
+
           # Get list of changed files
           CHANGED_FILES=$(git diff --name-only $BASE_SHA..$HEAD_SHA)
           echo "Changed files:"
           echo "$CHANGED_FILES"
-          
+
           # Initialize outputs
           BASE_DOCKERFILE=false
           COOKBOOK_DOCKERFILES=false
           DOCS_ONLY=true
           ANY_CODE=false
           CHANGED_COOKBOOKS=""
-          
+
           # Check each changed file
           while IFS= read -r file; do
             echo "Checking file: $file"
-            
+
             # Check if base Dockerfile changed
             if [[ "$file" == "Dockerfile" ]]; then
               BASE_DOCKERFILE=true
@@ -67,7 +67,7 @@ jobs:
               DOCS_ONLY=false
               echo "Base Dockerfile changed"
             fi
-            
+
             # Check if cookbook Dockerfiles changed
             if [[ "$file" =~ ^docs/cookbooks/[^/]+/Dockerfile ]]; then
               COOKBOOK_DOCKERFILES=true
@@ -82,7 +82,7 @@ jobs:
               fi
               echo "Cookbook Dockerfile changed: $COOKBOOK"
             fi
-            
+
             # Check if any non-docs files changed
             if [[ ! "$file" =~ ^docs/ ]] && [[ "$file" != "README.md" ]] && [[ ! "$file" =~ \.md$ ]]; then
               ANY_CODE=true
@@ -90,16 +90,16 @@ jobs:
               echo "Code file changed: $file"
             fi
           done <<< "$CHANGED_FILES"
-          
+
           # Remove duplicates from changed cookbooks
           CHANGED_COOKBOOKS=$(echo "$CHANGED_COOKBOOKS" | tr ',' '\n' | sort -u | tr '\n' ',' | sed 's/,$//')
-          
+
           echo "base-dockerfile=$BASE_DOCKERFILE" >> $GITHUB_OUTPUT
-          echo "cookbook-dockerfiles=$COOKBOOK_DOCKERFILES" >> $GITHUB_OUTPUT  
+          echo "cookbook-dockerfiles=$COOKBOOK_DOCKERFILES" >> $GITHUB_OUTPUT
           echo "docs-only=$DOCS_ONLY" >> $GITHUB_OUTPUT
           echo "any-code=$ANY_CODE" >> $GITHUB_OUTPUT
           echo "changed-cookbooks=$CHANGED_COOKBOOKS" >> $GITHUB_OUTPUT
-          
+
           echo "Final outputs:"
           echo "  base-dockerfile: $BASE_DOCKERFILE"
           echo "  cookbook-dockerfiles: $COOKBOOK_DOCKERFILES"
@@ -230,7 +230,7 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
+
       # For same-repo PRs: use ephemeral registry tag for standard target
       - name: Log in to GHCR for ephemeral tag pull (same-repo PRs, standard target)
         if: github.event_name == 'pull_request' && matrix.target == 'standard' && github.event.pull_request.head.repo.fork == false
@@ -451,7 +451,7 @@ jobs:
         run: |
           echo "🔍 CI Summary for this PR"
           echo "========================"
-          
+
           # Check what type of changes we have
           if [[ "${{ needs.detect-changes.outputs.docs-only }}" == "true" ]]; then
             echo "📚 **Documentation-only changes detected**"
@@ -466,11 +466,11 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          
+
           # For code changes, check all job results
           echo "🏗️ **Code changes detected - full CI pipeline executed**"
           echo ""
-          
+
           # Check build status
           if [[ "${{ needs.build-standard.result }}" == "success" ]]; then
             echo "✅ Base image build: SUCCESS"
@@ -480,7 +480,7 @@ jobs:
             echo "❌ Base image build: FAILED"
             exit 1
           fi
-          
+
           # Check parallel validation status
           if [[ "${{ needs.parallel-validation.result }}" == "success" ]]; then
             echo "✅ Validation tests: SUCCESS"
@@ -490,10 +490,10 @@ jobs:
             echo "❌ Validation tests: FAILED"
             exit 1
           fi
-          
+
           echo ""
           echo "🎉 All checks passed!"
-          
+
           # Create detailed summary
           {
             echo "## 🚀 CI Pipeline Results"

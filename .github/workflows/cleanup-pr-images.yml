@@ -25,7 +25,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           owner: ${{ github.repository_owner }}
           package: ${{ github.event.repository.name }}
-          
+
       - name: Log cleanup completion
         run: |
           echo "🧹 Cleaned up ephemeral images for PR #${{ github.event.pull_request.number }}"

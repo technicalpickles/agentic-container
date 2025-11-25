@@ -19,7 +19,7 @@ test_base_target() {
     else
         image_name="test-${target}:latest"
         local build_local_script="$SCRIPT_DIR/build-local.sh"
-        
+
         if is_truthy "$DRY_RUN"; then
             log_info "DRY-RUN: would build base target '$target' as $image_name using build-local.sh"
         else
@@ -28,7 +28,7 @@ test_base_target() {
                 log_error "build-local.sh not found at: $build_local_script"
                 return 1
             fi
-            
+
             log_info "Building base target '$target' as $image_name using build-local.sh"
             if "$build_local_script" "$target" "$image_name"; then
                 log_success "Build successful: $image_name"
@@ -89,11 +89,11 @@ test_base_target() {
 
 # test-dockerfile.sh - Build and validate Dockerfiles with comprehensive testing
 #
-# This script builds and validates any Dockerfile using comprehensive goss test 
+# This script builds and validates any Dockerfile using comprehensive goss test
 # suites. All Dockerfiles must have a goss.yaml file in the same directory -
 # the script will error if one is not found.
 #
-# Usage: 
+# Usage:
 #   ./test-dockerfile.sh <dockerfile-path> [--cleanup]
 #   ./test-dockerfile.sh --help
 #
@@ -172,17 +172,17 @@ ARGUMENTS:
     --cleanup          Remove built test images after testing
 
 DESCRIPTION:
-    This script builds and validates any Dockerfile using comprehensive goss 
-    test suites. All Dockerfiles must have a goss.yaml file in the same 
+    This script builds and validates any Dockerfile using comprehensive goss
+    test suites. All Dockerfiles must have a goss.yaml file in the same
     directory - the script will error if one is not found.
 
 EXAMPLES:
     # Test a cookbook Dockerfile
     ./test-dockerfile.sh docs/cookbooks/python-cli/Dockerfile
-    
+
     # Test custom Dockerfile and cleanup afterwards
     ./test-dockerfile.sh path/to/my-custom.dockerfile --cleanup
-    
+
     # Create and test a Python Dockerfile
     cat > my-python-app.dockerfile << 'DOCKERFILE_EOF'
 FROM ghcr.io/technicalpickles/agentic-container:latest
@@ -206,11 +206,11 @@ TESTING APPROACH:
 COOKBOOK EXAMPLES:
     The docs/cookbooks/ directory contains tested Dockerfile examples for:
     • Python CLI Applications - CLI tools, data processing, automation
-    • Backend JavaScript/Node.js Services - APIs, microservices  
+    • Backend JavaScript/Node.js Services - APIs, microservices
     • Full-Stack Rails Applications - Complete Ruby on Rails development
     • Go Microservices - Lightweight, fast services and API backends
     • React Frontend Applications - Modern web frontends with tooling
-    
+
     Each cookbook includes both Dockerfile and goss.yaml for complete testing.
 
 BASE TARGET EXAMPLES:
@@ -233,24 +233,24 @@ ensure_base_image() {
     local base_dockerfile="$PROJECT_ROOT/Dockerfile"
     local base_image="agentic-container:latest"
     local build_local_script="$SCRIPT_DIR/build-local.sh"
-    
+
     if is_truthy "$DRY_RUN"; then
         log_info "DRY-RUN: would ensure base image '$base_image' is up to date (skipping)"
         return 0
     fi
-    
+
     # Skip base image building in CI environment
     if [[ -n "${CI:-}" ]] || [[ -n "${GITHUB_ACTIONS:-}" ]]; then
         log_info "Running in CI environment, skipping base image build"
         return 0
     fi
-    
+
     # Verify build-local.sh exists
     if [[ ! -f "$build_local_script" ]]; then
         log_error "build-local.sh not found at: $build_local_script"
         exit 1
     fi
-    
+
     # Check if base image exists
     if ! docker image inspect "$base_image" >/dev/null 2>&1; then
         log_info "Base image '$base_image' not found, building using build-local.sh..."
@@ -262,11 +262,11 @@ ensure_base_image() {
         fi
         return
     fi
-    
+
     # Check if Dockerfile is newer than the image
     local dockerfile_time=$(stat -c %Y "$base_dockerfile" 2>/dev/null || stat -f %m "$base_dockerfile" 2>/dev/null || echo 0)
     local image_time=$(docker image inspect "$base_image" --format '{{.Created}}' | xargs -I {} date -d {} +%s 2>/dev/null || docker image inspect "$base_image" --format '{{.Created}}' | xargs -I {} date -j -f '%Y-%m-%dT%H:%M:%S' {} +%s 2>/dev/null || echo 0)
-    
+
     if [[ "$dockerfile_time" -gt "$image_time" ]]; then
         log_info "Base Dockerfile is newer than image, rebuilding using build-local.sh..."
         if "$build_local_script" standard "$base_image"; then
@@ -286,7 +286,7 @@ parse_args() {
         show_help
         exit 0
     fi
-    
+
     # Handle base target usage
     if [[ $# -ge 1 ]] && [[ "$1" == "standard" || "$1" == "dev" ]]; then
         MODE="base"
@@ -317,17 +317,17 @@ parse_args() {
     DOCKERFILE="$1"
     CLEANUP="${2:-}"
     CI_MODE=false
-    
+
     if [[ "$MODE" == "cookbook" && ! -f "$DOCKERFILE" ]]; then
         log_error "Dockerfile not found: $DOCKERFILE"
         echo
         show_help
         exit 1
     fi
-    
+
     if [[ "$CI_MODE" == false ]] && [[ -n "$CLEANUP" ]] && [[ "$CLEANUP" != "--cleanup" ]]; then
         log_error "Invalid argument: $CLEANUP. Use --cleanup or omit."
-        echo  
+        echo
         show_help
         exit 1
     fi
@@ -337,7 +337,7 @@ parse_args() {
 test_comprehensive_validation() {
     local dockerfile="$1"
     local image_name="$2"
-    
+
     # Determine cookbook name from dockerfile path
     local cookbook_name=""
     local dockerfile_dir=$(dirname "$dockerfile")
@@ -346,7 +346,7 @@ test_comprehensive_validation() {
     local base_common_file="$PROJECT_ROOT/goss/base-common.yaml"
     local base_standard_file="$PROJECT_ROOT/goss/standard.yaml"
     local base_dev_file="$PROJECT_ROOT/goss/dev.yaml"
-    
+
     # Try to find corresponding goss.yaml file
     if [[ "$dockerfile" == *"/cookbooks/"* ]]; then
         cookbook_name=$(basename "$dockerfile_dir")
@@ -356,7 +356,7 @@ test_comprehensive_validation() {
             base_target="dev"
         fi
     fi
-    
+
     # Use goss tests (required for all extensions)
     if [[ -n "$goss_file" && -f "$goss_file" ]]; then
         log_info "Running comprehensive goss tests for $cookbook_name..."
@@ -381,12 +381,12 @@ test_comprehensive_validation() {
         else
             log_warning "Base goss files not found; running cookbook tests only"
         fi
-        
+
         # Add GITHUB_TOKEN if available (for GitHub Actions or local development)
         if [[ -n "${GITHUB_TOKEN:-}" ]]; then
             docker_cmd="$docker_cmd -e GITHUB_TOKEN"
         fi
-        
+
         docker_cmd="$docker_cmd \"$image_name\" bash -c '"
         docker_cmd="$docker_cmd set -euo pipefail; "
         docker_cmd="$docker_cmd echo \"📦 Ensuring goss is available...\"; "
@@ -408,7 +408,7 @@ test_comprehensive_validation() {
         docker_cmd="$docker_cmd goss -g /tmp/goss.yaml validate --format documentation --color; "
         docker_cmd="$docker_cmd fi"
         docker_cmd="$docker_cmd '"
-        
+
         if execute_or_dry_run "$docker_cmd"; then
             log_success "All goss tests passed for $cookbook_name!"
         else
@@ -436,12 +436,12 @@ test_comprehensive_validation() {
 test_dockerfile() {
     local dockerfile="$1"
     local image_name=""
-    
+
     if [[ "$CI_MODE" == true ]]; then
         # In CI mode, use the pre-built image
         image_name="$TEST_IMAGE"
         log_info "Testing pre-built image: $image_name"
-        
+
         # Verify the image exists
         if ! docker image inspect "$image_name" >/dev/null 2>&1; then
             log_error "Pre-built image not found: $image_name"
@@ -452,7 +452,7 @@ test_dockerfile() {
         # In local mode, build the image with ARG override
         image_name="test-dockerfile-$(date +%s)"
         log_info "Testing dockerfile: $(basename "$dockerfile")"
-        
+
         if is_truthy "$DRY_RUN"; then
             log_info "DRY-RUN: would build test image: $image_name from $dockerfile"
             log_info "DRY-RUN: would use --build-arg BASE_IMAGE=agentic-container:latest"
@@ -460,7 +460,7 @@ test_dockerfile() {
             # Build the image directly with BASE_IMAGE override - no temp files needed!
             log_info "Building test image: $image_name"
             log_info "Using base image override: agentic-container:latest"
-            
+
             if docker build -f "$dockerfile" \
                 --build-arg BASE_IMAGE=agentic-container:latest \
                 -t "$image_name" \
@@ -473,13 +473,13 @@ test_dockerfile() {
             fi
         fi
     fi
-    
+
     # Basic startup test
     if is_truthy "$DRY_RUN"; then
         log_info "DRY-RUN: skipping container startup and workspace tests"
     else
         log_info "Testing basic functionality..."
-        
+
         # Test 1: Container starts and basic commands work
         if docker run --rm "$image_name" bash -c 'echo "Container startup test passed"'; then
             log_success "Container startup test passed"
@@ -487,7 +487,7 @@ test_dockerfile() {
             log_error "Container startup test failed"
             FAILED_TESTS+=("Startup test")
         fi
-        
+
         # Test 2: Working directory is accessible
         if docker run --rm "$image_name" bash -c 'cd /workspace && pwd'; then
             log_success "Working directory is accessible"
@@ -496,10 +496,10 @@ test_dockerfile() {
             FAILED_TESTS+=("Working directory")
         fi
     fi
-    
+
     # Test 3: Comprehensive validation (goss tests required)
     test_comprehensive_validation "$dockerfile" "$image_name"
-    
+
     # Cleanup test image (only in local mode)
     if [[ "$CI_MODE" == false ]]; then
         if [[ "$CLEANUP" == "--cleanup" ]]; then
@@ -516,13 +516,13 @@ test_dockerfile() {
     else
         log_info "CI mode: test image cleanup handled by CI workflow"
     fi
-    
+
     return 0
 }
 
 main() {
     parse_args "$@"
-    
+
     log_info "Starting dockerfile validation..."
     if [[ "$MODE" == "base" ]]; then
         log_info "Testing base target: $BASE_TARGET"
@@ -534,7 +534,7 @@ main() {
         # Test the dockerfile
         test_dockerfile "$DOCKERFILE"
     fi
-    
+
     # Summary
     echo
     log_info "=== Test Summary ==="

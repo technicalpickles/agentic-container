@@ -1,13 +1,13 @@
 command:
   "git --version":
     exit-status: 0
-    stdout: [ "git version" ]
+    stdout: ["git version"]
   "curl --version":
     exit-status: 0
-    stdout: [ "curl" ]
+    stdout: ["curl"]
   "vim --version":
     exit-status: 0
-    stdout: [ "VIM" ]
+    stdout: ["VIM"]
   "jq --version":
     exit-status: 0
     stdout:
@@ -23,14 +23,14 @@ command:
 
   "docker --version":
     exit-status: 0
-    stdout: [ "Docker version" ]
+    stdout: ["Docker version"]
   "docker compose version":
     exit-status: 0
-    stdout: [ "Docker Compose version" ]
+    stdout: ["Docker Compose version"]
 
   "gh --version":
     exit-status: 0
-    stdout: [ "gh version" ]
+    stdout: ["gh version"]
 
   "mise --version":
     exit-status: 0
@@ -47,14 +47,14 @@ command:
       - /v\d+\.\d+\.\d+/
   "python3 --version":
     exit-status: 0
-    stdout: [ "Python 3" ]
+    stdout: ["Python 3"]
   "npm --version":
     exit-status: 0
     stdout:
       - /\d+\.\d+\.\d+/
   "pip --version":
     exit-status: 0
-    stdout: [ "pip" ]
+    stdout: ["pip"]
 
   "uv --version":
     exit-status: 0
@@ -72,11 +72,11 @@ command:
   # Test that umask is properly set via shell profile (requires sourcing bashrc)
   "bash -c 'source /etc/bash.bashrc && umask'":
     exit-status: 0
-    stdout: [ "0002" ]
+    stdout: ["0002"]
   # Test that mise is available (installed directly, not via shim)
   "bash -c 'command -v mise'":
     exit-status: 0
-    stdout: [ "/usr/local/bin/mise" ]
+    stdout: ["/usr/local/bin/mise"]
   # Test that starship is available (exit code only, path may vary)
   "which starship":
     exit-status: 0
@@ -98,23 +98,23 @@ file:
   /etc/bash.bashrc:
     exists: true
     filetype: file
-    contents: [ "umask 002", "mise activate bash", "starship init bash" ]
+    contents: ["umask 002", "mise activate bash", "starship init bash"]
   /etc/profile:
     exists: true
     filetype: file
-    contents: [ "umask 002", "mise activate bash", "starship init bash" ]
+    contents: ["umask 002", "mise activate bash", "starship init bash"]
   /home/agent/.bashrc:
     exists: true
     filetype: file
-    contents: [ "umask 002", "mise activate bash", "starship init bash" ]
+    contents: ["umask 002", "mise activate bash", "starship init bash"]
   /home/agent/.bash_profile:
     exists: true
     filetype: file
-    contents: [ "umask 002", "mise activate bash", "starship init bash" ]
+    contents: ["umask 002", "mise activate bash", "starship init bash"]
   /home/agent/.profile:
     exists: true
     filetype: file
-    contents: [ "umask 002", "mise activate bash", "starship init bash" ]
+    contents: ["umask 002", "mise activate bash", "starship init bash"]
 
 user:
   agent:
@@ -135,7 +135,4 @@ env:
   MISE_CACHE_DIR:
     value: "/tmp/mise-cache"
   PATH:
-    contains: [ "/usr/local/share/mise/shims" ]
-
-
-
+    contains: ["/usr/local/share/mise/shims"]

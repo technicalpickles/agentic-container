@@ -1,9 +1,7 @@
 # Docker Image Layer Analysis Report
 
-**Generated on:** September 14, 2025  
-**Image:** `agentic-container:standard`  
-**Total Image Size:** 897.7 MB (~898 MB)  
-**Analysis Tool:** `dive v0.13.1`
+**Generated on:** September 14, 2025 **Image:** `agentic-container:standard`
+**Total Image Size:** 897.7 MB (~898 MB) **Analysis Tool:** `dive v0.13.1`
 
 ## Executive Summary
 

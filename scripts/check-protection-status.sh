@@ -3,7 +3,7 @@
 # check-protection-status.sh
 #
 # Purpose: Check and verify branch protection and CI status
-# Created: 2024-01-20  
+# Created: 2024-01-20
 # Used for: Troubleshooting and monitoring branch protection setup
 #
 # This script helps verify that branch protection rules are working
@@ -48,12 +48,12 @@ echo "================================"
 # Check if branch protection exists
 if gh api "repos/${OWNER}/${REPO}/branches/${BRANCH}/protection" &> /dev/null; then
     echo "✅ Branch protection is ENABLED"
-    
+
     # Get full protection details
     echo ""
     echo "📋 Protection Rules:"
     gh api "repos/${OWNER}/${REPO}/branches/${BRANCH}/protection" | format_json
-    
+
     echo ""
     echo "🔒 Required Status Checks:"
     REQUIRED_CHECKS=$(gh api "repos/${OWNER}/${REPO}/branches/${BRANCH}/protection/required_status_checks" 2>/dev/null || echo '{"contexts":[]}')
@@ -91,7 +91,7 @@ gh api "repos/${OWNER}/${REPO}/commits" --paginate=false | jq -r '.[0:5][] | "\(
     commit_sha=$(echo "$line" | cut -d' ' -f1)
     echo ""
     echo "Commit: $line"
-    
+
     # Get check runs for this commit
     CHECK_RUNS=$(gh api "repos/${OWNER}/${REPO}/commits/${commit_sha}/check-runs" 2>/dev/null || echo '{"check_runs":[]}')
     if echo "$CHECK_RUNS" | jq -e '.check_runs | length > 0' &> /dev/null; then
@@ -100,7 +100,7 @@ gh api "repos/${OWNER}/${REPO}/commits" --paginate=false | jq -r '.[0:5][] | "\(
     else
         echo "  No check runs found"
     fi
-    
+
     # Limit to first commit for detailed output
     break
 done
@@ -113,7 +113,7 @@ echo "Recent workflow runs:"
 gh run list --limit 5 --json status,conclusion,name,createdAt,headBranch | jq -r '.[] | "\(.name): \(.status) \(if .conclusion then "(\(.conclusion))" else "" end) on \(.headBranch) - \(.createdAt)"'
 
 echo ""
-echo "🔧 TROUBLESHOOTING INFO"  
+echo "🔧 TROUBLESHOOTING INFO"
 echo "======================="
 
 # Check if there are any open PRs
@@ -130,7 +130,7 @@ echo ""
 echo "Expected status check names from workflows:"
 echo "  From lint-and-validate.yml:"
 echo "    - Lint Dockerfiles"
-echo "    - Lint YAML files" 
+echo "    - Lint YAML files"
 echo "    - Security Scan"
 echo "  From build-test-publish.yml:"
 echo "    - Build Standard Image"
