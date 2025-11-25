@@ -14,7 +14,7 @@ ARG UV_VERSION=0.9.11
 ARG CLAUDE_CODE_VERSION=2.0.53
 ARG CODEX_VERSION=0.63.0
 ARG GOSS_VERSION=0.4.9
-ARG STARSHIP_VERSION=1.23.0
+ARG STARSHIP_VERSION=1.24.1
 
 FROM ubuntu:24.04 AS builder
 
@@ -241,9 +241,6 @@ WORKDIR /workspace
 
 # For background agents: use dumb-init as entrypoint for proper signal handling
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
-
-# No HEALTHCHECK - this container is designed for agent task execution, not service monitoring
-# Agents execute commands and return results; traditional health checks are not applicable
 
 # Default command - can be overridden
 CMD ["/bin/bash", "--login"]

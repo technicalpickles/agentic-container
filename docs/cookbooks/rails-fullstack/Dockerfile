@@ -16,5 +16,4 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
     && gem install rails
 USER agent
 
-# No HEALTHCHECK - this container is designed for task execution, not service monitoring
 WORKDIR /workspace

@@ -376,8 +376,6 @@ for details.
 **Built with ❤️ for the AI agent community**
 
 <!-- AUTO-GENERATED-CONTENT-START -->
-<!-- This section is automatically updated by GitHub Actions -->
-
-_Last documentation update: 2025-09-20T17:54:18+00:00_
-
+    <!-- This section is automatically updated by GitHub Actions -->
+    *Last documentation update: 2025-11-25T18:31:38+00:00*
 <!-- AUTO-GENERATED-CONTENT-END -->

@@ -13,5 +13,4 @@ RUN pip install --no-cache-dir \
 # Ensure we run as non-root user for security
 USER agent
 
-# No HEALTHCHECK - this container is designed for task execution, not service monitoring
 WORKDIR /workspace
