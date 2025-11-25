@@ -2,6 +2,7 @@
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
   extends: ["config:recommended", ":semanticCommits", ":dependencyDashboard"],
   timezone: "America/New_York",
+  schedule: ["before 6am"],
   packageRules: [
     {
       description: "Group and auto-merge non-breaking GitHub Actions updates",
@@ -50,8 +51,8 @@
       automerge: true,
     },
     {
-      description: "Auto-merge patch updates",
-      matchUpdateTypes: ["patch"],
+      description: "Auto-merge patch and minor updates",
+      matchUpdateTypes: ["patch", "minor"],
       automerge: true,
       automergeType: "pr",
     },
@@ -256,9 +257,10 @@
     enabled: true,
   },
   osvVulnerabilityAlerts: true,
+  // Global automerge disabled - packageRules override this for specific update types
   automerge: false,
   automergeType: "pr",
-  automergeStrategy: "merge",
+  automergeStrategy: "squash",
   ignoreDeps: [],
   commitMessageTopic: "{{depName}}",
   commitMessageAction: "to",
