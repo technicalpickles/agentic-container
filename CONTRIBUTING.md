@@ -150,7 +150,8 @@ To create new extension examples:
 1. **Create cookbook directory**: `docs/cookbooks/your-example/`
 2. **Add Dockerfile**: Simple, focused extension pattern
 3. **Add goss.yaml**: Copy from `_templates/goss-template.yaml` and customize
-4. **Test thoroughly**: Use `./scripts/test-dockerfile.sh docs/cookbooks/your-example/Dockerfile`
+4. **Test thoroughly**: Use
+   `./scripts/test-dockerfile.sh docs/cookbooks/your-example/Dockerfile`
 5. **Document the pattern** in the cookbook README.md
 
 ## Pull Request Process

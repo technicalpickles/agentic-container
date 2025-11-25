@@ -1,27 +1,36 @@
 # Branch Protection and Auto-Merge Setup Guide
 
-This guide helps you configure GitHub branch protection rules and auto-merge functionality to ensure all CI checks pass before allowing merges.
+This guide helps you configure GitHub branch protection rules and auto-merge
+functionality to ensure all CI checks pass before allowing merges.
 
 ## Current CI Status Checks
 
 Based on your workflows, these are the status checks that should be required:
 
 ### From `lint-and-validate.yml`:
+
 - `Lint Dockerfiles` (hadolint job)
 - `Lint YAML files` (yamllint job)
 - `Security Scan` (security-scan job)
 
 ### From `build-test-publish.yml`:
+
 - `Build Standard Image` (build-standard job)
 - `Cookbook Tests Summary` (test-cookbooks-summary job)
 
-**Note:** The `parallel-validation` job uses a matrix strategy that creates multiple individual checks like `Parallel Validation (test-cookbooks, Test Cookbooks, python-cli)`. Rather than requiring each individual matrix job, we require the `Cookbook Tests Summary` job which waits for all parallel jobs to complete and fails if any cookbook test fails.
+**Note:** The `parallel-validation` job uses a matrix strategy that creates
+multiple individual checks like
+`Parallel Validation (test-cookbooks, Test Cookbooks, python-cli)`. Rather than
+requiring each individual matrix job, we require the `Cookbook Tests Summary`
+job which waits for all parallel jobs to complete and fails if any cookbook test
+fails.
 
 ## Step 1: Configure Branch Protection Rules
 
 ### Via GitHub Web Interface:
 
-1. Go to your repository settings: `https://github.com/YOUR_ORG/agentic-container/settings/branches`
+1. Go to your repository settings:
+   `https://github.com/YOUR_ORG/agentic-container/settings/branches`
 
 2. Click "Add rule" or edit the existing rule for `main` branch
 
@@ -40,6 +49,7 @@ Based on your workflows, these are the status checks that should be required:
    - ✅ Require branches to be up to date before merging
 
    **Required Status Checks** (add these exact names):
+
    ```
    Lint Dockerfiles
    Lint YAML files
@@ -75,6 +85,7 @@ gh api repos/{owner}/{repo}/branches/main/protection \
 ## Step 2: Enable Auto-Merge
 
 ### Repository Settings:
+
 1. Go to `https://github.com/YOUR_ORG/agentic-container/settings`
 2. Scroll to "Pull Requests" section
 3. ✅ Enable "Allow auto-merge"
@@ -90,6 +101,7 @@ Once enabled, on any pull request:
    - The PR will auto-merge once all required checks pass
 
 2. **Via GitHub CLI:**
+
    ```bash
    # Enable auto-merge on a PR
    gh pr merge --auto --squash PR_NUMBER
@@ -143,8 +155,7 @@ jobs:
   auto-merge:
     runs-on: ubuntu-latest
     if: >
-      github.event.pull_request.draft == false &&
-      (
+      github.event.pull_request.draft == false && (
         contains(github.event.pull_request.labels.*.name, 'auto-merge') ||
         github.event.pull_request.user.login == 'dependabot[bot]'
       )
@@ -164,24 +175,25 @@ Add to `.github/dependabot.yml`:
 ```yaml
 version: 2
 updates:
-  - package-ecosystem: "npm"
-    directory: "/"
+  - package-ecosystem: 'npm'
+    directory: '/'
     schedule:
-      interval: "weekly"
+      interval: 'weekly'
     # Auto-merge minor and patch updates
     open-pull-requests-limit: 5
     reviewers:
-      - "your-username"
+      - 'your-username'
     labels:
-      - "dependencies"
-      - "auto-merge"  # This triggers auto-merge workflow
+      - 'dependencies'
+      - 'auto-merge' # This triggers auto-merge workflow
 ```
 
 ## Understanding Matrix Jobs and Status Checks
 
 ### Why We Don't Require Individual Matrix Jobs
 
-Your `parallel-validation` job uses GitHub Actions matrix strategy, which creates multiple individual checks:
+Your `parallel-validation` job uses GitHub Actions matrix strategy, which
+creates multiple individual checks:
 
 ```yaml
 strategy:
@@ -195,6 +207,7 @@ strategy:
 ```
 
 This creates status checks like:
+
 - `Parallel Validation (test-cookbooks, Test Cookbooks, python-cli)`
 - `Parallel Validation (test-cookbooks, Test Cookbooks, nodejs-backend)`
 - `Parallel Validation (test-cookbooks, Test Cookbooks, go-microservices)`
@@ -202,20 +215,25 @@ This creates status checks like:
 
 ### The Problem with Requiring Matrix Jobs
 
-If we required all individual matrix jobs as status checks, we'd have several issues:
+If we required all individual matrix jobs as status checks, we'd have several
+issues:
 
-1. **Fragile Configuration**: Adding/removing cookbooks would require updating branch protection rules
-2. **Long Status Check Lists**: With 6+ cookbooks, we'd have 6+ individual checks to manage
-3. **Maintenance Overhead**: Each cookbook change requires infrastructure updates
+1. **Fragile Configuration**: Adding/removing cookbooks would require updating
+   branch protection rules
+2. **Long Status Check Lists**: With 6+ cookbooks, we'd have 6+ individual
+   checks to manage
+3. **Maintenance Overhead**: Each cookbook change requires infrastructure
+   updates
 
 ### The Solution: Summary Jobs
 
 Instead, we use the **`Cookbook Tests Summary`** job which:
 
-✅ **Waits for all matrix jobs** using `needs: parallel-validation`
-✅ **Fails if any cookbook test fails** using `if: needs.parallel-validation.result != 'success'`
-✅ **Provides a single status check** that represents all cookbook testing
-✅ **Scales automatically** when cookbooks are added/removed
+✅ **Waits for all matrix jobs** using `needs: parallel-validation` ✅ **Fails
+if any cookbook test fails** using
+`if: needs.parallel-validation.result != 'success'` ✅ **Provides a single
+status check** that represents all cookbook testing ✅ **Scales automatically**
+when cookbooks are added/removed
 
 This pattern is recommended by GitHub for matrix job workflows.
 

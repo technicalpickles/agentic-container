@@ -2,15 +2,15 @@ name: Validate Renovate Configuration
 
 on:
   push:
-    paths: ['.github/renovate.json5', 'scripts/validate-renovate.sh']
+    paths: [".github/renovate.json5", "scripts/validate-renovate.sh"]
     branches: [main, renovate/**]
   pull_request:
-    paths: ['.github/renovate.json5', 'scripts/validate-renovate.sh']
+    paths: [".github/renovate.json5", "scripts/validate-renovate.sh"]
     branches: [main]
   # Weekly validation to catch configuration drift
   schedule:
-    - cron: '0 6 * * 1'  # 6 AM every Monday
-  workflow_dispatch:  # Allow manual triggering
+    - cron: "0 6 * * 1" # 6 AM every Monday
+  workflow_dispatch: # Allow manual triggering
 
 env:
   # Disable Renovate telemetry for CI runs

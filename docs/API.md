@@ -91,8 +91,7 @@ publish-extended-image.sh \
 
 #### `base`
 
-**Purpose**: Minimal foundation with core tools and mise
-**Size**: ~800MB
+**Purpose**: Minimal foundation with core tools and mise **Size**: ~800MB
 **Includes**:
 
 - Ubuntu 24.04 LTS
@@ -111,9 +110,8 @@ FROM ghcr.io/technicalpickles/agentic-container:latest
 
 #### `tools`
 
-**Purpose**: Enhanced development experience
-**Size**: ~850MB
-**Includes**: Everything from `base` plus:
+**Purpose**: Enhanced development experience **Size**: ~850MB **Includes**:
+Everything from `base` plus:
 
 - Starship shell prompt
 - Configured shell environment
@@ -131,18 +129,16 @@ FROM ghcr.io/technicalpickles/agentic-container:standard
 
 #### `ruby`
 
-**Purpose**: Ruby development environment
-**Size**: ~1.2GB
-**Includes**: Everything from `tools` plus:
+**Purpose**: Ruby development environment **Size**: ~1.2GB **Includes**:
+Everything from `tools` plus:
 
 - Ruby 3.4.5 (configured globally)
 - RubyGems package manager
 
 #### `node`
 
-**Purpose**: JavaScript/TypeScript development
-**Size**: ~1.1GB
-**Includes**: Everything from `tools` plus:
+**Purpose**: JavaScript/TypeScript development **Size**: ~1.1GB **Includes**:
+Everything from `tools` plus:
 
 - Node.js 24.8.0 LTS (primary)
 - Node.js 22.11.0 (secondary)
@@ -150,26 +146,23 @@ FROM ghcr.io/technicalpickles/agentic-container:standard
 
 #### `python`
 
-**Purpose**: Python development environment
-**Size**: ~1.0GB
-**Includes**: Everything from `tools` plus:
+**Purpose**: Python development environment **Size**: ~1.0GB **Includes**:
+Everything from `tools` plus:
 
 - Python 3.13.7 (configured globally)
 - pip package manager
 
 #### `go`
 
-**Purpose**: Go development environment
-**Size**: ~1.1GB
-**Includes**: Everything from `tools` plus:
+**Purpose**: Go development environment **Size**: ~1.1GB **Includes**:
+Everything from `tools` plus:
 
 - Go 1.25.1 (configured globally)
 - Go module support
 
 #### `dev` (latest)
 
-**Purpose**: Full-featured development environment
-**Size**: ~2.2GB
+**Purpose**: Full-featured development environment **Size**: ~2.2GB
 **Includes**: Everything from `tools` plus:
 
 - All language runtimes (Ruby, Node.js, Python, Go)

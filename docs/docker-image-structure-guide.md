@@ -1,9 +1,8 @@
 # Docker Image Structure Guide
 
-**Created**: 2024-09-15
-**Purpose**: Reference guide for contributors modifying the agentic-container
-Dockerfile
-**Scope**: Docker layer optimization, multi-stage builds, and best practices
+**Created**: 2024-09-15 **Purpose**: Reference guide for contributors modifying
+the agentic-container Dockerfile **Scope**: Docker layer optimization,
+multi-stage builds, and best practices
 
 ## Overview
 
@@ -729,9 +728,8 @@ docker run --rm -it image find / -size +100M -ls
 
 ---
 
-**Last Updated**: 2024-09-16
-**Next Review**: When major Dockerfile changes are made
-**Maintainer**: Review this guide when contributing to the Dockerfile
+**Last Updated**: 2024-09-16 **Next Review**: When major Dockerfile changes are
+made **Maintainer**: Review this guide when contributing to the Dockerfile
 
 **Recent Changes**:
 

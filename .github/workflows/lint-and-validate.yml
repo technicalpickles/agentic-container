@@ -82,8 +82,8 @@ jobs:
       - name: Lint all Dockerfiles with Hadolint
         uses: jbergstroem/hadolint-gh-action@v1.13.0
         with:
-          dockerfile: '**/Dockerfile*'
-          config_file: '.hadolint.yaml'
+          dockerfile: "**/Dockerfile*"
+          config_file: ".hadolint.yaml"
           annotate: true
 
   yamllint:

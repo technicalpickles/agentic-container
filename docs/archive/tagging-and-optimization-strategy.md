@@ -1,8 +1,7 @@
 # Tagging and Size Optimization Strategy
 
-**Created**: 2025-01-15
-**Status**: Planning
-**Scope**: Image tagging strategy and size optimization for agentic-container
+**Created**: 2025-01-15 **Status**: Planning **Scope**: Image tagging strategy
+and size optimization for agentic-container
 
 ## Overview
 

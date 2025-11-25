@@ -4,15 +4,15 @@ on:
   workflow_dispatch:
     inputs:
       pr_number:
-        description: 'PR number to clean up (leave empty for bulk cleanup of all pr-* tags)'
+        description: "PR number to clean up (leave empty for bulk cleanup of all pr-* tags)"
         required: false
         type: string
       tag_pattern:
-        description: 'Custom tag pattern to delete (e.g., pr-24-*). Overrides PR number if provided.'
+        description: "Custom tag pattern to delete (e.g., pr-24-*). Overrides PR number if provided."
         required: false
         type: string
       dry_run:
-        description: 'Dry run - show what would be deleted without actually deleting'
+        description: "Dry run - show what would be deleted without actually deleting"
         required: false
         type: boolean
         default: false

@@ -34,8 +34,7 @@ I've created detailed documentation in `/scratch`:
 
 ### Phase 1: Quick Wins (Week 1) ⚡
 
-**Time**: ~8 hours
-**Impact**: High
+**Time**: ~8 hours **Impact**: High
 
 ```yaml
 # Add to existing .github/workflows/build-and-publish.yml
@@ -62,8 +61,7 @@ jobs:
 
 ### Phase 2: Systematic Testing (Week 2) 🧪
 
-**Time**: ~12 hours
-**Impact**: Very High
+**Time**: ~12 hours **Impact**: Very High
 
 **Tasks**:
 
@@ -88,8 +86,7 @@ dgoss run python-cli-test
 
 ### Phase 3: Full CI Integration (Week 3) 🔄
 
-**Time**: ~8 hours
-**Impact**: High
+**Time**: ~8 hours **Impact**: High
 
 **Tasks**:
 
@@ -125,8 +122,7 @@ jobs:
 
 ### Phase 4: Documentation Quality (Week 4) 📖
 
-**Time**: ~6 hours
-**Impact**: Medium
+**Time**: ~6 hours **Impact**: Medium
 
 **Tasks**:
 
@@ -271,15 +267,15 @@ curl -fsSL https://goss.rocks/install | sh
 
 ### Tool Choice Validation
 
-**Chosen**: Goss + dgoss
-**Why**: Simple YAML config, fast execution, wide adoption
-**Alternative**: Container Structure Test (more complex but more features)
+**Chosen**: Goss + dgoss **Why**: Simple YAML config, fast execution, wide
+adoption **Alternative**: Container Structure Test (more complex but more
+features)
 
 ### CI Integration Approach
 
-**Chosen**: Separate test workflow
-**Why**: Parallel execution, focused testing, easier maintenance
-**Alternative**: Extend existing workflow (simpler but slower)
+**Chosen**: Separate test workflow **Why**: Parallel execution, focused testing,
+easier maintenance **Alternative**: Extend existing workflow (simpler but
+slower)
 
 ---
 
@@ -380,8 +376,7 @@ All core CI testing infrastructure is implemented and working:
 - [ ] Create documentation testing standards
 - [ ] Update CONTRIBUTING.md with testing requirements and procedures
 
-**Estimated Time**: ~6 hours
-**Impact**: Medium (quality-of-life improvements)
+**Estimated Time**: ~6 hours **Impact**: Medium (quality-of-life improvements)
 
 ### 🎯 NEXT STEPS RECOMMENDATIONS
 

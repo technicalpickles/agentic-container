@@ -8,43 +8,43 @@ specific pattern or approach, not complete applications.
 
 ### [Python Development](./python-cli/)
 
-**Pattern**: pip package manager usage
-**Dockerfile**: [`python-cli/Dockerfile`](python-cli/Dockerfile)
+**Pattern**: pip package manager usage **Dockerfile**:
+[`python-cli/Dockerfile`](python-cli/Dockerfile)
 
 Shows how to add Python packages via pip (Python already pre-installed).
 
 ### [Node.js Development](./nodejs-backend/)
 
-**Pattern**: npm global installs + system packages
-**Dockerfile**: [`nodejs-backend/Dockerfile`](nodejs-backend/Dockerfile)
+**Pattern**: npm global installs + system packages **Dockerfile**:
+[`nodejs-backend/Dockerfile`](nodejs-backend/Dockerfile)
 
 Shows npm global package installation and adding system dependencies via apt.
 
 ### [Ruby Development](./rails-fullstack/)
 
-**Pattern**: mise install new language + gem packages
-**Dockerfile**: [`rails-fullstack/Dockerfile`](rails-fullstack/Dockerfile)
+**Pattern**: mise install new language + gem packages **Dockerfile**:
+[`rails-fullstack/Dockerfile`](rails-fullstack/Dockerfile)
 
 Shows how to install Ruby via mise and add packages with gem.
 
 ### [Go Development](./go-microservices/)
 
-**Pattern**: mise install + go install packages
-**Dockerfile**: [`go-microservices/Dockerfile`](go-microservices/Dockerfile)
+**Pattern**: mise install + go install packages **Dockerfile**:
+[`go-microservices/Dockerfile`](go-microservices/Dockerfile)
 
 Shows installing Go via mise and adding Go packages with `go install`.
 
 ### [Frontend Development](./react-frontend/)
 
-**Pattern**: npm global tools
-**Dockerfile**: [`react-frontend/Dockerfile`](react-frontend/Dockerfile)
+**Pattern**: npm global tools **Dockerfile**:
+[`react-frontend/Dockerfile`](react-frontend/Dockerfile)
 
 Shows installing frontend development tools globally via npm.
 
 ### [Multi-Stage Build](./multistage-production/)
 
-**Pattern**: Build vs Runtime stages
-**Dockerfile**: [`multistage-production/Dockerfile`](multistage-production/Dockerfile)
+**Pattern**: Build vs Runtime stages **Dockerfile**:
+[`multistage-production/Dockerfile`](multistage-production/Dockerfile)
 
 Shows multi-stage Docker builds for optimized production images.
 

@@ -1,8 +1,7 @@
 # CI Image Size Monitoring with Dive
 
-**Created**: 2025-01-15
-**Status**: Planning
-**Scope**: Using dive to monitor and control image size changes in CI/CD
+**Created**: 2025-01-15 **Status**: Planning **Scope**: Using dive to monitor
+and control image size changes in CI/CD
 
 ## Overview
 
@@ -116,8 +115,7 @@ Set minimum efficiency thresholds for images.
 
 ### Option 1: Basic Size Monitoring
 
-**Pros**: Simple, quick feedback
-**Cons**: Limited insights
+**Pros**: Simple, quick feedback **Cons**: Limited insights
 
 ```yaml
 jobs:
@@ -140,8 +138,7 @@ jobs:
 
 ### Option 2: Comprehensive Analysis with Dive
 
-**Pros**: Detailed insights, layer analysis
-**Cons**: More complex setup
+**Pros**: Detailed insights, layer analysis **Cons**: More complex setup
 
 ```yaml
 jobs:
@@ -182,8 +179,8 @@ jobs:
 
 ### Option 3: Historical Tracking with Database
 
-**Pros**: Long-term trends, regression analysis
-**Cons**: Requires external storage
+**Pros**: Long-term trends, regression analysis **Cons**: Requires external
+storage
 
 ```yaml
 - name: Track size history

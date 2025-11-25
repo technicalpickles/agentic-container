@@ -1,25 +1,32 @@
 # Goss Testing Integration Plan for Standard and Dev Targets
 
-**Created**: 2025-01-22
-**Status**: Research and Planning Complete
-**Goal**: Integrate goss tests for standard and dev targets, enable cookbook reuse
+**Created**: 2025-01-22 **Status**: Research and Planning Complete **Goal**:
+Integrate goss tests for standard and dev targets, enable cookbook reuse
 
 ## Executive Summary
 
-This plan outlines how to add comprehensive goss testing for the main Dockerfile's `standard` and `dev` targets, integrate them into CI, and enable cookbooks to reuse these base tests. The approach builds on the existing successful cookbook testing infrastructure while adding base image validation.
+This plan outlines how to add comprehensive goss testing for the main
+Dockerfile's `standard` and `dev` targets, integrate them into CI, and enable
+cookbooks to reuse these base tests. The approach builds on the existing
+successful cookbook testing infrastructure while adding base image validation.
 
 ## Current State Analysis
 
 ### Existing Goss Testing Infrastructure ✅
 
 **Strengths:**
-- **Container self-installation**: Each container installs goss using mise (solves architecture issues)
-- **Unified test script**: `scripts/test-dockerfile.sh` handles all testing logic
+
+- **Container self-installation**: Each container installs goss using mise
+  (solves architecture issues)
+- **Unified test script**: `scripts/test-dockerfile.sh` handles all testing
+  logic
 - **Comprehensive validation**: 23 tests passing for python-cli cookbook
 - **CI integration**: Cookbook testing fully integrated into GitHub Actions
-- **Template system**: `docs/cookbooks/_templates/goss-template.yaml` for new cookbooks
+- **Template system**: `docs/cookbooks/_templates/goss-template.yaml` for new
+  cookbooks
 
 **Current Cookbook Testing Flow:**
+
 1. Build cookbook extension image from base image
 2. Run `./scripts/test-dockerfile.sh <cookbook> <image>`
 3. Script mounts goss.yaml and runs comprehensive validation
@@ -28,6 +35,7 @@ This plan outlines how to add comprehensive goss testing for the main Dockerfile
 ### Dockerfile Target Analysis
 
 **Standard Target (Lines 76-247):**
+
 - **Base**: Ubuntu 24.04
 - **Core Tools**: git, curl, vim, nano, jq, ripgrep, fd-find, tree, htop
 - **System Tools**: dumb-init, sudo, procps, locales
@@ -42,6 +50,7 @@ This plan outlines how to add comprehensive goss testing for the main Dockerfile
 - **Workspace**: /workspace (owned by agent)
 
 **Dev Target (Lines 255-278):**
+
 - **Inherits**: Everything from standard target
 - **Additional Languages**: Ruby, Go, lefthook (via mise)
 - **Same user/workspace setup**
@@ -51,6 +60,7 @@ This plan outlines how to add comprehensive goss testing for the main Dockerfile
 ### Phase 1: Create Base Goss Test Files
 
 #### 1.1 File Structure
+
 ```
 /
 ├── goss/
@@ -68,6 +78,7 @@ This plan outlines how to add comprehensive goss testing for the main Dockerfile
 #### 1.2 Standard Target Tests (`goss/standard.yaml`)
 
 **Core System Validation:**
+
 ```yaml
 # Test essential system commands
 command:
@@ -198,22 +209,23 @@ env:
 #### 1.3 Dev Target Tests (`goss/dev.yaml`)
 
 **Inherits Standard + Additional Languages:**
+
 ```yaml
 # Note: Base tests from standard are merged at runtime by the unified test script.
 # No YAML include is required or supported.
 
 # Additional language tests
 command:
-  "ruby --version":
+  'ruby --version':
     exit-status: 0
     stdout: [/ruby \d+\.\d+/]
-  "gem --version":
+  'gem --version':
     exit-status: 0
     stdout: [/\d+\.\d+/]
-  "go version":
+  'go version':
     exit-status: 0
     stdout: [/go version go\d+\.\d+/]
-  "lefthook --version":
+  'lefthook --version':
     exit-status: 0
     stdout: [/\d+\.\d+/]
 
@@ -233,41 +245,42 @@ file:
 #### 1.4 Base Common Tests (`goss/base-common.yaml`)
 
 **Shared validation between standard and dev:**
+
 ```yaml
 # Common system validation
 command:
-  "dumb-init --version":
+  'dumb-init --version':
     exit-status: 0
     stdout: [/\d+\.\d+/]
-  "sudo --version":
+  'sudo --version':
     exit-status: 0
-    stdout: ["Sudo version"]
+    stdout: ['Sudo version']
 
 # Common file structure
 file:
   /usr/local/bin/mise:
     exists: true
     filetype: file
-    mode: "0755"
+    mode: '0755'
   /usr/local/bin/rv:
     exists: true
     filetype: file
-    mode: "0755"
+    mode: '0755'
   /usr/local/bin/starship:
     exists: true
     filetype: file
-    mode: "0755"
+    mode: '0755'
 
 # Common environment
 env:
   DEBIAN_FRONTEND:
-    value: "noninteractive"
+    value: 'noninteractive'
   TERM:
-    value: "xterm-256color"
+    value: 'xterm-256color'
   LANG:
-    value: "en_US.UTF-8"
+    value: 'en_US.UTF-8'
   LC_ALL:
-    value: "en_US.UTF-8"
+    value: 'en_US.UTF-8'
 ```
 
 ### Phase 2: Enhanced Test Script
@@ -275,12 +288,14 @@ env:
 #### 2.1 Enhanced `scripts/test-dockerfile.sh`
 
 **New capabilities:**
+
 - Support for testing base targets (`standard`, `dev`)
 - Automatic goss file detection for base targets
 - Enhanced CI mode for base target testing
 - Better error messages and guidance
 
 **New usage patterns:**
+
 ```bash
 # Test standard target
 ./scripts/test-dockerfile.sh standard
@@ -297,6 +312,7 @@ env:
 ```
 
 **Enhanced logic:**
+
 ```bash
 # Detect target type
 if [[ "$dockerfile" == "standard" ]] || [[ "$dockerfile" == "dev" ]]; then
@@ -320,6 +336,7 @@ fi
 #### 3.1 Enhanced GitHub Actions Workflow
 
 **New matrix jobs for base target testing:**
+
 ```yaml
 strategy:
   matrix:
@@ -328,20 +345,28 @@ strategy:
       - job: test-cookbooks
         name: Test Cookbooks
         cookbook: python-cli
-        condition: ${{ needs.detect-changes.outputs.base-dockerfile == 'true' || contains(needs.detect-changes.outputs.changed-cookbooks, 'python-cli') }}
+        condition:
+          ${{ needs.detect-changes.outputs.base-dockerfile == 'true' ||
+          contains(needs.detect-changes.outputs.changed-cookbooks, 'python-cli')
+          }}
 
       # New base target testing
       - job: test-standard
         name: Test Standard Target
         target: standard
-        condition: ${{ needs.detect-changes.outputs.base-dockerfile == 'true' || github.event_name == 'schedule' }}
+        condition:
+          ${{ needs.detect-changes.outputs.base-dockerfile == 'true' ||
+          github.event_name == 'schedule' }}
       - job: test-dev
         name: Test Dev Target
         target: dev
-        condition: ${{ needs.detect-changes.outputs.base-dockerfile == 'true' || github.event_name == 'schedule' }}
+        condition:
+          ${{ needs.detect-changes.outputs.base-dockerfile == 'true' ||
+          github.event_name == 'schedule' }}
 ```
 
 **New CI steps:**
+
 ```yaml
 - name: Test base target
   if: matrix.job == 'test-standard' || matrix.job == 'test-dev'
@@ -353,6 +378,7 @@ strategy:
 #### 3.2 CI Flow Integration
 
 **Build → Test → Publish Flow:**
+
 1. **Build Standard**: Build standard target, export for testing
 2. **Build Dev**: Build dev target (if base dockerfile changed)
 3. **Test Standard**: Run goss tests on standard target
@@ -364,7 +390,8 @@ strategy:
 
 #### 4.1 Base Test Reuse via Runtime Composition
 
-Cookbooks automatically reuse base validation without YAML includes. The unified test script composes multiple goss files at runtime using repeated `-g` flags:
+Cookbooks automatically reuse base validation without YAML includes. The unified
+test script composes multiple goss files at runtime using repeated `-g` flags:
 
 - Base common: `goss/base-common.yaml`
 - Standard target: `goss/standard.yaml`
@@ -372,24 +399,30 @@ Cookbooks automatically reuse base validation without YAML includes. The unified
 - Cookbook-specific: `docs/cookbooks/<cookbook>/goss.yaml`
 
 Implications:
+
 - No `include` directive is needed (goss does not support it).
 - Cookbook `goss.yaml` should contain only cookbook-specific tests.
-- For cookbooks based on the dev target, the script detects dev via the cookbook `Dockerfile` and mounts both standard and dev base tests.
+- For cookbooks based on the dev target, the script detects dev via the cookbook
+  `Dockerfile` and mounts both standard and dev base tests.
 
 #### 4.2 Cookbook Migration Strategy
 
 **For existing cookbooks:**
+
 1. Keep existing cookbook tests as-is
 2. Base validation is added automatically by the test script
 
 **For new cookbooks:**
-1. Copy the generic template `docs/cookbooks/_templates/goss-template.yaml` to `goss.yaml`
+
+1. Copy the generic template `docs/cookbooks/_templates/goss-template.yaml` to
+   `goss.yaml`
 2. Add cookbook-specific tests
 3. Base validation (standard and/or dev) is automatically included at test time
 
 #### 4.3 Template Usage Examples
 
 **Creating a new Python cookbook:**
+
 ```bash
 cd docs/cookbooks/my-python-cookbook
 cp ../_templates/goss-template.yaml goss.yaml
@@ -399,6 +432,7 @@ cp ../_templates/goss-template.yaml goss.yaml
 ```
 
 **Creating a new multi-language cookbook:**
+
 ```bash
 cd docs/cookbooks/my-multi-lang-cookbook
 cp ../_templates/goss-template.yaml goss.yaml
@@ -412,7 +446,9 @@ cp ../_templates/goss-template.yaml goss.yaml
 
 **Preview runtime composition (no build/run):**
 
-Use the unified script's dry-run mode to verify which base goss files will be merged and the exact `goss` command that would execute, without building images or starting containers:
+Use the unified script's dry-run mode to verify which base goss files will be
+merged and the exact `goss` command that would execute, without building images
+or starting containers:
 
 ```bash
 # Preview a cookbook's composition
@@ -425,32 +461,39 @@ DRY_RUN=true ./scripts/test-dockerfile.sh dev
 
 **CI validation:**
 
-- Base targets are tested via the `test-base-targets` job in `.github/workflows/build-test-publish.yml`.
-- Local workflow logic can be validated with `./scripts/test-workflows-locally.sh` using `act`.
+- Base targets are tested via the `test-base-targets` job in
+  `.github/workflows/build-test-publish.yml`.
+- Local workflow logic can be validated with
+  `./scripts/test-workflows-locally.sh` using `act`.
 
 ## Implementation Benefits
 
 ### 1. Comprehensive Base Validation ✅
+
 - **Standard target**: Validates all core tools, AI agents, languages
 - **Dev target**: Validates standard + additional languages (Ruby, Go)
 - **Consistent testing**: Same validation approach across all targets
 
 ### 2. CI Integration ✅
+
 - **Parallel testing**: Base targets and cookbooks test in parallel
 - **Change detection**: Only test what changed
 - **Build validation**: Ensure base images work before cookbook testing
 
 ### 3. Cookbook Reuse ✅
+
 - **Template system**: Easy creation of new cookbooks
 - **Base inheritance**: Cookbooks automatically get base validation
 - **Consistency**: All cookbooks use same base validation approach
 
 ### 4. Developer Experience ✅
+
 - **Local testing**: `./scripts/test-dockerfile.sh standard`
 - **Clear feedback**: Comprehensive test results and error messages
 - **Easy debugging**: Failed tests show exactly what's wrong
 
 ### 5. Maintenance Benefits ✅
+
 - **Single source of truth**: Base tests defined once, reused everywhere
 - **Version validation**: Ensure all tools are correct versions
 - **Regression prevention**: Catch breaking changes in base images
@@ -482,5 +525,6 @@ DRY_RUN=true ./scripts/test-dockerfile.sh dev
 5. **Test implementation** with existing cookbooks
 6. **Document new usage patterns** in README and docs
 
-This plan provides a comprehensive, maintainable approach to testing base images while enabling cookbook reuse and maintaining the existing successful testing infrastructure.
-
+This plan provides a comprehensive, maintainable approach to testing base images
+while enabling cookbook reuse and maintaining the existing successful testing
+infrastructure.

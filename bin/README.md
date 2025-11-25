@@ -1,6 +1,7 @@
 # Renovate Docker Wrappers
 
-Convenient wrapper scripts that hide Docker complexity for running Renovate tools.
+Convenient wrapper scripts that hide Docker complexity for running Renovate
+tools.
 
 ## Usage
 
@@ -32,7 +33,8 @@ npm run renovate -- --version
 
 ## Environment Variables
 
-The `renovate` wrapper automatically passes through these environment variables to Docker:
+The `renovate` wrapper automatically passes through these environment variables
+to Docker:
 
 - `GITHUB_TOKEN`
 - `RENOVATE_TOKEN`
