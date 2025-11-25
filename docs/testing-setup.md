@@ -148,8 +148,8 @@ For CI (GitHub Actions):
 
 ## Architecture Benefits
 
-✨ **No host/container architecture mismatches**  
-✨ **No complex volume mounting**  
-✨ **Uses existing mise infrastructure**  
-✨ **Works identically in development and CI**  
+✨ **No host/container architecture mismatches**
+✨ **No complex volume mounting**
+✨ **Uses existing mise infrastructure**
+✨ **Works identically in development and CI**
 ✨ **Self-documenting test specifications**

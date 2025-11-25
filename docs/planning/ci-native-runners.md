@@ -1,7 +1,7 @@
 # CI Strategy: Native Runners with Manifest Combination
 
-**Created**: 2024-09-19  
-**Status**: Planning/Proposal  
+**Created**: 2024-09-19
+**Status**: Planning/Proposal
 **Purpose**: Document strategy for using native ARM64 runners to improve
 multi-platform build performance
 
@@ -254,7 +254,7 @@ jobs:
             echo "build-arm64=true" >> $GITHUB_OUTPUT
             echo "use-native-runners=true" >> $GITHUB_OUTPUT
           else
-            echo "build-arm64=false" >> $GITHUB_OUTPUT  
+            echo "build-arm64=false" >> $GITHUB_OUTPUT
             echo "use-native-runners=false" >> $GITHUB_OUTPUT
           fi
 
@@ -503,6 +503,6 @@ collect-metrics:
 
 ---
 
-**Status**: Ready for implementation  
-**Next Steps**: Begin Phase 1 implementation with test repository  
+**Status**: Ready for implementation
+**Next Steps**: Begin Phase 1 implementation with test repository
 **Review Date**: After initial implementation and performance validation

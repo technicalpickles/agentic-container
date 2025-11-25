@@ -5,7 +5,7 @@ on:
     paths: ['.github/renovate.json5', 'scripts/validate-renovate.sh']
     branches: [main, renovate/**]
   pull_request:
-    paths: ['.github/renovate.json5', 'scripts/validate-renovate.sh'] 
+    paths: ['.github/renovate.json5', 'scripts/validate-renovate.sh']
     branches: [main]
   # Weekly validation to catch configuration drift
   schedule:
@@ -21,7 +21,7 @@ jobs:
     name: Validate Renovate Configuration
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     permissions:
       contents: read
       # No additional permissions needed for validation
@@ -32,6 +32,6 @@ jobs:
         with:
           # Full history needed to detect changes
           fetch-depth: 0
-        
+
       - name: Run validation (Docker-only)
         run: ./scripts/validate-renovate.sh

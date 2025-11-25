@@ -1,7 +1,7 @@
 # Agent Design Principles
 
-**Created**: 2025-09-15  
-**Status**: Living Document  
+**Created**: 2025-09-15
+**Status**: Living Document
 **Purpose**: Core design principles guiding the agentic-container project
 
 ## Vision Statement

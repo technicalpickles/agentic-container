@@ -457,7 +457,7 @@ jobs:
           curl -fsSL https://goss.rocks/install | sh
           sudo cp goss /usr/local/bin/
 
-          # Install dgoss  
+          # Install dgoss
           curl -fsSL https://raw.githubusercontent.com/aelsabbahy/goss/master/extras/dgoss/dgoss -o dgoss
           chmod +x dgoss
           sudo mv dgoss /usr/local/bin/

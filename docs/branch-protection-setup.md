@@ -8,7 +8,7 @@ Based on your workflows, these are the status checks that should be required:
 
 ### From `lint-and-validate.yml`:
 - `Lint Dockerfiles` (hadolint job)
-- `Lint YAML files` (yamllint job) 
+- `Lint YAML files` (yamllint job)
 - `Security Scan` (security-scan job)
 
 ### From `build-test-publish.yml`:
@@ -34,11 +34,11 @@ Based on your workflows, these are the status checks that should be required:
      - ✅ Dismiss stale PR approvals when new commits are pushed
      - ✅ Require review from code owners (if you have CODEOWNERS)
      - ✅ Allow specified actors to bypass pull request requirements (optional)
-   
+
    **Status Checks:**
    - ✅ Require status checks to pass before merging
    - ✅ Require branches to be up to date before merging
-   
+
    **Required Status Checks** (add these exact names):
    ```
    Lint Dockerfiles
@@ -84,7 +84,7 @@ gh api repos/{owner}/{repo}/branches/main/protection \
 Once enabled, on any pull request:
 
 1. **Via Web Interface:**
-   - Click the dropdown arrow next to "Merge pull request" 
+   - Click the dropdown arrow next to "Merge pull request"
    - Select "Enable auto-merge"
    - Choose merge type (merge commit, squash, rebase)
    - The PR will auto-merge once all required checks pass
@@ -93,7 +93,7 @@ Once enabled, on any pull request:
    ```bash
    # Enable auto-merge on a PR
    gh pr merge --auto --squash PR_NUMBER
-   
+
    # Or with merge commit
    gh pr merge --auto --merge PR_NUMBER
    ```
@@ -110,7 +110,7 @@ Once enabled, on any pull request:
 
 1. Create a test branch and PR
 2. Verify you cannot merge while checks are running
-3. Verify you cannot merge if any check fails  
+3. Verify you cannot merge if any check fails
 4. Verify auto-merge works when all checks pass
 
 ### Check Current Protection Status:
@@ -189,7 +189,7 @@ strategy:
     include:
       - job: test-cookbooks
         cookbook: python-cli
-      - job: test-cookbooks  
+      - job: test-cookbooks
         cookbook: nodejs-backend
       # ... more cookbooks
 ```
@@ -212,10 +212,10 @@ If we required all individual matrix jobs as status checks, we'd have several is
 
 Instead, we use the **`Cookbook Tests Summary`** job which:
 
-✅ **Waits for all matrix jobs** using `needs: parallel-validation`  
-✅ **Fails if any cookbook test fails** using `if: needs.parallel-validation.result != 'success'`  
-✅ **Provides a single status check** that represents all cookbook testing  
-✅ **Scales automatically** when cookbooks are added/removed  
+✅ **Waits for all matrix jobs** using `needs: parallel-validation`
+✅ **Fails if any cookbook test fails** using `if: needs.parallel-validation.result != 'success'`
+✅ **Provides a single status check** that represents all cookbook testing
+✅ **Scales automatically** when cookbooks are added/removed
 
 This pattern is recommended by GitHub for matrix job workflows.
 
@@ -270,6 +270,6 @@ gh pr view PR_NUMBER --json mergeStateStatus,mergeable,mergeabilityChecks
 
 1. Apply these settings to your main branch
 2. Test with a sample PR
-3. Train your team on the new workflow  
+3. Train your team on the new workflow
 4. Consider additional automation based on your needs
 5. Update this documentation as you refine the process

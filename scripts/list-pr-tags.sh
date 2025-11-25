@@ -51,26 +51,26 @@ echo -e "${YELLOW}📋 Fetching package versions...${NC}"
 # Function to analyze PR status and recommend cleanup
 analyze_pr_status() {
     local tags="$1"
-    
+
     echo
     echo -e "${BLUE}🔍 Analyzing PR status for cleanup recommendations...${NC}"
-    
+
     # Extract unique PR numbers from tags
     local pr_numbers
     pr_numbers=$(echo "$tags" | grep -oE 'pr-[0-9]+' | sed 's/pr-//' | sort -n | uniq)
-    
+
     if [ -z "$pr_numbers" ]; then
         echo -e "  ${YELLOW}ℹ️  No PR numbers found in tags${NC}"
         return
     fi
-    
+
     local open_prs=()
     local closed_prs=()
     local merged_prs=()
     local error_prs=()
-    
+
     echo -e "${YELLOW}📋 Checking PR status...${NC}"
-    
+
     # Check each PR's status
     while read -r pr_num; do
         if [ -n "$pr_num" ]; then
@@ -79,7 +79,7 @@ analyze_pr_status() {
                 local state=$(echo "$pr_info" | jq -r '.state')
                 local merged=$(echo "$pr_info" | jq -r '.merged')
                 local title=$(echo "$pr_info" | jq -r '.title' | cut -c1-50)
-                
+
                 if [ "$state" = "open" ]; then
                     open_prs+=("$pr_num")
                     echo -e "  ${GREEN}🟢${NC} PR #$pr_num: Open - \"$title\""
@@ -96,38 +96,38 @@ analyze_pr_status() {
             fi
         fi
     done <<< "$pr_numbers"
-    
+
     echo
     echo -e "${BLUE}📊 Summary:${NC}"
     echo -e "  Open PRs: ${GREEN}${#open_prs[@]}${NC}"
-    echo -e "  Merged PRs: ${BLUE}${#merged_prs[@]}${NC}" 
+    echo -e "  Merged PRs: ${BLUE}${#merged_prs[@]}${NC}"
     echo -e "  Closed PRs: ${RED}${#closed_prs[@]}${NC}"
     if [ ${#error_prs[@]} -gt 0 ]; then
         echo -e "  Error PRs: ${YELLOW}${#error_prs[@]}${NC}"
     fi
-    
+
     # Recommendations
     echo
     echo -e "${BLUE}💡 Cleanup Recommendations:${NC}"
-    
+
     if [ ${#merged_prs[@]} -gt 0 ] || [ ${#closed_prs[@]} -gt 0 ]; then
         echo -e "${YELLOW}🧹 Tags ready for cleanup:${NC}"
-        
+
         for pr in "${merged_prs[@]}"; do
             local pr_tag_count
             pr_tag_count=$(echo "$tags" | grep -c "pr-$pr-" || echo "0")
             echo -e "  • PR #$pr (merged) - $pr_tag_count tags"
         done
-        
+
         for pr in "${closed_prs[@]}"; do
             local pr_tag_count
             pr_tag_count=$(echo "$tags" | grep -c "pr-$pr-" || echo "0")
             echo -e "  • PR #$pr (closed) - $pr_tag_count tags"
         done
-        
+
         echo
         echo -e "${GREEN}🚀 Recommended actions:${NC}"
-        
+
         # Specific cleanup commands
         if [ ${#merged_prs[@]} -eq 1 ] && [ ${#closed_prs[@]} -eq 0 ]; then
             echo "  1. Clean up merged PR #${merged_prs[0]}:"
@@ -141,11 +141,11 @@ analyze_pr_status() {
         else
             echo "  1. Bulk cleanup recommended: Manual workflow → pr_number: (empty) → dry_run: false"
         fi
-        
+
     else
         echo -e "${GREEN}✅ All PR tags are for open PRs - no cleanup needed${NC}"
     fi
-    
+
     if [ ${#open_prs[@]} -gt 0 ]; then
         echo
         echo -e "${YELLOW}⚠️  Keep these tags (open PRs):${NC}"
@@ -161,32 +161,32 @@ analyze_pr_status() {
 list_tags() {
     local pattern="$1"
     local description="$2"
-    
+
     echo -e "\n${BLUE}🏷️  ${description}${NC}"
     echo "Pattern: ${pattern}"
     echo
-    
+
     local tags=""
     local success=false
-    
+
     # Try GitHub CLI first if available
     if [ "$HAS_GH" = true ]; then
         echo -e "${YELLOW}🔍 Trying GitHub CLI...${NC}"
-        
+
         # First, let's try the simpler approach - get all tags and filter locally
         local all_tags
         if all_tags=$(gh api "/users/technicalpickles/packages/container/agentic-container/versions" \
             --paginate \
             --jq '.[].metadata.container.tags[]' \
             2>/dev/null); then
-            
+
             echo -e "  ${BLUE}📋 All available tags:${NC}"
             echo "$all_tags" | head -10 | sed 's/^/    /'
             if [ $(echo "$all_tags" | wc -l) -gt 10 ]; then
                 echo "    ... and $(( $(echo "$all_tags" | wc -l) - 10 )) more"
             fi
             echo
-            
+
             # Filter for PR tags
             tags=$(echo "$all_tags" | grep -E "^$pattern" | sort || true)
             success=true
@@ -197,17 +197,17 @@ list_tags() {
                 --paginate \
                 --jq '.[].metadata.container.tags[]' \
                 2>/dev/null); then
-                
+
                 echo -e "  ${BLUE}📋 All available tags (org endpoint):${NC}"
                 echo "$all_tags" | head -10 | sed 's/^/    /'
                 echo
-                
+
                 tags=$(echo "$all_tags" | grep -E "^$pattern" | sort || true)
                 success=true
             fi
         fi
     fi
-    
+
     # Try Docker if GitHub CLI failed or isn't available
     if [ "$success" = false ] && [ "$HAS_DOCKER" = true ]; then
         echo -e "${YELLOW}🔍 Trying Docker registry API...${NC}"
@@ -220,19 +220,19 @@ list_tags() {
         echo "     3. Use the manual cleanup workflow with dry_run=true to see what tags exist"
         return
     fi
-    
+
     # Display results and analyze PR status
     if [ "$success" = true ]; then
         if [ -n "$tags" ]; then
             echo "$tags" | while read -r tag; do
                 echo -e "  ${GREEN}✓${NC} $tag"
             done
-            
+
             local count
             count=$(echo "$tags" | wc -l | tr -d ' ')
             echo
             echo -e "${YELLOW}📊 Found ${count} matching tags${NC}"
-            
+
             # Analyze PR status if we found PR tags
             if [ "$pattern" = "pr-" ]; then
                 analyze_pr_status "$tags"
@@ -260,7 +260,7 @@ fi
 echo
 echo -e "${BLUE}💡 Usage Tips:${NC}"
 echo "• To clean up specific PR: Use manual workflow with PR number"
-echo "• To clean up all PR tags: Use manual workflow without PR number"  
+echo "• To clean up all PR tags: Use manual workflow without PR number"
 echo "• To see what would be deleted: Use dry_run option in manual workflow"
 echo
 echo -e "${YELLOW}🔗 Manual cleanup workflow:${NC}"

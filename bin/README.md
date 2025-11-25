@@ -10,7 +10,7 @@ Convenient wrapper scripts that hide Docker complexity for running Renovate tool
 # Validate default config (.github/renovate.json5)
 ./bin/renovate-config-validator
 
-# Validate specific config file  
+# Validate specific config file
 ./bin/renovate-config-validator path/to/renovate.json
 
 # Via npm script
@@ -26,7 +26,7 @@ npm run renovate-config-validator
 # Dry run (requires GITHUB_TOKEN)
 GITHUB_TOKEN=your_token ./bin/renovate --dry-run repo-name
 
-# Via npm script  
+# Via npm script
 npm run renovate -- --version
 ```
 
@@ -35,7 +35,7 @@ npm run renovate -- --version
 The `renovate` wrapper automatically passes through these environment variables to Docker:
 
 - `GITHUB_TOKEN`
-- `RENOVATE_TOKEN` 
+- `RENOVATE_TOKEN`
 - `LOG_LEVEL`
 - `RENOVATE_CONFIG_FILE`
 - `RENOVATE_DRY_RUN`

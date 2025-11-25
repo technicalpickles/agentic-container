@@ -67,16 +67,16 @@ All cookbooks use the **unified test script** at `scripts/test-dockerfile.sh`:
 
 ### What to Test
 
-✅ **Tool availability** - Can execute installed commands  
-✅ **Package functionality** - Can import/use installed packages  
-✅ **File permissions** - Workspace and key files have correct permissions  
-✅ **User setup** - Running as agent user with correct groups  
+✅ **Tool availability** - Can execute installed commands
+✅ **Package functionality** - Can import/use installed packages
+✅ **File permissions** - Workspace and key files have correct permissions
+✅ **User setup** - Running as agent user with correct groups
 ✅ **Development tools** - git, mise, and other base tools work
 
 ### What NOT to Test
 
-❌ **Build process** - test-extensions.sh already covers this  
-❌ **Internal implementation details** - Focus on user-visible functionality  
+❌ **Build process** - test-extensions.sh already covers this
+❌ **Internal implementation details** - Focus on user-visible functionality
 ❌ **Performance** - Keep tests fast and focused on correctness
 
 ## Examples

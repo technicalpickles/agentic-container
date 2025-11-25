@@ -9,7 +9,7 @@
 | Migration Type | Status | Functional Impact | Risk Level | Decision |
 |----------------|--------|-------------------|------------|----------|
 | `regexManagers` → `customManagers` | ✅ **Completed** | None | Low | ✅ Applied |
-| Pattern delimiters (`/regex/`) | ✅ **Completed** | None | Low | ✅ Applied |  
+| Pattern delimiters (`/regex/`) | ✅ **Completed** | None | Low | ✅ Applied |
 | `fileMatch` → `managerFilePatterns` | ⚠️ **Incomplete** | None | Medium | 🔄 Deferred |
 
 ---
@@ -54,7 +54,7 @@ AFTER:  "customManagers": [{"customType": "regex", ...}]
 
 #### 2. Pattern Delimiter Updates
 ```yaml
-# Migration Applied  
+# Migration Applied
 BEFORE: "fileMatch": ["(^|/)Dockerfile$"]
 AFTER:  "fileMatch": ["/(^|/)Dockerfile$/"]
 ```
@@ -69,7 +69,7 @@ AFTER:  "fileMatch": ["/(^|/)Dockerfile$/"]
 
 ### 🔄 Deferred Migrations
 
-#### 1. fileMatch → managerFilePatterns  
+#### 1. fileMatch → managerFilePatterns
 ```yaml
 # Migration NOT Applied (Deferred)
 CURRENT: "fileMatch": ["/(^|/)Dockerfile$/"]
@@ -78,7 +78,7 @@ TARGET:  "managerFilePatterns": ["/(^|/)Dockerfile$/"]
 
 **Deferral Reasons:**
 - ⚠️ Property name change more complex than format updates
-- ⚠️ Limited real-world validation examples found  
+- ⚠️ Limited real-world validation examples found
 - ⚠️ Current format fully functional
 - ⚠️ Risk/benefit ratio not favorable for immediate deployment
 - ✅ Can be applied later without user impact
@@ -95,12 +95,12 @@ TARGET:  "managerFilePatterns": ["/(^|/)Dockerfile$/"]
 ### Migration Decision Tree
 
 ```
-Is migration required for functionality? 
+Is migration required for functionality?
 ├── YES → Apply immediately (High Priority)
 └── NO → Evaluate risk/benefit
     ├── Low Risk + Clear Benefit → Apply now
     ├── Medium Risk + Clear Benefit → Test first, then apply
-    ├── High Risk OR Unclear Benefit → Defer  
+    ├── High Risk OR Unclear Benefit → Defer
     └── No Benefit → Skip
 ```
 
@@ -157,7 +157,7 @@ cp .github/renovate.json5.backup .github/renovate.json5
 
 ### What Worked Well
 1. **Incremental approach** - Apply low-risk changes first
-2. **Thorough validation** - Test every change extensively  
+2. **Thorough validation** - Test every change extensively
 3. **Documentation-first** - Only apply well-documented migrations
 4. **Backup strategy** - Always have rollback plan ready
 
@@ -169,7 +169,7 @@ cp .github/renovate.json5.backup .github/renovate.json5
 
 ### Decision Principles Established
 1. **Functionality First** - Never sacrifice working features for format compliance
-2. **Risk Management** - Prefer warnings over broken functionality  
+2. **Risk Management** - Prefer warnings over broken functionality
 3. **Community Validation** - Wait for format adoption before following
 4. **Continuous Monitoring** - Stay informed but don't over-react to warnings
 

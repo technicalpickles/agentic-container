@@ -43,7 +43,7 @@ jobs:
             echo "pattern=pr-*" >> $GITHUB_OUTPUT
             echo "description=All PR tags" >> $GITHUB_OUTPUT
           fi
-          
+
           if [ "${{ inputs.dry_run }}" = "true" ]; then
             echo "mode=DRY RUN" >> $GITHUB_OUTPUT
           else

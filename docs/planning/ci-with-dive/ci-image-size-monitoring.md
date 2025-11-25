@@ -1,7 +1,7 @@
 # CI Image Size Monitoring with Dive
 
-**Created**: 2025-01-15  
-**Status**: Planning  
+**Created**: 2025-01-15
+**Status**: Planning
 **Scope**: Using dive to monitor and control image size changes in CI/CD
 
 ## Overview
@@ -98,13 +98,13 @@ Set minimum efficiency thresholds for images.
     for target in minimal standard python node ruby go dev; do
       IMAGE="ghcr.io/${{ github.repository }}:${{ github.sha }}-$target"
       echo "Analyzing $target..."
-      
+
       # Fail if efficiency below threshold
       dive --ci "$IMAGE" \
         --lowestEfficiency=0.85 \
         --highestUserWastedPercent=15 \
         --highestWasted=200MB
-      
+
       if [ $? -ne 0 ]; then
         echo "::error::$target image failed efficiency check"
         exit 1
@@ -116,7 +116,7 @@ Set minimum efficiency thresholds for images.
 
 ### Option 1: Basic Size Monitoring
 
-**Pros**: Simple, quick feedback  
+**Pros**: Simple, quick feedback
 **Cons**: Limited insights
 
 ```yaml
@@ -128,7 +128,7 @@ jobs:
       - name: Check image sizes
         run: |
           echo "## Image Size Report" >> $GITHUB_STEP_SUMMARY
-          echo "| Image | Size |" >> $GITHUB_STEP_SUMMARY  
+          echo "| Image | Size |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|------|" >> $GITHUB_STEP_SUMMARY
 
           for tag in base tools python node ruby go dev; do
@@ -140,7 +140,7 @@ jobs:
 
 ### Option 2: Comprehensive Analysis with Dive
 
-**Pros**: Detailed insights, layer analysis  
+**Pros**: Detailed insights, layer analysis
 **Cons**: More complex setup
 
 ```yaml
@@ -162,11 +162,11 @@ jobs:
 
           for target in minimal standard python node ruby go dev; do
             image="ghcr.io/${{ github.repository }}:${{ github.sha }}-$target"
-            
+
             # Generate detailed analysis
             dive --json "$image" > "reports/${target}-analysis.json"
-            
-            # Run CI checks  
+
+            # Run CI checks
             dive --ci "$image" \
               --lowestEfficiency=0.8 \
               --highestUserWastedPercent=20 \
@@ -182,7 +182,7 @@ jobs:
 
 ### Option 3: Historical Tracking with Database
 
-**Pros**: Long-term trends, regression analysis  
+**Pros**: Long-term trends, regression analysis
 **Cons**: Requires external storage
 
 ```yaml
@@ -201,17 +201,17 @@ jobs:
     for target in minimal standard python node ruby go dev; do
       if [ "$first" = false ]; then echo "," >> size_data.json; fi
       first=false
-      
+
       image="ghcr.io/${{ github.repository }}:${{ github.sha }}-$target"
       analysis=$(dive --json "$image")
       size=$(echo "$analysis" | jq '.image.sizeBytes')
       efficiency=$(echo "$analysis" | jq '.image.efficiency')
       waste=$(echo "$analysis" | jq '.image.userSizeBytesWasted')
-      
+
       cat >> size_data.json << EOF
         "$target": {
           "size": $size,
-          "efficiency": $efficiency, 
+          "efficiency": $efficiency,
           "waste": $waste
         }
     EOF
@@ -313,7 +313,7 @@ env:
       analysis=$(cat "reports/${target}-analysis.json")
       size=$(echo "$analysis" | jq '.image.sizeBytes')
       efficiency=$(echo "$analysis" | jq '.image.efficiency')
-      
+
       curl -X POST https://api.datadoghq.com/api/v1/series \
         -H "Content-Type: application/json" \
         -H "DD-API-KEY: ${{ secrets.DATADOG_API_KEY }}" \

@@ -1,4 +1,4 @@
-# Node.js Development Extension  
+# Node.js Development Extension
 # Demonstrates: npm global package installation, system packages
 ARG BASE_IMAGE=ghcr.io/technicalpickles/agentic-container:main
 FROM ${BASE_IMAGE}

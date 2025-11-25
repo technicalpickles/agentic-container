@@ -32,7 +32,7 @@ renovate --dry-run your-username/agentic-container
 The custom regex managers will handle:
 ```dockerfile
 ARG NODE_VERSION=24.8.0      # → Latest Node.js LTS
-ARG PYTHON_VERSION=3.13.7    # → Latest Python stable  
+ARG PYTHON_VERSION=3.13.7    # → Latest Python stable
 ARG RUBY_VERSION=3.4.5       # → Latest Ruby stable
 ARG GO_VERSION=1.25.1        # → Latest Go stable
 ```
@@ -147,7 +147,7 @@ Current: Groups related updates to reduce PR noise
 ### 1. Validation Workflow
 Each Renovate PR should trigger:
 - Dockerfile linting (hadolint)
-- YAML validation (yamllint)  
+- YAML validation (yamllint)
 - Container builds and tests
 - Cookbook validation with goss tests
 
@@ -174,7 +174,7 @@ docker build --build-arg NODE_VERSION=24.9.0 -t test .
 - Security vulnerabilities may go unnoticed
 - Time-consuming dependency research
 
-### After Renovate  
+### After Renovate
 - Automated PRs for 80%+ of version updates
 - Consistent security patch application
 - Grouped updates reduce notification noise
@@ -211,7 +211,7 @@ If multiple files need coordination:
 
 ### Setup Cost
 - Initial configuration: 4-8 hours
-- Testing and validation: 2-4 hours  
+- Testing and validation: 2-4 hours
 - Team training: 1-2 hours
 
 ### Ongoing Maintenance

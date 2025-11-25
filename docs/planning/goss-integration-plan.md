@@ -1,7 +1,7 @@
 # Goss Testing Integration Plan for Standard and Dev Targets
 
-**Created**: 2025-01-22  
-**Status**: Research and Planning Complete  
+**Created**: 2025-01-22
+**Status**: Research and Planning Complete
 **Goal**: Integrate goss tests for standard and dev targets, enable cookbook reuse
 
 ## Executive Summary
@@ -55,7 +55,7 @@ This plan outlines how to add comprehensive goss testing for the main Dockerfile
 /
 ├── goss/
 │   ├── standard.yaml          # Tests for standard target
-│   ├── dev.yaml              # Tests for dev target  
+│   ├── dev.yaml              # Tests for dev target
 │   └── base-common.yaml      # Shared tests between standard/dev
 ├── docs/cookbooks/
 │   ├── _templates/
@@ -285,7 +285,7 @@ env:
 # Test standard target
 ./scripts/test-dockerfile.sh standard
 
-# Test dev target  
+# Test dev target
 ./scripts/test-dockerfile.sh dev
 
 # Test cookbook (existing)
@@ -329,14 +329,14 @@ strategy:
         name: Test Cookbooks
         cookbook: python-cli
         condition: ${{ needs.detect-changes.outputs.base-dockerfile == 'true' || contains(needs.detect-changes.outputs.changed-cookbooks, 'python-cli') }}
-      
+
       # New base target testing
       - job: test-standard
         name: Test Standard Target
         target: standard
         condition: ${{ needs.detect-changes.outputs.base-dockerfile == 'true' || github.event_name == 'schedule' }}
       - job: test-dev
-        name: Test Dev Target  
+        name: Test Dev Target
         target: dev
         condition: ${{ needs.detect-changes.outputs.base-dockerfile == 'true' || github.event_name == 'schedule' }}
 ```
@@ -356,7 +356,7 @@ strategy:
 1. **Build Standard**: Build standard target, export for testing
 2. **Build Dev**: Build dev target (if base dockerfile changed)
 3. **Test Standard**: Run goss tests on standard target
-4. **Test Dev**: Run goss tests on dev target  
+4. **Test Dev**: Run goss tests on dev target
 5. **Test Cookbooks**: Test all cookbooks (existing)
 6. **Publish**: Publish successful builds
 
@@ -400,7 +400,7 @@ cp ../_templates/goss-template.yaml goss.yaml
 
 **Creating a new multi-language cookbook:**
 ```bash
-cd docs/cookbooks/my-multi-lang-cookbook  
+cd docs/cookbooks/my-multi-lang-cookbook
 cp ../_templates/goss-template.yaml goss.yaml
 
 # Edit goss.yaml to add cookbook-specific tests
@@ -461,7 +461,7 @@ DRY_RUN=true ./scripts/test-dockerfile.sh dev
 /
 ├── goss/                           # NEW: Base target tests
 │   ├── standard.yaml              # Standard target validation
-│   ├── dev.yaml                   # Dev target validation  
+│   ├── dev.yaml                   # Dev target validation
 │   └── base-common.yaml           # Shared base tests
 ├── docs/cookbooks/
 │   ├── _templates/

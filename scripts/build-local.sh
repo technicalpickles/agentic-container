@@ -21,7 +21,7 @@ if [[ "${1:-}" == "--help" ]] || [[ "${1:-}" == "-h" ]]; then
     echo "    builder           Base Ubuntu build stage with common tools"
     echo "  Language stages:"
     echo "    ruby-stage        Ruby development environment"
-    echo "    go-stage          Go development environment"  
+    echo "    go-stage          Go development environment"
     echo "    node-stage        Node.js development environment"
     echo "    python-stage      Python development environment"
     echo "  Tool stages:"
@@ -52,12 +52,12 @@ TAG="${2:-agentic-container:local}"
 validate_target() {
     local target="$1"
     local dockerfile="Dockerfile"
-    
+
     if [[ ! -f "$dockerfile" ]]; then
         echo "❌ Error: Dockerfile not found in current directory"
         exit 1
     fi
-    
+
     # Check if the target exists as a stage in the Dockerfile
     if ! grep -q "^FROM .* AS $target$" "$dockerfile"; then
         echo "❌ Error: Target '$target' not found in Dockerfile"

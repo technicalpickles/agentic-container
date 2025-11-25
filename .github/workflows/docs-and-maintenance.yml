@@ -123,7 +123,7 @@ jobs:
       - name: Check CI status before committing
         run: |
           echo "🔍 Checking CI status before committing documentation updates..."
-          
+
           # Check if there are any recent failed workflows
           # This is a basic check - in a real scenario you might want to check specific workflows
           echo "✅ CI status check completed - proceeding with documentation update"

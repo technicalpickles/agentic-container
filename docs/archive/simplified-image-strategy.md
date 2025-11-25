@@ -1,7 +1,7 @@
 # Simplified Image Strategy
 
-**Created**: 2025-01-15  
-**Status**: Planning  
+**Created**: 2025-01-15
+**Status**: Planning
 **Scope**: Simplification of agentic-container image strategy and maintenance
 approach
 

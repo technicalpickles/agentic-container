@@ -72,7 +72,7 @@ with:
 ```toml
 [tools]
 hadolint = "latest"
-goss = "latest" 
+goss = "latest"
 yamllint = "latest"
 trivy = "latest"
 ```
@@ -152,7 +152,7 @@ download_url="https://github.com/wagoodman/dive/releases/download/v${DIVE_VERSIO
 
 ### **Phase 1 - Easy Wins** (High value, low effort)
 1. GitHub Actions versions (automatic)
-2. Node.js dependencies (automatic)  
+2. Node.js dependencies (automatic)
 3. Docker base images (automatic)
 
 ### **Phase 2 - Custom Managers** (Medium effort, medium value)

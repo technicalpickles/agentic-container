@@ -8,6 +8,12 @@ ignored:
   - SC2086 # Allow word splitting (controlled in our context)
   - SC2174 # Allow mkdir -m with -p (our usage is correct)
   - DL3008 # Pin versions in apt get install - impractical for base images
+  - DL4006 # Set SHELL option -o pipefail - not needed for our specific usage
+  - DL3013 # Pin pip versions - example Dockerfiles
+  - DL3016 # Pin npm versions - example Dockerfiles
+  - DL3028 # Pin gem versions - example Dockerfiles
+  - DL3062 # Pin go versions - example Dockerfiles
+  - DL3059 # Multiple consecutive RUN instructions - acceptable in examples
 
 # Override severity levels for specific rules
 override:

@@ -10,7 +10,7 @@ This document provides a comprehensive guide to validating Renovate configuratio
 # Quick validation (syntax + official validator) - ~10 seconds
 ./scripts/validate-renovate.sh --quick
 
-# Full validation (includes pattern testing) - ~30 seconds  
+# Full validation (includes pattern testing) - ~30 seconds
 ./scripts/validate-renovate.sh
 
 # Pattern-only validation (for debugging)
@@ -40,21 +40,21 @@ Our validation strategy includes multiple layers to ensure configuration quality
 ### 2. Official Validation
 - **Tool**: `renovate-config-validator` via Docker
 - **Purpose**: Renovate's built-in validation
-- **Catches**: Schema errors, deprecated options, invalid configurations  
+- **Catches**: Schema errors, deprecated options, invalid configurations
 - **Speed**: Fast (~5s)
 - **Reliability**: No Node.js ES module conflicts
 
 ### 3. Pattern Validation
 - **Tool**: Custom scripts with grep/regex
 - **Purpose**: Tests that custom managers will match actual files
-- **Validates**: 
+- **Validates**:
   - Dockerfile ARG patterns (`ARG NODE_VERSION=`, etc.)
-  - Script version patterns  
+  - Script version patterns
   - GitHub Actions version patterns
   - mise.toml tool versions
 
 ### 4. Security Scanning
-- **Checks**: 
+- **Checks**:
   - Automerge safety (patch-only)
   - Reasonable rate limits
   - Update scheduling
@@ -104,7 +104,7 @@ Our workflow (`.github/workflows/validate-renovate.yml`) runs:
 
 **Triggered on:**
 - Push to `main` or `renovate/**` branches (when config files change)
-- Pull requests (when config files change)  
+- Pull requests (when config files change)
 - Weekly schedule (Monday 6 AM) - configuration drift detection
 - Manual workflow dispatch
 
@@ -130,7 +130,7 @@ We provide convenient wrapper scripts in `bin/` that hide Docker complexity:
 # Validate default config (.github/renovate.json5)
 ./bin/renovate-config-validator
 
-# Validate specific config file  
+# Validate specific config file
 ./bin/renovate-config-validator path/to/renovate.json
 
 # Via npm script
@@ -146,7 +146,7 @@ npm run renovate-config-validator
 # Dry run (requires GITHUB_TOKEN)
 GITHUB_TOKEN=your_token ./bin/renovate --dry-run repo-name
 
-# Via npm script  
+# Via npm script
 npm run renovate -- --version
 ```
 
@@ -155,7 +155,7 @@ npm run renovate -- --version
 The wrappers automatically pass through these environment variables:
 
 - `GITHUB_TOKEN`
-- `RENOVATE_TOKEN` 
+- `RENOVATE_TOKEN`
 - `LOG_LEVEL`
 - `RENOVATE_CONFIG_FILE`
 - `RENOVATE_DRY_RUN`

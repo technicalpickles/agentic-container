@@ -37,7 +37,7 @@ file:
     mode: "0644"
     contents:
       - "defaultBranch = main"
-      - "rebase = false" 
+      - "rebase = false"
       - "autocrlf = input"
       - "directory = /workspace"
 
