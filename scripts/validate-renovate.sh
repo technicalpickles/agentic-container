@@ -61,26 +61,26 @@ print_status() {
 # Function to validate version detection
 validate_version_detection() {
     local log_file="$1"
-    
+
     print_status "INFO" "Validating version detection..."
-    
+
     # Get all _VERSION variables from codebase
     local codebase_versions=()
     while IFS= read -r version_var; do
         [[ -n "$version_var" ]] && codebase_versions+=("$version_var")
     done < <(grep -r "ARG.*_VERSION=" . --include="*Dockerfile*" --exclude-dir=node_modules --exclude-dir=log | grep -o "[A-Z_]*_VERSION" | sort -u || true)
-    
+
     # Check what Renovate detected for each version variable
     detected_count=0
     total_expected=${#codebase_versions[@]}
-    
+
     if [[ $total_expected -eq 0 ]]; then
         print_status "INFO" "No _VERSION variables found in codebase"
         return 0
     fi
-    
+
     print_status "INFO" "Checking version detection for ${total_expected} _VERSION variables..."
-    
+
     for version_var in "${codebase_versions[@]}"; do
         # Look for this version variable in Renovate output
         if grep -q "\"depName\".*\"${version_var}\"" "$log_file"; then
@@ -103,7 +103,7 @@ validate_version_detection() {
             fi
         fi
     done
-    
+
     # Validate detection threshold
     min_required=3
     if [[ $detected_count -ge $min_required ]]; then
@@ -120,19 +120,19 @@ validate_version_detection() {
 # Function to validate version coverage - ensure all _VERSION variables have Renovate rules
 validate_version_coverage() {
     print_status "INFO" "Validating version coverage..."
-    
+
     # Find all _VERSION variables in codebase
     local found_versions=()
     while IFS= read -r version_var; do
         [[ -n "$version_var" ]] && found_versions+=("$version_var")
     done < <(grep -r "ARG.*_VERSION=" . --include="*Dockerfile*" --exclude-dir=node_modules --exclude-dir=log | grep -o "[A-Z_]*_VERSION" | sort -u || true)
-    
+
     # Find all _VERSION variables configured in Renovate
     local configured_versions=()
     while IFS= read -r version_var; do
         [[ -n "$version_var" ]] && configured_versions+=("$version_var")
     done < <(grep -o "depName>[A-Z_]*_VERSION" .github/renovate.json5 | grep -o "[A-Z_]*_VERSION" | sort -u || true)
-    
+
     # Find ignored dependencies
     local ignored_versions=()
     if grep -A10 '"ignoreDeps"' .github/renovate.json5 | grep -q '"[A-Z_]*_VERSION"'; then
@@ -140,21 +140,21 @@ validate_version_coverage() {
             [[ -n "$version_var" ]] && ignored_versions+=("$version_var")
         done < <(grep -A10 '"ignoreDeps"' .github/renovate.json5 | grep -o '"[A-Z_]*_VERSION"' | tr -d '"' | sort -u || true)
     fi
-    
+
     # Check for missing coverage
     local missing_coverage=()
     local total_found=${#found_versions[@]}
     local covered_count=0
-    
+
     if [[ $total_found -eq 0 ]]; then
         print_status "INFO" "No _VERSION variables found in codebase for coverage validation"
         return 0
     fi
-    
+
     for version_var in "${found_versions[@]}"; do
         local is_configured=false
         local is_ignored=false
-        
+
         # Check if configured
         for configured in "${configured_versions[@]}"; do
             if [[ "$version_var" == "$configured" ]]; then
@@ -162,7 +162,7 @@ validate_version_coverage() {
                 break
             fi
         done
-        
+
         # Check if ignored (only if array has elements)
         if [[ ${#ignored_versions[@]} -gt 0 ]]; then
             for ignored in "${ignored_versions[@]}"; do
@@ -172,7 +172,7 @@ validate_version_coverage() {
                 fi
             done
         fi
-        
+
         if [[ "$is_configured" == "true" ]]; then
             covered_count=$((covered_count + 1))
             if [[ "$VERBOSE" == "true" ]]; then
@@ -188,7 +188,7 @@ validate_version_coverage() {
             print_status "FAIL" "$version_var found in codebase but missing from Renovate rules"
         fi
     done
-    
+
     # Report results
     if [[ ${#missing_coverage[@]} -eq 0 ]]; then
         print_status "PASS" "Version coverage complete: $covered_count/$total_found variables covered"
@@ -273,11 +273,11 @@ if LOG_LEVEL=debug bin/renovate --platform=local --dry-run=log > "$validation_lo
         regex_file_count=$(grep -o '"regex":.*"fileCount":[0-9]*' "$validation_log" | grep -o '[0-9]*$' | head -1)
         regex_dep_count=$(grep -o '"regex":.*"depCount":[0-9]*' "$validation_log" | grep -o '[0-9]*$' | head -1)
         print_status "PASS" "Custom managers working: $regex_file_count files, $regex_dep_count dependencies"
-        
+
         # Show total dependency stats for comparison
         total_deps=$(grep -o '"total":.*"depCount":[0-9]*' "$validation_log" | grep -o '[0-9]*$' | head -1)
         print_status "INFO" "Total dependencies detected: $total_deps (including built-in managers)"
-        
+
         # Validate specific version detection
         validate_version_detection "$validation_log"
     else
@@ -304,13 +304,13 @@ print_status "INFO" "Validation log saved to: $validation_log"
 # Analyze upstream versions from Renovate's own data
 validate_upstream_versions() {
     local log_file="$1"
-    
+
     print_status "INFO" "Analyzing upstream versions from Renovate data..."
-    
+
     local deps_analyzed=0
     local updates_available=0
     local up_to_date=0
-    
+
     # Extract and analyze each _VERSION dependency directly
     while IFS= read -r dep_line; do
         if [[ -n "$dep_line" ]]; then
@@ -321,21 +321,21 @@ validate_upstream_versions() {
             local new_version=$(echo "$dep_line" | cut -d: -f5)
             local update_type=$(echo "$dep_line" | cut -d: -f6)
             local current_age=$(echo "$dep_line" | cut -d: -f7)
-            
+
             deps_analyzed=$((deps_analyzed + 1))
-            
+
             if [[ "$VERBOSE" == "true" ]]; then
                 print_status "INFO" "Processing $dep_name: $current_value (datasource: $datasource)"
             fi
-            
+
             if [[ "$has_updates" == "yes" && -n "$new_version" ]]; then
                 updates_available=$((updates_available + 1))
-                
+
                 local age_info=""
                 if [[ -n "$current_age" && "$current_age" != "unknown" ]]; then
                     age_info=" (${current_age}d old)"
                 fi
-                
+
                 case "$update_type" in
                     "major") print_status "INFO" "$dep_name: $current_value → $new_version ⚠️  MAJOR$age_info" ;;
                     "minor") print_status "INFO" "$dep_name: $current_value → $new_version 📈 minor$age_info" ;;
@@ -356,7 +356,7 @@ validate_upstream_versions() {
                 fi
                 print_status "PASS" "$dep_name: $current_value ✅ latest$age_info"
             fi
-            
+
             if [[ "$VERBOSE" == "true" && -n "$datasource" ]]; then
                 print_status "INFO" "  └─ Source: $datasource"
             fi
@@ -366,7 +366,7 @@ validate_upstream_versions() {
         grep -A 25 '"depName": ".*_VERSION"' "$log_file" | \
         awk '
         BEGIN { dep_name=""; current_value=""; datasource=""; has_updates="no"; new_version=""; update_type=""; current_age="unknown" }
-        /"depName": ".*_VERSION"/ { 
+        /"depName": ".*_VERSION"/ {
             if (dep_name != "") {
                 print dep_name ":" current_value ":" datasource ":" has_updates ":" new_version ":" update_type ":" current_age
             }
@@ -378,18 +378,18 @@ validate_upstream_versions() {
         /"currentVersionAgeInDays":/ { gsub(/.*"currentVersionAgeInDays": /, "", $0); gsub(/[,}].*/, "", $0); current_age=$0 }
         /"newVersion":/ { gsub(/.*"newVersion": "/, "", $0); gsub(/".*/, "", $0); new_version=$0; has_updates="yes" }
         /"updateType":/ { gsub(/.*"updateType": "/, "", $0); gsub(/".*/, "", $0); update_type=$0 }
-        END { 
+        END {
             if (dep_name != "") {
                 print dep_name ":" current_value ":" datasource ":" has_updates ":" new_version ":" update_type ":" current_age
             }
         }' 2>/dev/null || true
     )
-    
+
     # Summary
     if [[ $deps_analyzed -gt 0 ]]; then
         print_status "INFO" "Upstream analysis complete: $deps_analyzed dependencies analyzed"
         print_status "INFO" "Status: $up_to_date up-to-date, $updates_available updates available"
-        
+
         if [[ $updates_available -gt 0 ]]; then
             print_status "INFO" "💡 Run Renovate without --dry-run to create update PRs"
         fi

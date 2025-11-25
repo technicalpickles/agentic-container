@@ -34,11 +34,11 @@ if command -v mise &> /dev/null; then
     echo "Mise root: $(mise root)"
     echo "Mise config dir: $(mise config dir)"
     echo ""
-    
+
     echo "=== MISE TOOLS ==="
     mise list
     echo ""
-    
+
     echo "=== MISE SHIMS DIR ==="
     mise_shims_dir="$(mise root)/shims"
     echo "Expected shims dir: $mise_shims_dir"
@@ -57,7 +57,7 @@ fi
 echo "=== CHECKING SHELL STARTUP FILES ==="
 startup_files=(
     "/etc/bash.bashrc"
-    "/etc/bashrc" 
+    "/etc/bashrc"
     "$HOME/.bashrc"
     "$HOME/.bash_profile"
     "$HOME/.profile"

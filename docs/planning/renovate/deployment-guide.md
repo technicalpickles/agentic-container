@@ -2,14 +2,20 @@
 
 ## ✅ Configuration Complete
 
-The Renovate configuration has been successfully copied from `scratch/renovate.json5` to `.github/renovate.json5`. This configuration includes:
+The Renovate configuration has been successfully copied from
+`scratch/renovate.json5` to `.github/renovate.json5`. This configuration
+includes:
 
-- **Automatic updates** for GitHub Actions, Docker base images, Node.js dependencies
-- **Custom regex managers** for Docker ARG versions (NODE_VERSION, PYTHON_VERSION, etc.)
+- **Automatic updates** for GitHub Actions, Docker base images, Node.js
+  dependencies
+- **Custom regex managers** for Docker ARG versions (NODE_VERSION,
+  PYTHON_VERSION, etc.)
 - **Tool version tracking** for ast-grep, lefthook, uv, dive, and trivy
-- **Conservative automerge** settings (only patch updates for GitHub Actions and dev dependencies)
+- **Conservative automerge** settings (only patch updates for GitHub Actions and
+  dev dependencies)
 - **Dependency dashboard** for overview and management
-- **Rate limiting** to avoid overwhelming the repository (max 3 concurrent PRs, 2 per hour)
+- **Rate limiting** to avoid overwhelming the repository (max 3 concurrent PRs,
+  2 per hour)
 
 ## 🚀 Next Steps: Install Renovate App
 
@@ -36,6 +42,7 @@ The Renovate configuration has been successfully copied from `scratch/renovate.j
 After installation, Renovate will:
 
 1. **Create an onboarding PR** within 1-2 hours with title like:
+
    ```
    Configure Renovate
    ```
@@ -70,12 +77,14 @@ After installation, Renovate will:
 ### Local Validation
 
 **Quick Validation (Recommended):**
+
 ```bash
 # Run the comprehensive validation script
 ./scripts/validate-renovate-config.sh
 ```
 
 **Full Dry Run Test (Optional):**
+
 ```bash
 # Renovate is installed as dev dependency
 # Set GitHub token (needs repo access)
@@ -91,6 +100,7 @@ npx renovate --dry-run --log-level debug your-username/agentic-container
 ### Expected Output
 
 The dry run should show:
+
 - Detection of GitHub Actions in `.github/workflows/`
 - Detection of Docker base images in Dockerfiles
 - Detection of Node.js dependencies in `package.json`
@@ -100,17 +110,20 @@ The dry run should show:
 ## 📊 What Happens Next
 
 ### Immediate Benefits (Week 1)
+
 - **GitHub Actions updates**: `actions/checkout@v3` → `actions/checkout@v4`
 - **Docker base images**: `ubuntu:22.04` → `ubuntu:24.04`
 - **Node.js dependencies**: Automatic patch and minor updates
 - **Security alerts**: Immediate notification of vulnerabilities
 
 ### Custom Managers (Week 2-3)
+
 - **Language runtime versions**: NODE_VERSION, PYTHON_VERSION updates
 - **Tool versions**: ast-grep, lefthook, uv version updates
 - **Script embedded versions**: dive version in analyze-image-size.sh
 
 ### Expected PR Volume
+
 - **Initial week**: 5-10 PRs (catching up on outdated dependencies)
 - **Ongoing**: 2-5 PRs per week (depending on update frequency)
 - **Grouped updates**: Related changes combined to reduce noise
@@ -118,11 +131,13 @@ The dry run should show:
 ## 🛠 Troubleshooting
 
 ### If Onboarding PR Doesn't Appear
+
 1. Check repository permissions in GitHub App settings
 2. Verify `.github/renovate.json5` is in the default branch
 3. Check Renovate logs in the GitHub App dashboard
 
 ### If Too Many PRs Are Created
+
 1. Adjust rate limiting in `.github/renovate.json5`:
    ```json5
    "prConcurrentLimit": 2,  // Reduce from 3
@@ -130,6 +145,7 @@ The dry run should show:
    ```
 
 ### If Configuration Errors Occur
+
 1. Check the dependency dashboard issue for error messages
 2. Validate JSON5 syntax at https://jsonlint.com/
 3. Review Renovate logs in the GitHub App dashboard
@@ -137,10 +153,13 @@ The dry run should show:
 ## 📈 Success Metrics
 
 After 1 week, you should see:
+
 - ✅ Dependency dashboard issue created
 - ✅ 3-8 dependency update PRs created
 - ✅ At least 1 security update (if any exist)
 - ✅ Proper grouping of related updates
 - ✅ Semantic commit messages and PR titles
 
-The configuration is designed to be conservative initially. You can make it more aggressive (more automerge, higher frequency) as you build confidence in the automation.
+The configuration is designed to be conservative initially. You can make it more
+aggressive (more automerge, higher frequency) as you build confidence in the
+automation.

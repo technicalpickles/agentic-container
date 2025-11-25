@@ -32,15 +32,15 @@ jobs:
             BASE_SHA="${{ github.event.before }}"
             HEAD_SHA="${{ github.sha }}"
           fi
-          
+
           # Get list of changed files
           CHANGED_FILES=$(git diff --name-only $BASE_SHA..$HEAD_SHA)
-          
+
           # Initialize outputs
           DOCKERFILES=false
           YAML_FILES=false
           ANY_CODE=false
-          
+
           # Check each changed file
           while IFS= read -r file; do
             # Check for Dockerfiles
@@ -48,26 +48,26 @@ jobs:
               DOCKERFILES=true
               ANY_CODE=true
             fi
-            
+
             # Check for YAML files
             if [[ "$file" == *.yml ]] || [[ "$file" == *.yaml ]]; then
               YAML_FILES=true
               ANY_CODE=true
             fi
-            
+
             # Check if any non-docs files changed (for security scan)
             if [[ ! "$file" =~ ^docs/ ]] && [[ "$file" != "README.md" ]] && [[ ! "$file" =~ \.md$ ]]; then
               ANY_CODE=true
             fi
           done <<< "$CHANGED_FILES"
-          
+
           echo "dockerfiles=$DOCKERFILES" >> $GITHUB_OUTPUT
           echo "yaml-files=$YAML_FILES" >> $GITHUB_OUTPUT
           echo "any-code=$ANY_CODE" >> $GITHUB_OUTPUT
-          
+
           echo "Lint change detection:"
           echo "  dockerfiles: $DOCKERFILES"
-          echo "  yaml-files: $YAML_FILES" 
+          echo "  yaml-files: $YAML_FILES"
           echo "  any-code: $ANY_CODE"
 
   hadolint:
@@ -82,8 +82,8 @@ jobs:
       - name: Lint all Dockerfiles with Hadolint
         uses: jbergstroem/hadolint-gh-action@v1.13.0
         with:
-          dockerfile: '**/Dockerfile*'
-          config_file: '.hadolint.yaml'
+          dockerfile: "**/Dockerfile*"
+          config_file: ".hadolint.yaml"
           annotate: true
 
   yamllint:

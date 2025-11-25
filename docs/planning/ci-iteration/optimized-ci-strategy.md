@@ -111,8 +111,8 @@ jobs:
 
 #### Workflow 3: `docs-and-maintenance.yml` (3-5 min)
 
-**Purpose**: Documentation updates and maintenance tasks  
-**Triggers**: `push` (main), `schedule` (weekly)
+**Purpose**: Documentation updates and maintenance tasks **Triggers**: `push`
+(main), `schedule` (weekly)
 
 ```yaml
 jobs:

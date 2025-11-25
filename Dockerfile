@@ -24,7 +24,7 @@ ARG PYTHON_VERSION
 
 # Set up mise for system-wide installations (optimized configuration)
 ENV MISE_DATA_DIR=/usr/local/share/mise
-ENV MISE_CONFIG_DIR=/etc/mise  
+ENV MISE_CONFIG_DIR=/etc/mise
 ENV MISE_CACHE_DIR=/tmp/mise-cache
 # Add mise shims to PATH - no activation needed!
 ENV PATH="/usr/local/share/mise/shims:${PATH}"
@@ -65,7 +65,7 @@ RUN rv ruby install --install-dir $MISE_DATA_DIR/installs/ruby/ ruby-${RUBY_VERS
 FROM builder AS go-stage
 # Re-declare ARG for this stage (inherit from global)
 ARG GO_VERSION
-# https://endoflife.date/go - Install to global mise directory  
+# https://endoflife.date/go - Install to global mise directory
 RUN mise use -g go@${GO_VERSION}
 
 FROM builder AS node-stage
@@ -132,7 +132,7 @@ ARG USER_GID=$USER_UID
 
 # Set up mise for system-wide installations (optimized configuration)
 ENV MISE_DATA_DIR=/usr/local/share/mise
-ENV MISE_CONFIG_DIR=/etc/mise  
+ENV MISE_CONFIG_DIR=/etc/mise
 ENV MISE_CACHE_DIR=/tmp/mise-cache
 # Add mise shims to PATH - no activation needed!
 ENV PATH="/usr/local/share/mise/shims:${PATH}"
@@ -201,7 +201,7 @@ COPY --chown=$USERNAME:$USERNAME config/shell-profile.sh /home/$USERNAME/.profil
 # Copy version managers and common languages from builder stage
 COPY --from=builder /usr/local/bin/mise /usr/local/bin/mise
 COPY --from=builder /usr/local/bin/rv /usr/local/bin/rv
-COPY --from=node-stage $MISE_DATA_DIR/installs/node $MISE_DATA_DIR/installs/node  
+COPY --from=node-stage $MISE_DATA_DIR/installs/node $MISE_DATA_DIR/installs/node
 COPY --from=python-stage $MISE_DATA_DIR/installs/python $MISE_DATA_DIR/installs/python
 COPY --from=starship-stage $MISE_DATA_DIR/installs/starship $MISE_DATA_DIR/installs/starship
 

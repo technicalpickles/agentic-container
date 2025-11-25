@@ -1,16 +1,16 @@
 command:
   "ruby --version":
     exit-status: 0
-    stdout: [ /ruby \d+\.\d+/ ]
+    stdout: [/ruby \d+\.\d+/]
   "gem --version":
     exit-status: 0
-    stdout: [ /\d+\.\d+/ ]
+    stdout: [/\d+\.\d+/]
   "go version":
     exit-status: 0
-    stdout: [ /go version go\d+\.\d+/ ]
+    stdout: [/go version go\d+\.\d+/]
   "lefthook version":
     exit-status: 0
-    stdout: [ /\d+\.\d+/ ]
+    stdout: [/\d+\.\d+/]
   "ast-grep --version":
     exit-status: 0
     stdout:
@@ -52,5 +52,3 @@ file:
   /usr/local/share/mise/installs/node:
     exists: true
     filetype: directory
-
-

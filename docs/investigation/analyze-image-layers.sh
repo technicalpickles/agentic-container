@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # analyze-image-layers.sh
-# 
+#
 # Purpose: Quick analysis of Docker image layers using dive
 # Usage: ./analyze-image-layers.sh <image-name>
 # Example: ./analyze-image-layers.sh agentic-container:standard
