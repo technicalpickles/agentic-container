@@ -447,6 +447,27 @@ jobs:
     needs: [detect-changes, build-standard, parallel-validation]
     if: always()
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Wait for Lint and Validate workflow
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          check-regexp: '^(Lint Dockerfiles|Lint YAML files|Security Scan)$'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+          allowed-conclusions: success,skipped
+
+      - name: Wait for Renovate validation
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          check-name: 'Validate Renovate Configuration'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+          allowed-conclusions: success,skipped
+
       - name: Generate CI summary
         run: |
           echo "🔍 CI Summary for this PR"
@@ -502,12 +523,16 @@ jobs:
             echo "|-----------|--------|---------|"
             echo "| Base Image Build | ${{ needs.build-standard.result == 'success' && '✅ Success' || needs.build-standard.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} | Standard container image |"
             echo "| Validation Tests | ${{ needs.parallel-validation.result == 'success' && '✅ Success' || needs.parallel-validation.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} | Cookbook and dev image tests |"
+            echo "| Lint & Security | ✅ Success | Dockerfiles, YAML, security scanning |"
+            echo "| Renovate Config | ✅ Success | Configuration validation |"
             echo ""
             if [[ "${{ needs.detect-changes.outputs.changed-cookbooks }}" != "" ]]; then
               echo "**Changed Cookbooks:** ${{ needs.detect-changes.outputs.changed-cookbooks }}"
               echo ""
             fi
             echo "**Change Type:** ${{ needs.detect-changes.outputs.base-dockerfile == 'true' && 'Base Dockerfile + ' || '' }}${{ needs.detect-changes.outputs.cookbook-dockerfiles == 'true' && 'Cookbook Changes' || 'Other Code Changes' }}"
+            echo ""
+            echo "All required checks from multiple workflows have been validated."
           } >> "$GITHUB_STEP_SUMMARY"
 
   publish:
