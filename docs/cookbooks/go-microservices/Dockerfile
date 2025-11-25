@@ -14,5 +14,4 @@ RUN mise use -g go@${GO_VERSION}
 RUN go install github.com/air-verse/air@latest
 USER agent
 
-# No HEALTHCHECK - this container is designed for task execution, not service monitoring
 WORKDIR /workspace

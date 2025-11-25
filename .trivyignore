@@ -1,0 +1,13 @@
+# DS026: No HEALTHCHECK defined
+# Rationale: All containers in this repository are designed for ephemeral AI agent
+# task execution in cloud platforms (Cursor Background Agents, Replit AI, etc.),
+# not long-running services. Health checks are not applicable to short-lived
+# command execution containers that start, execute a task, and terminate.
+#
+# - Main Dockerfile: Base image for agent task execution
+# - dev Dockerfile: Example kitchen-sink image for prototyping
+# - Cookbooks: Extension examples for specific tech stacks
+#
+# All are designed for "Fast startup time" and "Headless execution" as documented
+# in the README, not for service orchestration that would benefit from health monitoring.
+AVD-DS-0026

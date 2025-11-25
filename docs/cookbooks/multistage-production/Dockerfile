@@ -18,5 +18,4 @@ FROM ${BASE_IMAGE} AS runtime
 # Install only runtime dependencies
 RUN pip install --no-cache-dir requests
 
-# No HEALTHCHECK - this container is designed for task execution, not service monitoring
 WORKDIR /workspace

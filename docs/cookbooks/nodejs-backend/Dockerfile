@@ -10,5 +10,4 @@ RUN npm install -g typescript @types/node ts-node nodemon \
     && rm -rf /var/lib/apt/lists/*
 USER agent
 
-# No HEALTHCHECK - this container is designed for task execution, not service monitoring
 WORKDIR /workspace
