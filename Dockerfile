@@ -6,7 +6,7 @@
 # Build arguments for language versions and agent tools (can be overridden during build)
 ARG NODE_VERSION=25.2.1
 ARG PYTHON_VERSION=3.14.2
-ARG RUBY_VERSION=3.4.5
+ARG RUBY_VERSION=4.0.0
 ARG GO_VERSION=1.25.5
 ARG AST_GREP_VERSION=0.40.3
 ARG LEFTHOOK_VERSION=2.0.12
