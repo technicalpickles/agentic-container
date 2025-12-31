@@ -206,7 +206,7 @@ jobs:
 
       - name: Upload base image artifact (fork PRs only)
         if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: base-image
           path: /tmp/base-image.tar
@@ -249,7 +249,7 @@ jobs:
       # For fork PRs: use artifact from build-standard for standard target
       - name: Download base image artifact (fork PRs only, standard target)
         if: github.event_name == 'pull_request' && matrix.target == 'standard' && github.event.pull_request.head.repo.fork == true
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: base-image
           path: /tmp/
@@ -390,7 +390,7 @@ jobs:
 
       - name: Download base image artifact (fork PRs only)
         if: matrix.job == 'test-cookbooks' && matrix.condition == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == true
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: base-image
           path: /tmp/
