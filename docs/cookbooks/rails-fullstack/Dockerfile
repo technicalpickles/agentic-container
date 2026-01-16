@@ -4,7 +4,7 @@ ARG BASE_IMAGE=ghcr.io/technicalpickles/agentic-container:main
 FROM ${BASE_IMAGE}
 
 # Build argument for Ruby version (can be overridden during build)
-ARG RUBY_VERSION=3.4.5
+ARG RUBY_VERSION=4.0.1
 
 # Install Ruby via rv (fast precompiled binaries) and build tools for native extensions
 USER root
