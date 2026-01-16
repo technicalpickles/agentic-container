@@ -4,7 +4,7 @@ ARG BASE_IMAGE=ghcr.io/technicalpickles/agentic-container:main
 FROM ${BASE_IMAGE}
 
 # Build argument for Go version (can be overridden during build)
-ARG GO_VERSION=1.25.5
+ARG GO_VERSION=1.25.6
 
 # Install Go via mise
 USER root
