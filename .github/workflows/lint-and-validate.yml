@@ -80,7 +80,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Lint all Dockerfiles with Hadolint
-        uses: jbergstroem/hadolint-gh-action@v1.13.0
+        uses: jbergstroem/hadolint-gh-action@v1.15.0
         with:
           dockerfile: "**/Dockerfile*"
           config_file: ".hadolint.yaml"
